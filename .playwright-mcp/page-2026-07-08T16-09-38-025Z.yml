@@ -1,0 +1,77 @@
+- generic [ref=e1]:
+  - banner [ref=e2]:
+    - navigation [ref=e3]:
+      - link "AI Tattoo" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e5]: AI Tattoo
+      - button "Sign in" [ref=e7]
+  - main [ref=e8]:
+    - generic [ref=e10]:
+      - heading "See Your Tattoo Before You Ink" [level=1] [ref=e11]
+      - paragraph [ref=e12]: Upload a photo, describe your idea, and let AI preview the tattoo on your arm, shoulder, and calf in seconds.
+      - generic [ref=e13]:
+        - button "Try it free" [ref=e14]
+        - button "See examples" [ref=e15]
+      - paragraph [ref=e16]: 1 free generation on sign up · No credit card required
+  - button "Open Next.js Dev Tools" [ref=e22] [cursor=pointer]:
+    - img [ref=e23]
+  - alert [ref=e26]
+  - generic [ref=e27]:
+    - button "Keyless prompt" [expanded] [ref=e28] [cursor=pointer]:
+      - img [ref=e29]
+      - generic [ref=e33]: Configure your application
+      - img [ref=e34]
+    - generic [ref=e37]:
+      - generic [ref=e38]:
+        - paragraph [ref=e39]: Temporary API keys are enabled so you can get started immediately.
+        - list [ref=e40]:
+          - listitem [ref=e41]: Add SSO connections (eg. GitHub)
+          - listitem [ref=e42]: Set up B2B authentication
+          - listitem [ref=e43]: Enable MFA
+        - paragraph [ref=e44]: Access the dashboard to customize auth settings and explore Clerk features.
+      - link "Configure your application" [ref=e45] [cursor=pointer]:
+        - /url: https://dashboard.clerk.com/apps/claim?framework=nextjs&token=2ql4g15j5uptbw2xl9vp12k9javhu7tp4yu8j4sp&return_url=http%3A%2F%2Flocalhost%3A3000%2F
+  - dialog [active] [ref=e48]:
+    - generic [ref=e50]:
+      - generic [ref=e51]:
+        - button "Close modal" [ref=e52] [cursor=pointer]:
+          - img [ref=e53]
+        - generic [ref=e56]:
+          - heading "Sign in to My Application" [level=1] [ref=e57]
+          - paragraph [ref=e58]: Welcome back! Please sign in to continue
+        - generic [ref=e59]:
+          - button "Sign in with Google Continue with Google" [ref=e62] [cursor=pointer]:
+            - generic [ref=e63]:
+              - generic "Sign in with Google" [ref=e65]
+              - generic [ref=e66]: Continue with Google
+          - paragraph [ref=e69]: or
+          - generic [ref=e71]:
+            - generic [ref=e72]:
+              - generic [ref=e75]:
+                - generic [ref=e77]: Email address
+                - textbox "Email address" [ref=e78]:
+                  - /placeholder: Enter your email address
+              - generic:
+                - generic:
+                  - generic: Password
+                - generic:
+                  - textbox:
+                    - /placeholder: Enter your password
+                  - button:
+                    - img
+            - button "Continue" [ref=e81] [cursor=pointer]:
+              - generic [ref=e82]:
+                - text: Continue
+                - img [ref=e83]
+      - generic [ref=e85]:
+        - generic [ref=e86]:
+          - generic [ref=e87]: Don’t have an account?
+          - link "Sign up" [ref=e88] [cursor=pointer]:
+            - /url: http://localhost:3000/CLERK-ROUTER/VIRTUAL/sign-up
+        - generic [ref=e90]:
+          - generic [ref=e92]:
+            - paragraph [ref=e93]: Secured by
+            - link "Clerk logo" [ref=e94] [cursor=pointer]:
+              - /url: https://go.clerk.com/components
+              - img [ref=e95]
+          - paragraph [ref=e100]: Development mode

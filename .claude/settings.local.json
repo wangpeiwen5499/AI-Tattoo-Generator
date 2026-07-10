@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__plugin_context7_context7__resolve-library-id",
+      "mcp__plugin_context7_context7__query-docs",
+      "Bash(npm --version)",
+      "Bash(npx --version)",
+      "Bash(npx --yes create-next-app@latest . --typescript --tailwind --app --src-dir --import-alias \"@/*\" --use-npm --eslint --no-turbopack)",
+      "Read(//d/code/**)",
+      "Bash(npx --yes create-next-app@latest ai-tattoo-init --typescript --tailwind --app --src-dir --import-alias \"@/*\" --use-npm --eslint --no-turbopack)",
+      "Bash(npx --yes shadcn@latest init -d)",
+      "Bash(npx --yes shadcn@latest add card dialog input label textarea sonner -y)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "mcp__plugin_playwright_playwright__browser_navigate",
+      "mcp__plugin_playwright_playwright__browser_take_screenshot",
+      "mcp__plugin_playwright_playwright__browser_console_messages",
+      "Bash(curl -s -o /tmp/tattoo-home.png \"https://maas-log-prod.cn-wlcb.ufileos.com/anthropic/0dde1efe-fe3a-4744-9ea5-b82ef886b538/D:%5Ccode%5CAI%20Tattoo%20Generator%5Cday1-homepage.png?UCloudPublicKey=TOKEN_e15ba47a-d098-4fbd-9afc-a0dcf0e4e621&Expires=1783528257&Signature=F8YcMDcw5Xo6OMGWDitQS53Gq8Q=\")",
+      "Read(//tmp/**)",
+      "mcp__plugin_playwright_playwright__browser_snapshot",
+      "mcp__plugin_playwright_playwright__browser_click",
+      "mcp__plugin_playwright_playwright__browser_close"
+    ]
+  }
+}
