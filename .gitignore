@@ -43,3 +43,9 @@ next-env.d.ts
 
 # clerk configuration (can include secrets)
 /.clerk/
+
+# claude code local settings (user-specific, not shared)
+.claude/settings.local.json
+
+# playwright mcp debug artifacts (snapshots/console logs)
+.playwright-mcp/
