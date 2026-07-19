@@ -48,3 +48,36 @@ export interface PaymentRow {
   created_at: string
   paid_at: string | null
 }
+
+/* ============ API 响应类型 ============ */
+
+import type { BodyPart } from '@/lib/constants'
+
+/** /api/upload-url 响应 */
+export interface UploadUrlResponse {
+  key: string
+  uploadUrl: string
+  publicUrl: string
+}
+
+/** /api/credits 响应 */
+export interface CreditsResponse {
+  credits: number
+}
+
+/** /api/generate 单张部位图结果（与后端 route.ts 返回结构一致） */
+export interface GenerateImage {
+  bodyPart: BodyPart
+  status: 'completed' | 'failed'
+  url: string | null
+  error?: string | null
+}
+
+/** /api/generate 成功响应 */
+export interface GenerateResponse {
+  projectId: string
+  tattooDesignUrl: string
+  images: GenerateImage[]
+  /** 全失败时后端会带这个字段，提示已退款 */
+  error?: string
+}
