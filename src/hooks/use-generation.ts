@@ -236,13 +236,14 @@ export function useGeneration() {
         throw new Error('Invalid response from server')
       }
 
-      if (!res.ok || !data.projectId) {
-        throw new Error(data.error || `Generation failed (HTTP ${res.status})`)
-      }
-
-      // 4 张全失败的语义判定
+      // 4 张全失败的语义判定（后端在 allFailed 时返回 HTTP 500 + 完整 body）
       const allFailed =
         data.images.length > 0 && data.images.every((img) => img.status === 'failed')
+
+      // allFailed 是业务结果（虽然 HTTP 500），不当作服务器错误，走退款路径
+      if ((!res.ok && !allFailed) || !data.projectId) {
+        throw new Error(data.error || `Generation failed (HTTP ${res.status})`)
+      }
 
       clearTimers()
       setState((s) => ({
@@ -281,14 +282,26 @@ export function useGeneration() {
     setState(INITIAL_STATE)
   }, [clearTimers])
 
-  /** 清空照片但保留 prompt（用于 "Try another idea"） */
-  const resetPhoto = useCallback(() => {
+  /** 清空 prompt 但保留照片（用于 "Try another idea"） */
+  const resetPrompt = useCallback(() => {
     clearTimers()
     setState((s) => ({
       ...INITIAL_STATE,
-      prompt: s.prompt,
+      photoKey: s.photoKey,
+      photoUrl: s.photoUrl,
     }))
   }, [clearTimers])
+
+  /** 清空照片（用于 ImageUploader 的 X 按钮） */
+  const clearPhoto = useCallback(() => {
+    setState((s) => ({
+      ...s,
+      photoKey: null,
+      photoUrl: null,
+      status: 'idle',
+      uploadProgress: 0,
+    }))
+  }, [])
 
   return {
     ...state,
@@ -296,6 +309,7 @@ export function useGeneration() {
     uploadPhoto,
     generate,
     reset,
-    resetPhoto,
+    resetPrompt,
+    clearPhoto,
   }
 }

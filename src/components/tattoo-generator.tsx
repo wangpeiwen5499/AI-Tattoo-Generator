@@ -88,7 +88,7 @@ export function TattooGenerator() {
           tattooDesignUrl={gen.result.tattooDesignUrl}
           images={gen.result.images}
           refunded={gen.refunded}
-          onRegenerate={gen.resetPhoto}
+          onRegenerate={gen.resetPrompt}
           onReset={gen.reset}
         />
       </div>
@@ -117,7 +117,7 @@ export function TattooGenerator() {
                 uploading={gen.status === 'uploading'}
                 uploadProgress={gen.uploadProgress}
                 onFileSelected={handleFile}
-                onClear={gen.resetPhoto}
+                onClear={gen.clearPhoto}
               />
             </div>
 
