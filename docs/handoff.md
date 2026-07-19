@@ -1,9 +1,8 @@
 # 项目交接文档
 
 > 上次更新：2026-07-19  
-> 当前进度：**Day 1 + Day 2 + Day 3 已完成，准备进入 Day 4**  
-> 主分支：`main`，已推送到 `github.com:wangpeiwen5499/AI-Tattoo-Generator`  
-> ⚠️ 本次会话新增代码（Day 3）尚未 commit，需用户审阅后提交
+> 当前进度：**Day 1 + Day 2 + Day 3 已完成并推送，准备进入 Day 4**  
+> 主分支：`main`，已推送到 `github.com:wangpeiwen5499/AI-Tattoo-Generator`（最新 `bafb944`）
 
 ---
 
@@ -27,7 +26,7 @@
 |---|---|---|
 | 1 | 项目搭建 + Clerk 认证 + 首页骨架 | ✅ 已完成（commit `7d5203e`）|
 | 2 | Supabase schema + R2 存储 | ✅ 已完成（3 个 commit）|
-| 3 | AI 生成核心流程（KIE 中转 + 两步流程） | ✅ 已完成（**待 commit**）|
+| 3 | AI 生成核心流程（KIE 中转 + 两步流程） | ✅ 已完成（commit `bafb944`，已推送）|
 | **4** | **前端生成页（上传 + 4 图结果网格）** | ⏳ **下一步开始** |
 | 5 | Stripe 支付 | ⏳ |
 | 6 | 历史记录 + UI 打磨 | ⏳ |
@@ -38,6 +37,7 @@
 ## 3. Git 历史
 
 ```
+bafb944  feat: 实现 AI 纹身生成核心流程（Day 3）            ← Day 3（已推送 origin/main）
 462a0ec  feat: 用户首次调用 API 时自动创建用户记录          ← Day 2 第 3 commit
 d751367  feat: 通过预签名 URL 实现 R2 直传上传              ← Day 2 第 2 commit
 6f4d747  feat: 初始化 Supabase 数据库 schema                ← Day 2 第 1 commit
@@ -124,12 +124,20 @@ d751367  feat: 通过预签名 URL 实现 R2 直传上传              ← Day 2
     - 业务层默认超时设置：`generate-tattoo.ts` 240 秒、`apply-to-body.ts` 300 秒
     - **不能再用 60 秒超时**（首版踩过，导致任务超时但 KIE 已扣 credits）
 
-11. **KIE 每次任务消耗 6 credits**（成本测算关键）：
-    - Step 1（text-to-image）：6 KIE credits
-    - Step 2（image-to-image × 4 部位）：6 × 4 = 24 KIE credits
-    - **一次 /api/generate 总消耗：30 KIE credits**
-    - 业务侧 1 tattoo credit = 1 次生成 = 30 KIE credits
-    - 定价需保证：用户付费 ≥ 30 KIE credits 美元成本（参考 `kie平台gpt image 2定价.jpg`）
+11. **KIE 每次任务消耗 6 credits**（成本测算关键，已确认定价）：
+    - KIE 平台定价（见 `docs/kie-pricing.jpg`）：
+      - 1K 分辨率：6 credits ≈ **$0.03 / 张**
+      - 2K 分辨率：10 credits ≈ $0.05 / 张
+      - 4K 分辨率：16 credits ≈ $0.08 / 张
+    - 本项目默认用 1K：
+      - Step 1（text-to-image × 1）：6 credits
+      - Step 2（image-to-image × 4 部位）：6 × 4 = 24 credits
+      - **一次 /api/generate 总消耗：30 KIE credits ≈ $0.15**
+    - 业务侧定价毛利率（1 次生成 = 1 tattoo credit）：
+      - Starter $4.99 / 5 次 → 单次 $1.00 → 毛利 **85%**
+      - Popular $14.99 / 20 次 → 单次 $0.75 → 毛利 **80%**
+      - Pro $29.99 / 50 次 → 单次 $0.60 → 毛利 **75%**
+    - **结论**：毛利率健康，定价档位无需调整
 
 12. **R2 bucket 必须配 CORS 才能浏览器直传**（Day 3 已踩）：
     - Day 2 的 `verify:db` 走 Node.js 服务端，不受 CORS 限制 → 当时没暴露
@@ -228,6 +236,7 @@ docs/
 ├── mvp-plan.md                             # 完整计划（开发宪法）
 ├── handoff.md                              # 本文档
 ├── kie-ai-api.md                           # KIE API 使用文档（Day 3 参考）
+├── kie-pricing.jpg                         # KIE 平台 gpt-image-2 定价截图
 └── gpt image2 接口调用.md                  # 用户提供的真实接口示例（createTask + recordInfo）
 ```
 
@@ -277,6 +286,8 @@ fetch('/api/generate', {
 ## 8. Day 3 完成回顾 + Day 4 准备清单
 
 ### 8.1 Day 3 已完成事项
+
+**Commit**：`bafb944 feat: 实现 AI 纹身生成核心流程（Day 3）`，已推送到 `origin/main`（15 个文件 +1680/-102）
 
 ✅ **AI 模块**（4 个新文件）：
 - `src/server/ai/types.ts` — KIE + 业务类型
@@ -332,10 +343,11 @@ Day 4 详细任务见 `docs/mvp-plan.md` 的 Day 4 章节。
 
 ### 8.4 Day 4 开始前用户需要确认
 
-- [ ] **跑通 `npm run verify:day3`**：确认 KIE 接口 + R2 落图链路通
-- [ ] **手动调 `/api/generate`**：用真实 Clerk 登录态跑一次端到端，确认业务层无误
-- [ ] **commit Day 3 代码**（用户审阅后）
-- [ ] 准备 5 张测试身体照片（Day 4 联调用）
+- [x] **跑通 `npm run verify:day3`**：✅ KIE 接口 + R2 落图链路已验证通过
+- [x] **手动调 `/api/generate`**：✅ 用真实 Clerk 登录态端到端跑通（纹身设计 + 4 部位融合全部成功）
+- [x] **commit Day 3 代码**：✅ 已提交 `bafb944` 并推送到 `origin/main`
+- [x] **KIE 成本测算**：✅ 单次成本 $0.15，毛利率 75-85%（详见 §4 第 11 项）
+- [ ] 准备 5 张测试身体照片（Day 4 联调用，可临时用 verify-day3 测试图）
 
 ---
 
