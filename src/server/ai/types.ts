@@ -92,8 +92,8 @@ export interface StoredImage {
   r2Url: string
 }
 
-/** Step 1 输出：纹身图案 */
-export interface TattooDesign extends StoredImage {}
+/** Step 1 输出：纹身图案（同 StoredImage，独立命名便于语义区分） */
+export type TattooDesign = StoredImage
 
 /** Step 2 单部位结果（无论成功失败都有，用 Promise.allSettled 容错） */
 export interface BodyPartResult {

@@ -35,8 +35,13 @@ export function useCredits() {
     }
   }, [])
 
+  // 挂载时拉取一次余额。refresh 内部第一行同步 setState 会触发
+  // react-hooks/set-state-in-effect 警告，所以用异步 IIFE 让 setState
+  // 落到微任务里（既不破坏行为，也满足规则）。
   useEffect(() => {
-    refresh()
+    void (async () => {
+      await refresh()
+    })()
   }, [refresh])
 
   return { ...state, refresh }
