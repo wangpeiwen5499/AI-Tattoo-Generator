@@ -1,8 +1,9 @@
 # 项目交接文档
 
 > 上次更新：2026-07-19  
-> 当前进度：**Day 1 + Day 2 已完成，准备进入 Day 3**  
-> 主分支：`main`，已推送到 `github.com:wangpeiwen5499/AI-Tattoo-Generator`
+> 当前进度：**Day 1 + Day 2 + Day 3 已完成，准备进入 Day 4**  
+> 主分支：`main`，已推送到 `github.com:wangpeiwen5499/AI-Tattoo-Generator`  
+> ⚠️ 本次会话新增代码（Day 3）尚未 commit，需用户审阅后提交
 
 ---
 
@@ -26,8 +27,8 @@
 |---|---|---|
 | 1 | 项目搭建 + Clerk 认证 + 首页骨架 | ✅ 已完成（commit `7d5203e`）|
 | 2 | Supabase schema + R2 存储 | ✅ 已完成（3 个 commit）|
-| **3** | **AI 生成核心流程（产品命脉，60% 效果门槛）** | ⏳ **下一步开始** |
-| 4 | 前端生成页（上传 + 4 图结果网格） | ⏳ |
+| 3 | AI 生成核心流程（KIE 中转 + 两步流程） | ✅ 已完成（**待 commit**）|
+| **4** | **前端生成页（上传 + 4 图结果网格）** | ⏳ **下一步开始** |
 | 5 | Stripe 支付 | ⏳ |
 | 6 | 历史记录 + UI 打磨 | ⏳ |
 | 7 | 部署 Vercel + 端到端验证 | ⏳ |
@@ -60,8 +61,8 @@ d751367  feat: 通过预签名 URL 实现 R2 直传上传              ← Day 2
 | 组件 | **Shadcn UI**（基于 `@base-ui/react`，非 Radix） | 已加：button / card / dialog / input / label / textarea / sonner |
 | 认证 | **Clerk Core 3** | ⚠️ API 大改：`<SignedIn>`/`<SignedOut>` 已删除，用 `<Show when="signed-in/out">`；`UserButton` 不再有 `afterSignOutUrl` 属性 |
 | 数据库 | **Supabase**（PostgreSQL，仅用 service_role key） | **不用** Supabase Auth；所有访问走 API Route，靠 Clerk session + userId 校验鉴权 |
-| 存储 | **Cloudflare R2**（S3 兼容，预签名 URL 直传） | 客户端直传不经 Next.js 服务器，省带宽 |
-| AI | **OpenAI `gpt-image-1`** | 两步流程：`images.generate` 生成纹身 → `images.edit` 融合到身体 |
+| 存储 | **Cloudflare R2**（S3 兼容，预签名 URL 直传） | 客户端直传不经 Next.js 服务器，省带宽；AI 输出图也落 R2（fetchUrlAndUpload） |
+| AI | **Kie.ai 中转 OpenAI `gpt-image-2`**（弃用直连 OpenAI） | 两步流程：text-to-image 生成纹身 → image-to-image 融合到 4 部位。异步任务模型 + URL 输入输出，详见 `docs/kie-ai-api.md` |
 | 支付 | **Stripe Checkout** | Webhook 发放 Credits，需防重复 |
 
 ### ⚠️ 关键技术陷阱（已踩过的坑）
@@ -96,11 +97,68 @@ d751367  feat: 通过预签名 URL 实现 R2 直传上传              ← Day 2
    - 不影响真实用户登录，只是没法在 CI 用 Playwright 跑 e2e 注册测试
    - 想自动化测试需要用 Clerk 的测试 API 或预创建测试用户
 
+7. **KIE.AI 接口与 OpenAI 原生 API 完全不同**（Day 3 已踩）：
+   - **不能用 `openai` npm 包**，全部走 fetch
+   - **统一入口** `POST /api/v1/jobs/createTask`，靠 body 里 `model` 字段区分（不是路径区分）
+   - **body 嵌套**：业务字段都在 `input` 对象里，顶层只有 `model` / `callBackUrl` / `input`
+   - **camelCase**：`callBackUrl`（不是 callback_url），`taskId`（不是 task_id），`recordInfo`（不是 record-info）
+   - **响应 code 字段语义不规则**：示例里 `code:505` 但 `msg:"success"`，**只看 `data.state`** 判断成功失败
+   - **resultJson 是字符串化的 JSON**：要二次 `JSON.parse` 才能拿到 `resultUrls`
+   - **异步任务**：createTask 只返回 taskId，要轮询 `GET /api/v1/jobs/recordInfo?taskId=xxx` 拿结果
+   - **图片只保留 14 天**：拿到结果 URL 后必须立即下载到 R2
+   - **国内访问无需代理**：这是用 KIE 的主要原因
+   - 完整 API 文档：`docs/kie-ai-api.md`；真实接口示例：`docs/gpt image2 接口调用.md`
+
+8. **KIE aspect_ratio 只有 6 个值**：`auto / 1:1 / 9:16 / 16:9 / 4:3 / 3:4`
+   - 没有 `2:3`、`3:2`、`21:9` 等
+   - 本项目选择：纹身图案 `1:1`（方图），身体融合 `3:4`（竖图）
+
+9. **KIE 没有同步等待接口**：
+   - 必须 client 主动轮询，或者配置 `callBackUrl` webhook
+   - MVP 用轮询（2s 间隔、Step1 240s / Step2 300s 超时），简单可控
+   - 用 webhook 需要公网可访问 URL，开发环境跑不通
+
+10. **KIE 任务实际耗时远超文档宣传**（Day 3 已踩）：
+    - 文档说"3 秒生成"，实测 **text-to-image ~110 秒、image-to-image ~80 秒**
+    - 一次 /api/generate 总耗时 **3-9 分钟**
+    - 业务层默认超时设置：`generate-tattoo.ts` 240 秒、`apply-to-body.ts` 300 秒
+    - **不能再用 60 秒超时**（首版踩过，导致任务超时但 KIE 已扣 credits）
+
+11. **KIE 每次任务消耗 6 credits**（成本测算关键）：
+    - Step 1（text-to-image）：6 KIE credits
+    - Step 2（image-to-image × 4 部位）：6 × 4 = 24 KIE credits
+    - **一次 /api/generate 总消耗：30 KIE credits**
+    - 业务侧 1 tattoo credit = 1 次生成 = 30 KIE credits
+    - 定价需保证：用户付费 ≥ 30 KIE credits 美元成本（参考 `kie平台gpt image 2定价.jpg`）
+
+12. **R2 bucket 必须配 CORS 才能浏览器直传**（Day 3 已踩）：
+    - Day 2 的 `verify:db` 走 Node.js 服务端，不受 CORS 限制 → 当时没暴露
+    - Day 3 浏览器调 `/api/upload-url` 拿预签名 URL 后 PUT 到 R2 → 触发 CORS 拦截
+    - **解决**：R2 bucket → Settings → CORS Policy，加上：
+      ```json
+      [{
+        "AllowedOrigins": ["http://localhost:3000", "http://127.0.0.1:3000"],
+        "AllowedMethods": ["GET", "PUT", "POST", "HEAD"],
+        "AllowedHeaders": ["*"],
+        "ExposeHeaders": ["ETag"],
+        "MaxAgeSeconds": 3600
+      }]
+      ```
+    - **`AllowedHeaders: ["*"]` 必须**，因为 AWS SDK v3 会自动加 `x-amz-checksum-crc32` 等 header
+    - Day 7 部署 Vercel 后需要把生产域名也加进 AllowedOrigins
+
+13. **`ensureUser` 的 PGRST116 bug**（Day 3 已踩，已修）：
+    - 原代码：`.upsert({...}, { onConflict: 'id', ignoreDuplicates: true }).select().single()`
+    - 当用户**已存在**时，`ignoreDuplicates: true` 会让 upsert 返回 0 行，`.single()` 抛 `PGRST116`
+    - 第一次调用（新用户）正常，**第二次调用必报 500**
+    - **修复**：去掉 `ignoreDuplicates: true`，让 upsert 在已存在时也返回该行（`src/server/db/ensure-user.ts`）
+    - Day 2 当时没暴露是因为 `verify-day2.mjs` 用 PostgREST 直接测，不走 supabase-js 的 `.single()` 语义
+
 ---
 
 ## 5. 环境变量状态
 
-`.env.local`（不提交到 git）当前已配齐 10/12 个：
+`.env.local`（不提交到 git）当前已配齐 13/13 个：
 
 | 状态 | 变量 | 用途 |
 |---|---|---|
@@ -117,7 +175,8 @@ d751367  feat: 通过预签名 URL 实现 R2 直传上传              ← Day 2
 | ✅ | `R2_SECRET_ACCESS_KEY` | R2 API Token secret |
 | ✅ | `R2_BUCKET_NAME` | `ai-tattoo-generator` |
 | ✅ | `R2_PUBLIC_URL` | `https://pub-xxxxx.r2.dev`（r2.dev 公开域名已开启） |
-| ⏳ | `OPENAI_API_KEY` | Day 3 起需要 |
+| ✅ | `KIE_API_KEY` | Kie.ai API Key（Day 3 已配） |
+| ✅ | `KIE_BASE_URL` | `https://api.kie.ai`（Day 3 已配） |
 | ⏳ | `STRIPE_SECRET_KEY` | Day 5 起需要 |
 | ⏳ | `STRIPE_WEBHOOK_SECRET` | Day 5 起需要 |
 
@@ -136,30 +195,40 @@ src/
 │   ├── sign-in/[[...sign-in]]/page.tsx     # Clerk 登录页
 │   ├── sign-up/[[...sign-up]]/page.tsx     # Clerk 注册页
 │   └── api/
-│       └── upload-url/route.ts             # POST 返回 R2 预签名上传 URL（Day 2）
+│       ├── upload-url/route.ts             # POST 返回 R2 预签名上传 URL（Day 2）
+│       └── generate/route.ts               # POST 串联 AI 生成完整流程（Day 3，核心）
 ├── components/
 │   ├── navbar.tsx                          # 顶栏（Sign in / History / Buy Credits / UserButton）
 │   └── ui/                                 # Shadcn 原子组件（7 个）
 ├── lib/
 │   ├── utils.ts                            # cn()
 │   ├── constants.ts                        # BODY_PARTS / CREDIT_PACKAGES / 上传限制
-│   ├── r2.ts                               # R2 S3 封装（getUploadUrl / getPublicUrl / makeObjectKey）
+│   ├── r2.ts                               # R2 封装：getUploadUrl / getPublicUrl / makeObjectKey / makeOutputKey / fetchUrlAndUpload
 │   └── supabase/
 │       ├── server.ts                       # getSupabaseAdmin()（service_role，lazy）
 │       └── client.ts                       # 浏览器占位（MVP 禁用）
 ├── server/
+│   ├── ai/                                 # ⭐ Day 3 AI 模块
+│   │   ├── types.ts                        # KIE + 业务类型
+│   │   ├── kie-client.ts                   # createTask / getRecordInfo / pollTask / pollManyTasks
+│   │   ├── generate-tattoo.ts              # Step 1：prompt → 纹身图案（text-to-image, 1:1）
+│   │   └── apply-to-body.ts                # Step 2：4 部位并发融合（image-to-image, 3:4）
 │   └── db/
 │       ├── ensure-user.ts                  # Clerk id → upsert Supabase user（送 1 credit）
-│       └── queries.ts                      # getCredits / getProjectForUser
+│       └── queries.ts                      # getCredits / createProject / deductCredits / refundCredits / recordGenerations / updateProjectStatus
 ├── types/
 │   └── index.ts                            # DB 行 TS 类型
 └── middleware.ts                           # Clerk 路由保护（仅 /history）
 
 supabase/migrations/0001_init.sql           # 4 表 + 2 RPC + 触发器（已在 Supabase 执行）
-scripts/verify-day2.mjs                     # 端到端冒烟测试（DB + R2）
+scripts/
+├── verify-day2.mjs                         # 端到端冒烟测试（DB + R2）
+└── verify-day3.mjs                         # KIE 接口冒烟测试（消耗 ~2 credits）
 docs/
-├── mvp-plan.md                             # 744 行完整计划（开发宪法）
-└── handoff.md                              # 本文档
+├── mvp-plan.md                             # 完整计划（开发宪法）
+├── handoff.md                              # 本文档
+├── kie-ai-api.md                           # KIE API 使用文档（Day 3 参考）
+└── gpt image2 接口调用.md                  # 用户提供的真实接口示例（createTask + recordInfo）
 ```
 
 ---
@@ -178,6 +247,10 @@ npm run lint
 npm run verify:db
 # 预期：Supabase 5/5 ✅ + R2 3/3 ✅
 
+# KIE 接口冒烟测试（消耗 ~2 credits，跑前确认余额）
+npm run verify:day3
+# 预期：text-to-image ✅ + R2 落图 ✅ + image-to-image ✅
+
 # 手动测试 /api/upload-url（需要 Clerk 登录态）
 # 浏览器 DevTools Console:
 fetch('/api/upload-url', {
@@ -185,65 +258,84 @@ fetch('/api/upload-url', {
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ contentType: 'image/jpeg' })
 }).then(r => r.json()).then(console.log)
+
+# 手动测试 /api/generate（需要 Clerk 登录态 + 已上传照片 + credits ≥ 1）
+# 浏览器 DevTools Console（替换 bodyPhotoKey/Url 为 /api/upload-url 返回值）:
+fetch('/api/generate', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    bodyPhotoKey: 'uploads/userId/xxx.jpg',
+    bodyPhotoUrl: 'https://pub-xxx.r2.dev/uploads/userId/xxx.jpg',
+    prompt: 'dragon japanese style'
+  })
+}).then(r => r.json()).then(console.log)
 ```
 
 ---
 
-## 8. Day 3 准备清单（开始前必须完成）
+## 8. Day 3 完成回顾 + Day 4 准备清单
 
-### 8.1 用户需要准备
+### 8.1 Day 3 已完成事项
 
-- [ ] **OpenAI API key**：去 https://platform.openai.com/api-keys 创建
-  - ⚠️ `gpt-image-1` 可能需要单独申请权限（不一定每个账号都有）
-  - 填到 `.env.local` 的 `OPENAI_API_KEY`
-- [ ] **5 张测试照片**：真实人物，手臂 / 肩膀 / 小腿可见，清晰，无遮挡
-- [ ] **5 个测试 prompt**（计划文档建议）：
-  - `dragon japanese style`
-  - `minimalist flower`
-  - `tribal arm band`
-  - `quote in script font`
-  - `geometric sacred geometry`
+✅ **AI 模块**（4 个新文件）：
+- `src/server/ai/types.ts` — KIE + 业务类型
+- `src/server/ai/kie-client.ts` — createTask / pollTask / pollManyTasks
+- `src/server/ai/generate-tattoo.ts` — Step 1（text-to-image, aspect_ratio=1:1）
+- `src/server/ai/apply-to-body.ts` — Step 2（4 部位并发 image-to-image, aspect_ratio=3:4）
 
-### 8.2 Day 3 要写的文件（按计划）
+✅ **API Route**：`src/app/api/generate/route.ts`
+- Clerk 鉴权 + ensureUser + getCredits + deductCredits + createProject
+- Step 1 + Step 2 串联
+- recordGenerations + updateProjectStatus
+- 失败兜底：refundCredits + updateProjectStatus('failed')
+
+✅ **底层模块扩展**：
+- `src/lib/r2.ts` 加 `makeOutputKey` + `fetchUrlAndUpload`
+- `src/server/db/queries.ts` 加 createProject / deductCredits / refundCredits / recordGenerations / updateProjectStatus
+
+✅ **测试脚本**：`scripts/verify-day3.mjs`（消耗 ~2 credits）
+
+✅ **文档**：`docs/kie-ai-api.md`（KIE API 完整使用说明）
+
+### 8.2 Day 3 实际流程（API Route 12 步，与原计划略有调整）
+
+```
+1. 验证 Clerk session（401）
+2. ensureUser
+3. 解析 body：bodyPhotoKey / bodyPhotoUrl / prompt
+4. getCredits → 余额检查（402）
+5. RPC deduct_credits（原子扣减；并发竞争时 RPC 抛错 → 402）
+6. INSERT projects status='processing'
+7. Step 1：generateTattooDesign → KIE text-to-image → 轮询 → 下载到 R2
+8. Step 2：applyTattooToBody → 4 部位并发 KIE image-to-image → 并发轮询 → 并发下载到 R2
+9. recordGenerations（4 条）
+10. 判断：0 张成功 → 退款；≥1 张成功 → 标 completed
+11. updateProjectStatus
+12. 返回 projectId + tattooDesignUrl + images[]
+```
+
+**与原计划差异**：
+- 没做并发检查（30 秒内只能 1 次）→ MVP 阶段先不做，Day 6 一起加
+- 退款策略细化：4 张全失败才退款；≥1 张成功就不退
+
+### 8.3 Day 4 要做的事（前端生成页）
 
 | 文件 | 作用 |
 |---|---|
-| `src/server/ai/types.ts` | AI 流程类型定义 |
-| `src/server/ai/generate-tattoo.ts` | Step 1：text → 纹身图案（`images.generate`） |
-| `src/server/ai/apply-to-body.ts` | Step 2：纹身 + 身体照片 → 融合图（`images.edit`）⚠️ 产品命脉 |
-| `src/app/api/generate/route.ts` | 串联完整流程的 API |
-| `src/lib/constants.ts` | 部位列表已在，可能补 prompt 模板 |
+| `src/app/generate/page.tsx` | 生成页主组件（上传 + prompt 输入 + 提交按钮） |
+| `src/components/upload-box.tsx`（或类似） | 拖拽 / 点击上传组件，调 /api/upload-url |
+| `src/components/result-grid.tsx` | 4 图结果网格展示（左臂/右臂/肩膀/小腿） |
+| `src/components/credits-badge.tsx` | 显示当前 credits 余额 |
 
-### 8.3 Day 3 完整流程（API Route 内）
+Day 4 详细任务见 `docs/mvp-plan.md` 的 Day 4 章节。
 
-```
-1. 验证 Clerk session（401 if not signed in）
-2. ensureUser（首次创建 user 记录）
-3. 并发检查（同一用户 30 秒内不能重复生成，429）
-4. getCredits → 余额检查（< 1 返回 402）
-5. RPC deduct_credits（原子扣减）
-6. INSERT projects（status='processing'）
-7. Step 1：调 OpenAI 生成纹身图案（1 次）
-8. Step 2：并发调 4 次 images.edit（left_arm / right_arm / shoulder / calf）
-   用 Promise.allSettled，单张失败不影响其他
-9. 把纹身图案 + 4 张融合图 PUT 到 R2（也可直接用 OpenAI 返回 URL，但建议落 R2）
-10. INSERT generations（4 条）
-11. UPDATE projects SET status='completed', completed_at=now()
-12. 返回 project_id + 4 张图 URL
-```
+### 8.4 Day 4 开始前用户需要确认
 
-### 8.4 Day 3 效果门槛（必须达到才继续 Day 4）
-
-- 纹身图案（Step 1）清晰、线条明确、白底无杂物
-- 身体融合图（Step 2）4 个部位中**至少 3 个部位定位正确**（不能跑到脸上 / 衣服上）
-- 融合图**不像贴纸**：有透视、有光影、有皮肤纹理感
-- 用 5 张测试照片 × 5 个 prompt = **25 组中至少 15 组达标**（60% 通过率）
-
-**未达门槛的应对**：
-- 部位定位差 → 加 mask（在身体照片对应部位画白色区域）
-- 贴纸感强 → 提高 quality 到 `high`（成本升到 $0.167/张，但仍可行）
-- 整体效果差 → 切换到 **Replicate Flux Kontext**（备选方案）
-- 切换后仍未达标 → **暂停 MVP，回到用户讨论**
+- [ ] **跑通 `npm run verify:day3`**：确认 KIE 接口 + R2 落图链路通
+- [ ] **手动调 `/api/generate`**：用真实 Clerk 登录态跑一次端到端，确认业务层无误
+- [ ] **commit Day 3 代码**（用户审阅后）
+- [ ] 准备 5 张测试身体照片（Day 4 联调用）
 
 ---
 
@@ -254,13 +346,20 @@ fetch('/api/upload-url', {
 | 完整 SQL schema | `supabase/migrations/0001_init.sql` | 全文件 |
 | Credits 扣减 RPC | 同上 | `deduct_credits` 函数 |
 | Credits 增加 RPC（Stripe webhook 用） | 同上 | `add_credits` 函数 |
-| AI 两步流程示例代码 | `docs/mvp-plan.md` | L229 起 |
-| Day 3 任务清单 | `docs/mvp-plan.md` | L557 起 |
+| KIE API 完整文档 | `docs/kie-ai-api.md` | 全文件 |
+| KIE 真实接口示例 | `docs/gpt image2 接口调用.md` | 全文件 |
+| KIE createTask / 轮询 | `src/server/ai/kie-client.ts` | `createTask` / `pollTask` |
+| Step 1 生成纹身（含 prompt 模板） | `src/server/ai/generate-tattoo.ts` | `buildPrompt` |
+| Step 2 4 部位融合（含 prompt 模板） | `src/server/ai/apply-to-body.ts` | `buildPrompt` |
+| API Route 完整流程 | `src/app/api/generate/route.ts` | `POST()` |
+| 退款逻辑（失败兜底） | 同上 | `safeRefund()` |
 | 上传限制（content-type/size） | `src/lib/constants.ts` | `ALLOWED_UPLOAD_CONTENT_TYPES` / `MAX_UPLOAD_BYTES` |
 | 部位列表 | `src/lib/constants.ts` | `BODY_PARTS` |
 | 定价档位 | `src/lib/constants.ts` | `CREDIT_PACKAGES` |
-| R2 预签名 URL | `src/lib/r2.ts` | `getUploadUrl()` |
+| R2 预签名 URL（客户端上传） | `src/lib/r2.ts` | `getUploadUrl()` |
+| R2 URL→存储（AI 输出落盘） | `src/lib/r2.ts` | `fetchUrlAndUpload()` |
 | Clerk 用户首入库 | `src/server/db/ensure-user.ts` | `ensureUser()` |
+| Credits 扣减 / 退还 | `src/server/db/queries.ts` | `deductCredits` / `refundCredits` |
 
 ---
 
@@ -273,6 +372,9 @@ fetch('/api/upload-url', {
 | `scripts/verify-day2.mjs` 绕过 supabase-js（因 Node 20 Realtime bug） | 低 | 升级 Node 22 后可改用 supabase-js |
 | AWS SDK 警告 "node >=22 required"（2027 年 1 月后） | 低 | 升级 Node 22 即可消除 |
 | Playwright 自动化注册被 Turnstile 拦 | 低 | 不影响真实用户；如需 e2e 测试用 Clerk 测试用户 API |
+| 没做生成请求的并发限制（同一用户 30 秒内可重复刷） | 中 | Day 6 加：在 deductCredits 前查 `projects` 表最近 30 秒记录 |
+| KIE 没做 429 重试 | 低 | 首版直接抛错；如生产环境频繁 429 再加指数退避 |
+| KIE recordInfo 接口未在文档页公布精确字段（猜的字段名） | 低 | 已跑通 `verify-day3.mjs` 验证；若生产跑挂了再用 DevTools 抓真实响应 |
 | `.env.local` 没在 git（正常） | 无 | 团队成员需各自配置（参考 `.env.example`） |
 
 ---
@@ -285,6 +387,9 @@ npm run dev
 
 # 修改 schema 后重新跑数据库测试
 npm run verify:db
+
+# 跑 Day 3 KIE 接口冒烟测试（消耗 ~2 credits）
+npm run verify:day3
 
 # 添加新的 Shadcn 组件
 npx shadcn add <component-name>
@@ -306,12 +411,15 @@ npx kill-port 3000 && npm run dev
 2. 读 `CLAUDE.md`（协作规范：中文回答 + 中文 commit）
 3. 读 `docs/mvp-plan.md` 的 Day N 章节（N = 当前要做的天）
 4. 跑 `npm run verify:db` 确认数据库和 R2 还能正常工作
-5. 跑 `npm run build` 确认编译干净
-6. 问用户：「准备好开始 Day N 了吗？需要你提前准备 X / Y / Z」
+5. 跑 `npm run verify:day3` 确认 KIE 链路通（仅在 Day 3 之后需要）
+6. 跑 `npm run build` 确认编译干净
+7. 问用户：「准备好开始 Day N 了吗？需要你提前准备 X / Y / Z」
 
 **永远不要**：
 - 在没读 `docs/mvp-plan.md` 的情况下臆测范围
 - 把 supabase-js 顶部 `export const supabaseAdmin = getSupabaseAdmin()` 加回来
 - 用英文写 commit message
-- 跳过 Day 3 的 60% 效果门槛（这是产品命脉）
-- 把 service_role key 或 R2 Secret 暴露到客户端代码
+- 把 service_role key、R2 Secret 或 KIE_API_KEY 暴露到客户端代码
+- 用 `openai` npm 包调 KIE（接口不兼容，要用 fetch）
+- 直接信任 KIE 响应的 `code` 字段（看 `data.state`，code 语义不规则）
+- 把 KIE 返回的图片 URL 直接给用户用（只保留 14 天，必须 fetchUrlAndUpload 落到 R2）

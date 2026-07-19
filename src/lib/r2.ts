@@ -91,3 +91,49 @@ export async function getUploadUrl(opts: {
   const uploadUrl = await getSignedUrl(client, command, { expiresIn: 60 * 10 })
   return { uploadUrl, publicUrl: getPublicUrl(key), key }
 }
+
+/**
+ * 生成 AI 输出图的 R2 key。
+ * 与用户上传（uploads/）区分开，方便后续清理、计费、CDN 策略。
+ * 格式：outputs/{userId}/{projectId}/{uuid}.{ext}
+ */
+export function makeOutputKey(userId: string, projectId: string, ext = 'png'): string {
+  const safeExt = ext.replace(/^\./, '').toLowerCase() || 'png'
+  return `outputs/${userId}/${projectId}/${randomUUID()}.${safeExt}`
+}
+
+/**
+ * 从外部 URL 下载图片并直接 PUT 到 R2（服务端中转，不走浏览器）。
+ *
+ * 用途：把 KIE 生成的图片（仅保留 14 天）落到我们自己的 R2，
+ * 数据攥在自己手里。
+ *
+ * @param sourceUrl 外部图片 URL（KIE 返回的 resultUrl）
+ * @param key R2 对象 key（用 makeOutputKey 生成）
+ * @returns R2 公开访问 URL + key + 推断的 contentType
+ */
+export async function fetchUrlAndUpload(
+  sourceUrl: string,
+  key: string
+): Promise<{ key: string; publicUrl: string; contentType: string }> {
+  const response = await fetch(sourceUrl)
+  if (!response.ok) {
+    throw new Error(`fetchUrlAndUpload: failed to fetch ${sourceUrl}: HTTP ${response.status}`)
+  }
+
+  const buffer = await response.arrayBuffer()
+  // KIE 通常返回 image/png；content-type 不准时兜底为 png
+  const contentType = response.headers.get('content-type')?.split(';')[0].trim() || 'image/png'
+
+  const client = getS3Client()
+  await client.send(
+    new PutObjectCommand({
+      Bucket: getBucketName(),
+      Key: key,
+      Body: new Uint8Array(buffer),
+      ContentType: contentType,
+    })
+  )
+
+  return { key, publicUrl: getPublicUrl(key), contentType }
+}

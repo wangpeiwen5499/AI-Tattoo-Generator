@@ -505,56 +505,72 @@ export const CREDITS_PER_GENERATION = 1;
 
 > **执行原则**：每个可独立验收的小块一个 commit。每天结束前必须能跑通当天的验收标准。
 
-### Day 1：项目初始化 + 认证
+### 进度总览（2026-07-19 更新）
+
+| Day | 任务 | 状态 |
+|---|---|---|
+| 1 | 项目初始化 + Clerk 认证 | ✅ 已完成（`7d5203e`） |
+| 2 | Supabase schema + R2 存储 | ✅ 已完成（`6f4d747` / `d751367` / `462a0ec`） |
+| 3 | AI 生成核心流程（⚠️ 效果门槛） | ⏳ 下一步 |
+| 4 | 前端生成页 | ⏳ |
+| 5 | Stripe 支付 | ⏳ |
+| 6 | 历史记录 + UI 打磨 | ⏳ |
+| 7 | 部署 + 端到端验证 | ⏳ |
+
+> 详细交接信息见 [`docs/handoff.md`](./handoff.md)。
+
+---
+
+### Day 1：项目初始化 + 认证 ✅ 已完成
 
 **目标**：Next.js 项目跑起来，Clerk 登录可用。
 
 **文件**：`package.json` / `src/app/layout.tsx` / `src/app/page.tsx`（占位）/ `src/app/globals.css` / `middleware.ts` / `src/app/sign-in/[[...sign-in]]/page.tsx` / `src/app/sign-up/[[...sign-up]]/page.tsx` / `src/components/navbar.tsx` / `.env.local` / `.env.example`
 
 **关键步骤**：
-- [ ] `npx create-next-app@latest` 初始化（TypeScript + Tailwind + App Router）
-- [ ] `npx shadcn@latest init` 配置 Shadcn UI
-- [ ] 安装 `@clerk/nextjs`，按官方文档包裹 `ClerkProvider`
-- [ ] 配置 Clerk 中间件保护 `/history` 路由
-- [ ] 在 Clerk Dashboard 创建 Application，配置 Google OAuth
-- [ ] `navbar.tsx` 用 Clerk 的 `<UserButton />` 和 `<SignInButton />`
+- [x] `npx create-next-app@latest` 初始化（TypeScript + Tailwind + App Router）— 实际装到 Next.js 16.2.10 + React 19.2.4
+- [x] `npx shadcn@latest init` 配置 Shadcn UI — 基于 `@base-ui/react`
+- [x] 安装 `@clerk/nextjs`，按官方文档包裹 `ClerkProvider`
+- [x] 配置 Clerk 中间件保护 `/history` 路由 — ⚠️ Next.js 16 把 middleware 改名 proxy.ts，但 Clerk 还没适配，保留 middleware.ts
+- [x] 在 Clerk Dashboard 创建 Application，配置 Google OAuth
+- [x] `navbar.tsx` 用 Clerk 的 `<UserButton />` 和 `<SignInButton />` — ⚠️ Clerk Core 3 删除了 `<SignedIn>/<SignedOut>`，改用 `<Show when="...">`
 
 **验收**：
-- [ ] `npm run dev` 无报错
-- [ ] 首页显示导航栏
-- [ ] 点击 Sign In 弹出 Clerk 组件，Google + 邮箱登录都能成功
-- [ ] 登录后导航栏显示用户头像
+- [x] `npm run dev` 无报错
+- [x] 首页显示导航栏
+- [x] 点击 Sign In 弹出 Clerk 组件，Google + 邮箱登录都能成功
+- [x] 登录后导航栏显示用户头像
 
 **commits**：`init: scaffold Next.js 15 with TypeScript and Tailwind` / `feat: integrate Clerk authentication`
 
 ---
 
-### Day 2：数据库 + R2 存储
+### Day 2：数据库 + R2 存储 ✅ 已完成
 
 **目标**：Supabase 表就绪，R2 能上传下载。
 
 **文件**：`supabase/migrations/0001_init.sql` / `src/lib/supabase/client.ts` / `src/lib/supabase/server.ts` / `src/lib/r2.ts` / `src/server/db/ensure-user.ts` / `src/server/db/queries.ts` / `src/app/api/upload-url/route.ts` / `next.config.ts`
 
 **关键步骤**：
-- [ ] Supabase Dashboard 创建项目，SQL Editor 执行 `0001_init.sql`
-- [ ] `src/lib/supabase/server.ts` 用 `service_role` key 创建 admin client
-- [ ] 安装 `@aws-sdk/client-s3` + `@aws-sdk/s3-request-presigner`
-- [ ] R2 创建 Bucket，启用 public access，创建 API Token
-- [ ] `next.config.ts` 的 `images.remotePatterns` 配置 R2 域名
-- [ ] `/api/upload-url` 实现：验证登录 → `ensureUser()` → `getUploadUrl()` → 返回
+- [x] Supabase Dashboard 创建项目，SQL Editor 执行 `0001_init.sql`
+- [x] `src/lib/supabase/server.ts` 用 `service_role` key 创建 admin client — ⚠️ 必须 lazy（函数内创建），顶层导出会破坏 build；Node 20 需关闭 Realtime/autoRefresh
+- [x] 安装 `@aws-sdk/client-s3` + `@aws-sdk/s3-request-presigner`
+- [x] R2 创建 Bucket，启用 public access，创建 API Token
+- [x] `next.config.ts` 的 `images.remotePatterns` 配置 R2 域名
+- [x] `/api/upload-url` 实现：验证登录 → `ensureUser()` → `getUploadUrl()` → 返回
 
 **验收**：
-- [ ] SQL 执行无报错，表和 RPC 都创建成功
-- [ ] curl `POST /api/upload-url` 返回有效预签名 URL
-- [ ] 用 `curl -X PUT -T photo.png <uploadUrl>` 上传成功
-- [ ] 浏览器访问 `<publicUrl>` 能看到图片
-- [ ] 新用户调用 `/api/upload-url` 后，`users` 表自动出现记录，`credits=1`
+- [x] SQL 执行无报错，表和 RPC 都创建成功
+- [x] curl `POST /api/upload-url` 返回有效预签名 URL
+- [x] 用 `curl -X PUT -T photo.png <uploadUrl>` 上传成功
+- [x] 浏览器访问 `<publicUrl>` 能看到图片
+- [x] 新用户调用 `/api/upload-url` 后，`users` 表自动出现记录，`credits=1`
 
 **commits**：`feat: setup Supabase database schema` / `feat: implement R2 upload via presigned URLs` / `feat: add user auto-creation on first API call`
 
 ---
 
-### Day 3：AI 生成核心流程（⚠️ 效果门槛）
+### Day 3：AI 生成核心流程（⚠️ 效果门槛） ⏳ 下一步
 
 **目标**：AI 两步流程跑通，输出 4 张预览。**这一天决定整个项目是否成立。**
 
@@ -589,7 +605,7 @@ export const CREDITS_PER_GENERATION = 1;
 
 ---
 
-### Day 4：前端生成页
+### Day 4：前端生成页 ⏳ 未开始
 
 **目标**：完整的首页生成体验。
 
@@ -615,7 +631,7 @@ export const CREDITS_PER_GENERATION = 1;
 
 ---
 
-### Day 5：Stripe 支付
+### Day 5：Stripe 支付 ⏳ 未开始
 
 **目标**：用户可以购买 credits。
 
@@ -641,7 +657,7 @@ export const CREDITS_PER_GENERATION = 1;
 
 ---
 
-### Day 6：历史记录 + UI 打磨
+### Day 6：历史记录 + UI 打磨 ⏳ 未开始
 
 **目标**：用户可查看历史，UI 达上线标准。
 
@@ -666,7 +682,7 @@ export const CREDITS_PER_GENERATION = 1;
 
 ---
 
-### Day 7：部署 + 端到端验证
+### Day 7：部署 + 端到端验证 ⏳ 未开始
 
 **目标**：上线 Vercel，完整流程跑通。
 
