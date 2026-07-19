@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type {
-  GenerateImage,
   GenerateResponse,
   UploadUrlResponse,
 } from '@/types'
@@ -66,11 +65,23 @@ export function useGeneration() {
   const abortRef = useRef<AbortController | null>(null)
   const progressTimerRef = useRef<NodeJS.Timeout | null>(null)
   const elapsedStartRef = useRef<number>(0)
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // stateRef 让 generate 能读到最新状态（避免 stale closure）
+  // 必须在任何使用 stateRef.current 的 callback 之前声明
+  const stateRef = useRef(state)
+  useEffect(() => {
+    stateRef.current = state
+  }, [state])
 
   const clearTimers = useCallback(() => {
     if (progressTimerRef.current) {
       clearInterval(progressTimerRef.current)
       progressTimerRef.current = null
+    }
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
     }
   }, [])
 
@@ -98,7 +109,7 @@ export function useGeneration() {
 
     // 客户端预检（双保险，组件层已检过）
     if (file.size > 10 * 1024 * 1024) {
-      setState((s) => ({ ...s, status: 'ready', error: 'File too large (max 10MB)' }))
+      setState((s) => ({ ...s, status: 'idle', error: 'File too large (max 10MB)' }))
       throw new Error('File too large (max 10MB)')
     }
 
@@ -160,6 +171,11 @@ export function useGeneration() {
   }, [])
 
   const generate = useCallback(async () => {
+    // 防止双击并发：如果已在 generating，先 abort 上一个
+    if (stateRef.current.status === 'generating') {
+      abortRef.current?.abort()
+    }
+
     const current = stateRef.current
     if (!current.photoKey || !current.photoUrl) {
       const msg = 'Photo is required'
@@ -199,7 +215,7 @@ export function useGeneration() {
 
     // AbortController 15 分钟超时兜底
     abortRef.current = new AbortController()
-    const timeoutId = setTimeout(() => abortRef.current?.abort(), 15 * 60 * 1000)
+    timeoutRef.current = setTimeout(() => abortRef.current?.abort(), 15 * 60 * 1000)
 
     try {
       const res = await fetch('/api/generate', {
@@ -213,14 +229,14 @@ export function useGeneration() {
         signal: abortRef.current.signal,
       })
 
-      const data: GenerateResponse = await res.json().catch(() => ({
-        projectId: '',
-        tattooDesignUrl: '',
-        images: [] as GenerateImage[],
-        error: 'Invalid server response',
-      }))
+      let data: GenerateResponse
+      try {
+        data = await res.json()
+      } catch {
+        throw new Error('Invalid response from server')
+      }
 
-      if (!res.ok) {
+      if (!res.ok || !data.projectId) {
         throw new Error(data.error || `Generation failed (HTTP ${res.status})`)
       }
 
@@ -240,6 +256,9 @@ export function useGeneration() {
       }))
     } catch (e) {
       clearTimers()
+      // 如果状态已被外部 reset() 改为 idle，说明用户主动取消了，
+      // 此时不应再覆盖状态；同时静默吞掉 AbortError，不向调用方抛出。
+      if (stateRef.current.status === 'idle') return
       const aborted = e instanceof DOMException && e.name === 'AbortError'
       const msg = aborted
         ? 'Generation timed out after 15 minutes. Please try again.'
@@ -253,8 +272,6 @@ export function useGeneration() {
         error: msg,
       }))
       throw new Error(msg)
-    } finally {
-      clearTimeout(timeoutId)
     }
   }, [clearTimers])
 
@@ -272,12 +289,6 @@ export function useGeneration() {
       prompt: s.prompt,
     }))
   }, [clearTimers])
-
-  // stateRef 让 generate 能读到最新状态（避免 stale closure）
-  const stateRef = useRef(state)
-  useEffect(() => {
-    stateRef.current = state
-  }, [state])
 
   return {
     ...state,
