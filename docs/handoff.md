@@ -1,8 +1,8 @@
 # 项目交接文档
 
 > 上次更新：2026-07-19  
-> 当前进度：**Day 1 + Day 2 + Day 3 已完成并推送，准备进入 Day 4**  
-> 主分支：`main`，已推送到 `github.com:wangpeiwen5499/AI-Tattoo-Generator`（最新 `bafb944`）
+> 当前进度：**Day 1 + Day 2 + Day 3 + Day 4 已完成，准备进入 Day 5**  
+> 主分支：`main`（Day 4 commit 暂未推送，可由用户决定何时 `git push`）
 
 ---
 
@@ -27,8 +27,8 @@
 | 1 | 项目搭建 + Clerk 认证 + 首页骨架 | ✅ 已完成（commit `7d5203e`）|
 | 2 | Supabase schema + R2 存储 | ✅ 已完成（3 个 commit）|
 | 3 | AI 生成核心流程（KIE 中转 + 两步流程） | ✅ 已完成（commit `bafb944`，已推送）|
-| **4** | **前端生成页（上传 + 4 图结果网格）** | ⏳ **下一步开始** |
-| 5 | Stripe 支付 | ⏳ |
+| 4 | 前端生成页（上传 + 4 图结果网格） | ✅ 已完成（Day 4 多个 commit）|
+| **5** | **Stripe 支付** | ⏳ **下一步开始** |
 | 6 | 历史记录 + UI 打磨 | ⏳ |
 | 7 | 部署 Vercel + 端到端验证 | ⏳ |
 
@@ -37,6 +37,17 @@
 ## 3. Git 历史
 
 ```
+f711771  feat: 首页嵌入 TattooGenerator 组件                ← Day 4
+cf454df  feat: 添加 TattooGenerator 主组件                  ← Day 4
+e4e968a  feat: 添加 GenerationResults 结果网格组件          ← Day 4
+a81920a  feat: 添加 GenerationProgress 多阶段进度组件       ← Day 4
+793729b  fix: useGeneration 状态竞争/双击并发/JSON 解析等 6 项问题  ← Day 4
+e243a22  feat: 添加 useGeneration hook 含状态机和假进度     ← Day 4
+587eea4  feat: 添加 ImageUploader 拖拽上传组件              ← Day 4
+3761221  feat: 添加 CreditsBadge 组件                       ← Day 4
+54d28bf  feat: 添加 useCredits hook                         ← Day 4
+253a216  feat: 添加 GET /api/credits 接口查询余额           ← Day 4
+6c8ced8  feat: 补充 Day 4 前端所需的 API 响应类型           ← Day 4
 bafb944  feat: 实现 AI 纹身生成核心流程（Day 3）            ← Day 3（已推送 origin/main）
 462a0ec  feat: 用户首次调用 API 时自动创建用户记录          ← Day 2 第 3 commit
 d751367  feat: 通过预签名 URL 实现 R2 直传上传              ← Day 2 第 2 commit
@@ -204,9 +215,15 @@ src/
 │   ├── sign-up/[[...sign-up]]/page.tsx     # Clerk 注册页
 │   └── api/
 │       ├── upload-url/route.ts             # POST 返回 R2 预签名上传 URL（Day 2）
-│       └── generate/route.ts               # POST 串联 AI 生成完整流程（Day 3，核心）
+│       ├── generate/route.ts               # POST 串联 AI 生成完整流程（Day 3，核心）
+│       └── credits/route.ts              # GET 返回余额（Day 4）
 ├── components/
 │   ├── navbar.tsx                          # 顶栏（Sign in / History / Buy Credits / UserButton）
+│   ├── tattoo-generator.tsx                # Day 4 主组件
+│   ├── image-uploader.tsx                  # Day 4 上传组件
+│   ├── generation-progress.tsx             # Day 4 进度展示
+│   ├── generation-results.tsx              # Day 4 结果网格
+│   ├── credits-badge.tsx                   # Day 4 余额徽章
 │   └── ui/                                 # Shadcn 原子组件（7 个）
 ├── lib/
 │   ├── utils.ts                            # cn()
@@ -215,6 +232,9 @@ src/
 │   └── supabase/
 │       ├── server.ts                       # getSupabaseAdmin()（service_role，lazy）
 │       └── client.ts                       # 浏览器占位（MVP 禁用）
+├── hooks/                                # Day 4 新目录
+│   ├── use-credits.ts                     # 挂载时拉取余额 + refresh()
+│   └── use-generation.ts                  # 6 状态状态机 + 假进度 + XHR 上传 + AbortController 超时
 ├── server/
 │   ├── ai/                                 # ⭐ Day 3 AI 模块
 │   │   ├── types.ts                        # KIE + 业务类型
@@ -348,6 +368,69 @@ Day 4 详细任务见 `docs/mvp-plan.md` 的 Day 4 章节。
 - [x] **commit Day 3 代码**：✅ 已提交 `bafb944` 并推送到 `origin/main`
 - [x] **KIE 成本测算**：✅ 单次成本 $0.15，毛利率 75-85%（详见 §4 第 11 项）
 - [ ] 准备 5 张测试身体照片（Day 4 联调用，可临时用 verify-day3 测试图）
+
+### 8.5 Day 4 完成回顾 + Day 5 准备清单
+
+**Commit 范围**：`6c8ced8` ~ `f711771` + 1 个 bug 修复 commit `793729b`，共 11 个 commit（全部在 main，未推送）。
+
+✅ **Day 4 已完成事项**：
+
+**新增 API**：
+- `GET /api/credits` — 返回当前 Clerk 用户余额（复用 ensureUser + getCredits）
+
+**新增 hooks**（`src/hooks/`）：
+- `useCredits` — 挂载时 fetch /api/credits，暴露 refresh()
+- `useGeneration` — 6 状态状态机（idle/uploading/ready/generating/completed/error），假进度算法（0-110s→45%、110-250s→90%、>250s→95% cap），XHR 上传进度，AbortController 15min 超时
+
+**新增组件**：
+- `TattooGenerator`（主组件，串联所有子组件）
+- `ImageUploader`（拖拽 + 点击 + 预览 + 客户端预检 size/type）
+- `GenerationProgress`（多阶段标签 + 进度条 + elapsed）
+- `GenerationResults`（Step 1 设计稿 + 4 部位 2x2 + Dialog 放大 + 失败占位 + refunded 提示）
+- `CreditsBadge`（右上角徽章）
+
+**修改**：
+- `src/types/index.ts` 追加 4 个 API 响应类型
+- `src/app/page.tsx` 改写为 Hero + TattooGenerator（已登录）
+
+**Day 4 实际遇到的坑**（通过 code review 发现并修复）：
+- `useGeneration` 的 6 项 bug 已修（commit `793729b`）：
+  - C1: stateRef 声明位置 → 移到顶部
+  - C2: reset() 与 generate catch 的状态竞争 → 加 idle 检查
+  - C3: 双击并发 → 入口加 abort-if-generating
+  - C4: clearTimers 没清 setTimeout → 加 timeoutRef
+  - I2: 上传预检失败 status 错误 → 改回 idle
+  - I4: JSON 解析静默失败 → 改为 throw
+
+**Day 5 要做的事**（Stripe 支付）：
+
+| 文件 | 作用 |
+|---|---|
+| `src/lib/stripe.ts` | Stripe client + CREDIT_PACKAGES 配置（plan 已有占位） |
+| `src/app/api/checkout/route.ts` | POST 创建 Stripe Checkout Session |
+| `src/app/api/stripe-webhook/route.ts` | Stripe Webhook → 发放 credits |
+| `src/app/pricing/page.tsx` | 定价页面 |
+| `src/components/pricing-cards.tsx` | 3 档定价卡片 |
+
+详见 `docs/mvp-plan.md` Day 5 章节。
+
+### 8.6 Day 5 开始前用户需要确认
+
+- [x] 跑通 `npm run build`：✅（Day 4 task 11 已验证）
+- [ ] 跑通端到端：⚠ **待用户在浏览器登录后手动跑一次**（消耗 1 credit + 3-9 分钟）：
+  1. 访问 `/`（已登录）→ 看到 Hero + Generator Card
+  2. 上传一张身体照片 → 显示缩略图
+  3. 输入 prompt（如 "dragon japanese style"）
+  4. 点 Generate → 进入 generating，进度条推进 + 阶段标签更新
+  5. 等 3-9 分钟 → 切换到 completed，显示 Step 1 设计稿 + 4 部位 2x2
+  6. 点击任一图弹出 Dialog 大图
+  7. credits 徽章从 1 变成 0
+  8. 再点 Generate → toast "out of credits"
+  9. 点 "Try another idea" → 回到表单
+  10. 点 "Start over" → 回到 idle
+- [ ] **Stripe 账户已注册**（Day 5 开始前必备）
+- [ ] **拿到 `STRIPE_SECRET_KEY` 和 `STRIPE_WEBHOOK_SECRET`**（写入 `.env.local`）
+- [ ] **准备测试卡 `4242 4242 4242 4242`** 跑支付
 
 ---
 
