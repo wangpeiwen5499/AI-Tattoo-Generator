@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useReducer } from 'react'
+import { useUser } from '@clerk/nextjs'
 import { Card, CardContent } from '@/components/ui/card'
 
 type Props = {
@@ -11,34 +12,56 @@ type Props = {
 type State = {
   /** 当前显示的数字（动画过程中会平滑变化） */
   display: number | null
-  /** 上一次 props.credits 的值，用于检测变化 */
+  /** 上一次 props.credits 的值，用于检测变化（从 sessionStorage 初始化） */
   prev: number | null
   /** 是否处于高亮态（数字刚变化后短暂高亮） */
   highlight: boolean
 }
 
 type Action =
-  | { type: 'reset' }
   | { type: 'init'; value: number }
   | { type: 'start'; from: number; to: number }
   | { type: 'tick'; value: number }
   | { type: 'stopHighlight' }
 
-const initialState: State = {
-  display: null,
-  prev: null,
-  highlight: false,
+/**
+ * 按用户 ID 隔离的 sessionStorage 读写。
+ * 用户切换账号时不会串扰。
+ */
+function readLastValue(userId: string): number | null {
+  if (typeof window === 'undefined') return null
+  const raw = window.sessionStorage.getItem(`creditsBadge.lastValue.${userId}`)
+  if (raw === null) return null
+  const n = Number(raw)
+  return Number.isFinite(n) ? n : null
+}
+
+function writeLastValue(userId: string, value: number) {
+  if (typeof window === 'undefined') return
+  window.sessionStorage.setItem(`creditsBadge.lastValue.${userId}`, String(value))
+}
+
+function makeInit(userId: string): State {
+  const last = readLastValue(userId)
+  return {
+    display: last, // 挂载时先显示上次的值（loading 时被 '…' 覆盖，loading=false 时露出来）
+    prev: last,
+    highlight: false,
+  }
 }
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
-    case 'reset':
-      return { display: null, prev: null, highlight: false }
     case 'init':
+      // 首次设置（无动画）：用户首次注册 / sessionStorage 无值
       return { display: action.value, prev: action.value, highlight: false }
     case 'start':
-      // 启动动画：记下新目标值，开高亮；display 仍保持旧值，由 tick 渐进到 to
-      return { display: state.display, prev: action.to, highlight: true }
+      // 启动动画：display 保持（用 from 兜底），prev 更新为目标值，开高亮
+      return {
+        display: state.display ?? action.from,
+        prev: action.to,
+        highlight: true,
+      }
     case 'tick':
       return { ...state, display: action.value }
     case 'stopHighlight':
@@ -52,32 +75,43 @@ function reducer(state: State, action: Action): State {
  * 右上角小卡片：显示当前 credits 余额。
  *
  * 行为：
- * - loading 时显示骨架占位，error/null 时显示 "—"
+ * - loading 时显示 "…"，error/null 时显示 "—"
  * - credits 变化时做 count-up 滚动动效（800ms ease-out）+ 短暂高亮
  *   （让用户付完款回来能醒目地看到加了几个 credits）
+ *
+ * 跨页面跳转持久化：
+ *   用户付完款从 Stripe 跳回主页会触发组件重新挂载，React state 丢失。
+ *   用 sessionStorage 缓存上次的值，挂载时初始化 prev，从而识别出
+ *   "从旧值到新值" 的变化并播放动画。
  */
 export function CreditsBadge({ credits, loading }: Props) {
-  const [state, dispatch] = useReducer(reducer, initialState)
+  const { user } = useUser()
+  const userId = user?.id ?? 'anonymous'
+
+  const [state, dispatch] = useReducer(reducer, userId, makeInit)
 
   useEffect(() => {
-    // null 或 loading：重置
-    if (credits === null) {
-      dispatch({ type: 'reset' })
+    // loading（credits=null）：等 fetch 完成，不动 state
+    if (credits === null) return
+
+    // 值未变化：不动
+    if (state.prev === credits) {
+      // 同步缓存（防止首次写入）
+      writeLastValue(userId, credits)
       return
     }
 
-    // 首次拿到值：直接显示，不做动画
+    // 首次拿到值（sessionStorage 无缓存）：直接 init，无动画
     if (state.prev === null) {
+      writeLastValue(userId, credits)
       dispatch({ type: 'init', value: credits })
       return
     }
 
-    // 值未变化：不动
-    if (state.prev === credits) return
-
-    // 值变化：启动 count-up 动画 + 高亮
+    // 数字变化：启动 count-up 动画 + 高亮
     const from = state.prev
     const to = credits
+    writeLastValue(userId, to)
     dispatch({ type: 'start', from, to })
 
     const duration = 800 // ms
@@ -97,9 +131,10 @@ export function CreditsBadge({ credits, loading }: Props) {
     }, 16) // ~60fps
 
     return () => clearInterval(timer)
-    // 故意不依赖 state.prev（dispatch 是稳定的，state.prev 通过 reducer 内部更新）
+    // state.prev 不进依赖（dispatch 稳定，prev 通过 reducer 内部更新）
+    // userId 变化会触发组件 re-mount（Clerk 状态切换），不需要单独处理
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [credits])
+  }, [credits, userId])
 
   return (
     <Card
