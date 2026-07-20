@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Show, SignInButton } from '@clerk/nextjs'
 import { toast } from 'sonner'
@@ -22,17 +22,15 @@ export function PricingCards() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [loadingPackage, setLoadingPackage] = useState<PackageId | null>(null)
-  const [canceledToastShown, setCanceledToastShown] = useState(false)
 
-  // 处理 ?canceled=true（Toast + 清理 URL）
-  const canceled = searchParams.get('canceled') === 'true'
-  if (canceled && !canceledToastShown) {
-    setCanceledToastShown(true)
+  // 处理 ?canceled=true：toast + 清 URL（用 useEffect 避免在 render 中触发副作用）
+  useEffect(() => {
+    if (searchParams.get('canceled') !== 'true') return
     toast('Checkout was canceled', {
       description: 'No charge was made. Pick a package to try again.',
     })
     router.replace('/pricing')
-  }
+  }, [searchParams, router])
 
   async function handleBuy(packageId: PackageId) {
     setLoadingPackage(packageId)
