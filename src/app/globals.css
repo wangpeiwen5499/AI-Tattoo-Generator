@@ -128,3 +128,27 @@
     @apply font-sans;
   }
 }
+
+/* Credits 徽章数字增加时的浮动 "+N" 动画 */
+@keyframes credits-float-up {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.8);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(-4px) scale(1.1);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-10px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-24px) scale(0.95);
+  }
+}
+
+.credits-float-up {
+  animation: credits-float-up 1.5s ease-out forwards;
+}

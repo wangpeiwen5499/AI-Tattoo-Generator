@@ -16,6 +16,10 @@ type State = {
   prev: number | null
   /** 是否处于高亮态（数字刚变化后短暂高亮） */
   highlight: boolean
+  /** 最近一次变化的差值（>0 表示增加，触发浮动 "+N" 动画） */
+  lastDelta: number
+  /** 动画 ID（每次 start +1，用作 React key 强制重触发 CSS 动画） */
+  animationId: number
 }
 
 type Action =
@@ -47,6 +51,8 @@ function makeInit(userId: string): State {
     display: last, // 挂载时先显示上次的值（loading 时被 '…' 覆盖，loading=false 时露出来）
     prev: last,
     highlight: false,
+    lastDelta: 0,
+    animationId: 0,
   }
 }
 
@@ -54,13 +60,21 @@ function reducer(state: State, action: Action): State {
   switch (action.type) {
     case 'init':
       // 首次设置（无动画）：用户首次注册 / sessionStorage 无值
-      return { display: action.value, prev: action.value, highlight: false }
+      return {
+        display: action.value,
+        prev: action.value,
+        highlight: false,
+        lastDelta: 0,
+        animationId: state.animationId,
+      }
     case 'start':
       // 启动动画：display 保持（用 from 兜底），prev 更新为目标值，开高亮
       return {
         display: state.display ?? action.from,
         prev: action.to,
         highlight: true,
+        lastDelta: action.to - action.from,
+        animationId: state.animationId + 1,
       }
     case 'tick':
       return { ...state, display: action.value }
@@ -76,7 +90,8 @@ function reducer(state: State, action: Action): State {
  *
  * 行为：
  * - loading 时显示 "…"，error/null 时显示 "—"
- * - credits 变化时做 count-up 滚动动效（800ms ease-out）+ 短暂高亮
+ * - credits 增加时做 count-up 滚动动效（800ms ease-out）+ 短暂高亮
+ *   + 浮动 "+N" 文字飘起来（1.5s）
  *   （让用户付完款回来能醒目地看到加了几个 credits）
  *
  * 跨页面跳转持久化：
@@ -125,7 +140,7 @@ export function CreditsBadge({ credits, loading }: Props) {
       dispatch({ type: 'tick', value })
       if (progress >= 1) {
         clearInterval(timer)
-        // 高亮保留一会儿再淡出
+        // 高亮保留一会儿再淡出（浮动 +N 持续 1.5s，比高亮长一点）
         window.setTimeout(() => dispatch({ type: 'stopHighlight' }), 1200)
       }
     }, 16) // ~60fps
@@ -136,9 +151,12 @@ export function CreditsBadge({ credits, loading }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [credits, userId])
 
+  // 浮动 "+N" 在数字增加时显示（减少时不显示，避免误导）
+  const showFloatingDelta = state.highlight && state.lastDelta > 0
+
   return (
     <Card
-      className={`border-border/50 bg-background/60 px-3 py-2 backdrop-blur transition-all duration-300 ${
+      className={`relative border-border/50 bg-background/60 px-3 py-2 backdrop-blur transition-all duration-300 ${
         state.highlight
           ? 'border-primary scale-110 bg-primary/10 ring-2 ring-primary/40'
           : ''
@@ -154,6 +172,16 @@ export function CreditsBadge({ credits, loading }: Props) {
           {loading ? '…' : state.display ?? '—'}
         </span>
       </CardContent>
+
+      {showFloatingDelta && (
+        <span
+          key={state.animationId}
+          className="credits-float-up pointer-events-none absolute -top-1 right-1 text-sm font-bold text-primary"
+          aria-hidden="true"
+        >
+          +{state.lastDelta}
+        </span>
+      )}
     </Card>
   )
 }
