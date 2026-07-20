@@ -1,8 +1,8 @@
 # 项目交接文档
 
-> 上次更新：2026-07-19  
-> 当前进度：**Day 1 + Day 2 + Day 3 + Day 4 已完成，准备进入 Day 5**  
-> 主分支：`main`（Day 4 commit 暂未推送，可由用户决定何时 `git push`）
+> 上次更新：2026-07-20  
+> 当前进度：**Day 1 + Day 2 + Day 3 + Day 4 + Day 5 已完成，准备进入 Day 6**  
+> 主分支：`main`（Day 5 多个 commit 暂未推送，可由用户决定何时 `git push`）
 
 ---
 
@@ -28,8 +28,8 @@
 | 2 | Supabase schema + R2 存储 | ✅ 已完成（3 个 commit）|
 | 3 | AI 生成核心流程（KIE 中转 + 两步流程） | ✅ 已完成（commit `bafb944`，已推送）|
 | 4 | 前端生成页（上传 + 4 图结果网格） | ✅ 已完成（Day 4 多个 commit）|
-| **5** | **Stripe 支付** | ⏳ **下一步开始** |
-| 6 | 历史记录 + UI 打磨 | ⏳ |
+| 5 | Stripe 支付（Checkout + Webhook + Credits 发放） | ✅ 已完成（Day 5 共 15 个 commit）|
+| **6** | **历史记录 + UI 打磨** | ⏳ **下一步开始** |
 | 7 | 部署 Vercel + 端到端验证 | ⏳ |
 
 ---
@@ -37,6 +37,21 @@
 ## 3. Git 历史
 
 ```
+4fcfb30  fix: credits "+N" 动效改用 URL 参数驱动（不再依赖 sessionStorage） ← Day 5
+b97c50e  feat: credits 徽章加浮动 "+N" 动效                              ← Day 5
+864215d  fix: credits 徽章动效跨页面跳转失效                             ← Day 5
+697dff4  feat: 增强付费成功反馈（toast 带 +N + credits 徽章动效）        ← Day 5
+d50f4e6  fix: 修复 lint 报错与 .gitignore 编码问题                       ← Day 5
+ad13aa8  feat: credits=0 toast 加 Buy Credits 按钮，处理付款成功反馈     ← Day 5
+10f3b62  fix: PricingCards 的 ?canceled=true 处理改用 useEffect          ← Day 5
+270b18c  feat: 添加 /pricing 定价页与 PricingCards 组件                  ← Day 5
+9ea0afb  fix: webhook 先 RPC 后 UPDATE 防漏发 credits，async_failed 加状态守卫 ← Day 5
+f34e28e  feat: 添加 POST /api/stripe-webhook 发放 credits                ← Day 5
+610eb18  feat: 添加 POST /api/checkout 创建 Stripe Session               ← Day 5
+4ee420f  feat: 添加 Day 5 Stripe 支付所需类型                            ← Day 5
+ab946e9  feat: 添加 Stripe SDK 单例                                      ← Day 5
+77fbcc5  docs: 添加 Day 5 Stripe 支付实施计划                            ← Day 5
+de80391  docs: 添加 Day 5 Stripe 支付设计文档                            ← Day 5
 f711771  feat: 首页嵌入 TattooGenerator 组件                ← Day 4
 cf454df  feat: 添加 TattooGenerator 主组件                  ← Day 4
 e4e968a  feat: 添加 GenerationResults 结果网格组件          ← Day 4
@@ -173,6 +188,36 @@ d751367  feat: 通过预签名 URL 实现 R2 直传上传              ← Day 2
     - **修复**：去掉 `ignoreDuplicates: true`，让 upsert 在已存在时也返回该行（`src/server/db/ensure-user.ts`）
     - Day 2 当时没暴露是因为 `verify-day2.mjs` 用 PostgREST 直接测，不走 supabase-js 的 `.single()` 语义
 
+14. **Stripe CLI 账号 ≠ STRIPE_SECRET_KEY 账号**（Day 5 已踩）：
+    - 现象：Stripe Dashboard 显示支付成功，dev server 终端看不到 `POST /api/stripe-webhook`，payments 表 status 永远 pending
+    - 排查：`./stripe.exe checkout sessions retrieve <cs_test_xxx>` 报 `resource_missing` → 该 session 在 CLI 账号下不存在
+    - 修复：`./stripe.exe logout` + `./stripe.exe login` 到正确账号（浏览器登录时确认邮箱 = STRIPE_SECRET_KEY 账号所有者）→ 重启 listen 拿新 whsec → 更新 `.env.local` → 重启 dev server
+    - 用 `./stripe.exe trigger checkout.session.completed` 测试转发链路（trigger 创建的是 fixture，metadata 为空，会走 missing metadata 分支返回 200，不影响功能）
+
+15. **stripe listen 每次重启生成新 whsec**：
+    - `whsec_xxx` 是 CLI 本地转发专用的密钥，每次 `stripe listen` 启动都不一样
+    - 生产环境的 webhook secret 在 Stripe Dashboard 配置 endpoint 时生成，与本地不同
+    - 重启 listen 后必须：复制新 whsec → 更新 `.env.local` 的 `STRIPE_WEBHOOK_SECRET` → **重启 dev server**（Next.js 启动时读 env）
+
+16. **Next.js 16 + useSearchParams 必须在 Suspense 边界内**：
+    - 否则 build 失败：`useSearchParams() should be wrapped in a suspense boundary`
+    - 任何用了 `useSearchParams` 的 Client Component 在被 Server Component 引用时都要 `<Suspense fallback={null}>` 包裹
+    - Day 5 在 `pricing/page.tsx` 和 `app/page.tsx` 都加了 Suspense
+
+17. **React 19 react-hooks/immutability 规则**（Day 5 已踩）：
+    - `window.location.href = x` 会被 lint 报错（属性修改，React Compiler 视为副作用）
+    - 改用 `window.location.assign(x)`（方法调用，不触发规则）
+
+18. **React 19 react-hooks/set-state-in-effect 规则**（Day 5 已踩）：
+    - 在 `useEffect` 里直接 `setState()`（即使是条件分支）会被 lint 报错
+    - 用 `useReducer` 的 `dispatch` 替代（dispatch 在 effect 里允许）
+    - 设计动效/动画逻辑时优先用 reducer 模式
+
+19. **Credits 徽章动效跨页面跳转**（Day 5 已踩）：
+    - 用户付款跳回主页会触发整个 React 树重新挂载，组件内部 state 丢失
+    - 用 sessionStorage 持久化 prev 不可靠（跨版本升级时是旧值，delta 计算错误）
+    - **最终方案**：URL 参数驱动 — PaymentFeedback 检测 `?credits=N` 时通过 `window.dispatchEvent(new CustomEvent('credits:added', { detail: { amount: N } }))` 通知 CreditsBadge 播放 "+N" 动画，delta 直接来自 URL，绝对准确
+
 ---
 
 ## 5. 环境变量状态
@@ -196,8 +241,8 @@ d751367  feat: 通过预签名 URL 实现 R2 直传上传              ← Day 2
 | ✅ | `R2_PUBLIC_URL` | `https://pub-xxxxx.r2.dev`（r2.dev 公开域名已开启） |
 | ✅ | `KIE_API_KEY` | Kie.ai API Key（Day 3 已配） |
 | ✅ | `KIE_BASE_URL` | `https://api.kie.ai`（Day 3 已配） |
-| ⏳ | `STRIPE_SECRET_KEY` | Day 5 起需要 |
-| ⏳ | `STRIPE_WEBHOOK_SECRET` | Day 5 起需要 |
+| ✅ | `STRIPE_SECRET_KEY` | Stripe 私钥（sk_test_，Day 5 已配） |
+| ✅ | `STRIPE_WEBHOOK_SECRET` | Stripe webhook 验签密钥（whsec_，Day 5 已配；本地 stripe listen 每次重启会变，重启后需更新此值） |
 
 参考 `.env.example` 看完整字段。
 
@@ -209,26 +254,32 @@ d751367  feat: 通过预签名 URL 实现 R2 直传上传              ← Day 2
 src/
 ├── app/
 │   ├── layout.tsx                          # ClerkProvider + Navbar 包裹
-│   ├── page.tsx                            # 首页 Hero（"See Your Tattoo Before You Ink"）
-│   ├── globals.css                         # Tailwind v4 @theme inline 配置
+│   ├── page.tsx                            # 首页 Hero + PaymentFeedback（监听 ?success=true）
+│   ├── globals.css                         # Tailwind v4 @theme inline + credits-float-up keyframes
 │   ├── sign-in/[[...sign-in]]/page.tsx     # Clerk 登录页
 │   ├── sign-up/[[...sign-up]]/page.tsx     # Clerk 注册页
+│   ├── pricing/page.tsx                    # ⭐ Day 5 定价页（Server Component + Suspense）
 │   └── api/
 │       ├── upload-url/route.ts             # POST 返回 R2 预签名上传 URL（Day 2）
 │       ├── generate/route.ts               # POST 串联 AI 生成完整流程（Day 3，核心）
-│       └── credits/route.ts              # GET 返回余额（Day 4）
+│       ├── credits/route.ts                # GET 返回余额（Day 4）
+│       ├── checkout/route.ts               # ⭐ Day 5 POST 创建 Stripe Checkout Session
+│       └── stripe-webhook/route.ts         # ⭐ Day 5 POST Stripe webhook 验签 + 发放 credits
 ├── components/
 │   ├── navbar.tsx                          # 顶栏（Sign in / History / Buy Credits / UserButton）
-│   ├── tattoo-generator.tsx                # Day 4 主组件
+│   ├── tattoo-generator.tsx                # Day 4 主组件（Day 5 加了 Buy Credits toast）
 │   ├── image-uploader.tsx                  # Day 4 上传组件
 │   ├── generation-progress.tsx             # Day 4 进度展示
 │   ├── generation-results.tsx              # Day 4 结果网格
-│   ├── credits-badge.tsx                   # Day 4 余额徽章
+│   ├── credits-badge.tsx                   # 余额徽章（Day 5 加了 count-up + 浮动 +N 动效）
+│   ├── pricing-cards.tsx                   # ⭐ Day 5 3 档定价卡片
+│   ├── payment-feedback.tsx                # ⭐ Day 5 监听 ?success=true 触发 toast + credits:added 事件
 │   └── ui/                                 # Shadcn 原子组件（7 个）
 ├── lib/
 │   ├── utils.ts                            # cn()
 │   ├── constants.ts                        # BODY_PARTS / CREDIT_PACKAGES / 上传限制
 │   ├── r2.ts                               # R2 封装：getUploadUrl / getPublicUrl / makeObjectKey / makeOutputKey / fetchUrlAndUpload
+│   ├── stripe.ts                           # ⭐ Day 5 getStripe() 懒加载单例
 │   └── supabase/
 │       ├── server.ts                       # getSupabaseAdmin()（service_role，lazy）
 │       └── client.ts                       # 浏览器占位（MVP 禁用）
@@ -236,7 +287,7 @@ src/
 │   ├── use-credits.ts                     # 挂载时拉取余额 + refresh()
 │   └── use-generation.ts                  # 6 状态状态机 + 假进度 + XHR 上传 + AbortController 超时
 ├── server/
-│   ├── ai/                                 # ⭐ Day 3 AI 模块
+│   ├── ai/                                 # Day 3 AI 模块
 │   │   ├── types.ts                        # KIE + 业务类型
 │   │   ├── kie-client.ts                   # createTask / getRecordInfo / pollTask / pollManyTasks
 │   │   ├── generate-tattoo.ts              # Step 1：prompt → 纹身图案（text-to-image, 1:1）
@@ -245,7 +296,7 @@ src/
 │       ├── ensure-user.ts                  # Clerk id → upsert Supabase user（送 1 credit）
 │       └── queries.ts                      # getCredits / createProject / deductCredits / refundCredits / recordGenerations / updateProjectStatus
 ├── types/
-│   └── index.ts                            # DB 行 TS 类型
+│   └── index.ts                            # DB 行 TS 类型 + Day 5 加的 PackageId/CheckoutRequestBody/CheckoutResponse
 └── middleware.ts                           # Clerk 路由保护（仅 /history）
 
 supabase/migrations/0001_init.sql           # 4 表 + 2 RPC + 触发器（已在 Supabase 执行）
@@ -257,7 +308,10 @@ docs/
 ├── handoff.md                              # 本文档
 ├── kie-ai-api.md                           # KIE API 使用文档（Day 3 参考）
 ├── kie-pricing.jpg                         # KIE 平台 gpt-image-2 定价截图
-└── gpt image2 接口调用.md                  # 用户提供的真实接口示例（createTask + recordInfo）
+├── gpt image2 接口调用.md                  # 用户提供的真实接口示例（createTask + recordInfo）
+├── superpowers/
+│   ├── specs/2026-07-20-day5-stripe-payment-design.md   # ⭐ Day 5 设计文档
+│   └── plans/2026-07-20-day5-stripe.md                  # ⭐ Day 5 实施计划
 ```
 
 ---
@@ -414,23 +468,77 @@ Day 4 详细任务见 `docs/mvp-plan.md` 的 Day 4 章节。
 
 详见 `docs/mvp-plan.md` Day 5 章节。
 
-### 8.6 Day 5 开始前用户需要确认
+### 8.6 Day 5 开始前用户需要确认（已完成 ✅）
 
-- [x] 跑通 `npm run build`：✅（Day 4 task 11 已验证）
-- [ ] 跑通端到端：⚠ **待用户在浏览器登录后手动跑一次**（消耗 1 credit + 3-9 分钟）：
-  1. 访问 `/`（已登录）→ 看到 Hero + Generator Card
-  2. 上传一张身体照片 → 显示缩略图
-  3. 输入 prompt（如 "dragon japanese style"）
-  4. 点 Generate → 进入 generating，进度条推进 + 阶段标签更新
-  5. 等 3-9 分钟 → 切换到 completed，显示 Step 1 设计稿 + 4 部位 2x2
-  6. 点击任一图弹出 Dialog 大图
-  7. credits 徽章从 1 变成 0
-  8. 再点 Generate → toast "out of credits"
-  9. 点 "Try another idea" → 回到表单
-  10. 点 "Start over" → 回到 idle
-- [ ] **Stripe 账户已注册**（Day 5 开始前必备）
-- [ ] **拿到 `STRIPE_SECRET_KEY` 和 `STRIPE_WEBHOOK_SECRET`**（写入 `.env.local`）
-- [ ] **准备测试卡 `4242 4242 4242 4242`** 跑支付
+- [x] 跑通 `npm run build`：✅
+- [x] 跑通 Day 4 端到端：✅（上传 + 生成流程正常）
+- [x] **Stripe 账户已注册**：✅（test mode）
+- [x] **拿到 `STRIPE_SECRET_KEY` 和 `STRIPE_WEBHOOK_SECRET`**：✅（写入 `.env.local`）
+- [x] **准备测试卡 `4242 4242 4242 4242`**：✅（Day 5 测试已用过）
+
+### 8.7 Day 5 完成回顾 + Day 6 准备清单
+
+**Commit 范围**：`de80391` ~ `4fcfb30`，共 15 个 commit（全部在 main，未推送）。
+
+✅ **Day 5 已完成事项**：
+
+**新增模块**（5 个核心文件）：
+- `src/lib/stripe.ts` — `getStripe()` 懒加载单例（匹配 `getSupabaseAdmin` 模式）
+- `src/app/api/checkout/route.ts` — POST 创建 Stripe Hosted Checkout Session
+- `src/app/api/stripe-webhook/route.ts` — POST Stripe webhook 验签 + 防重复 + RPC add_credits
+- `src/app/pricing/page.tsx` — 定价页 Server Component（含 Suspense 包裹，Next.js 16 要求）
+- `src/components/pricing-cards.tsx` — 3 档定价卡片 Client Component
+
+**新增 UI 反馈**：
+- `src/components/payment-feedback.tsx` — 监听 `?success=true&credits=N`，显示 toast + 通过 `window.dispatchEvent('credits:added')` 通知徽章做动效
+- `src/components/credits-badge.tsx` — 加 count-up 数字滚动 + 高亮（scale/ring/bg）+ 浮动 "+N" 文字动画（1.5s）
+- `src/app/globals.css` — 加 `@keyframes credits-float-up`
+
+**修改**：
+- `src/app/page.tsx` — 嵌入 `<PaymentFeedback>`（Suspense 包裹）
+- `src/components/tattoo-generator.tsx` — credits=0 toast 加 "Buy Credits" 按钮
+- `src/types/index.ts` — 加 `PackageId` / `CheckoutRequestBody` / `CheckoutResponse`
+- `src/app/api/checkout/route.ts` — `success_url` 加 `&credits=N` 参数（让 toast 和动效 delta 准确）
+
+**Day 5 实际遇到的坑**（已全部修复）：
+
+| 坑 | 修复 |
+|---|---|
+| **Stripe CLI 账号 ≠ STRIPE_SECRET_KEY 账号** | 本地开发最常见错误。现象：Stripe Dashboard 显示支付成功，但 dev server 看不到 webhook。修复：`stripe logout` + `stripe login` 到正确账号，重启 listen 拿新 whsec |
+| **Webhook 先 UPDATE 后 RPC 致 credits 漏发**（Task 4 严重 bug） | 修复 `9ea0afb`：交换为先 RPC 后 UPDATE。原理：RPC 失败 → 重试时 status 仍为 pending，重跑完整流程；UPDATE 失败导致重复加 credits 的概率极低（"用户多得" 比 "用户少得" 客诉风险小） |
+| **Next.js 16 + useSearchParams 必须 Suspense 包裹** | 否则 build 失败。PricingCards 和 PaymentFeedback 都用 Suspense 包裹 |
+| **React 19 react-hooks/immutability 报错 `window.location.href = x`** | 改为 `window.location.assign(x)`（方法调用 vs 属性修改） |
+| **React 19 react-hooks/set-state-in-effect 报错**（count-up 动效） | 用 `useReducer` 替代多个 useState + useRef，dispatch 在 effect 里调用（lint 允许） |
+| **Credits 动效跨页面跳转失效** | 第一版用 sessionStorage 持久化 prev，但用户跨版本升级时 storage 是旧值，delta 计算错误。最终方案：完全去掉 storage，改用 URL 参数驱动（PaymentFeedback 通过 `window.dispatchEvent` 通知 CreditsBadge，delta 直接来自 `?credits=N`，绝对准确） |
+| **`.gitignore` UTF-16 编码导致 stripe.exe 未被忽略** | Stripe Windows 安装包写入时编码错乱，重写为 UTF-8 |
+
+**Day 5 端到端验证**（全部 ✅）：
+- 未登录访问 /pricing → 3 卡片 + "Sign in to buy" → 点击弹 Clerk modal
+- 登录访问 /pricing → 3 卡片 + Most Popular 高亮
+- 点 Starter → Stripe Checkout → 取消 → 跳回 `/pricing?canceled=true` + toast
+- 点 Most Popular + 4242 测试卡 → 跳回 `/?success=true&credits=20` + toast + credits 徽章动效（count-up + 高亮 + 浮动 "+20"）
+- 数据库 payments 表新增 status='paid' 记录，users 表 credits +20
+- 防重复测试：resend `checkout.session.completed` 事件，dev server 打印 `payment already paid, skipping`，credits 不重复加
+- 错误场景：无效 packageId → 400；未登录调用 → 401
+
+### 8.8 Day 6 要做的事（历史记录 + UI 打磨）
+
+| 文件 | 作用 |
+|---|---|
+| `src/app/history/page.tsx` | 历史记录页（用户的所有 projects 列表） |
+| `src/components/history-list.tsx` 或类似 | 项目卡片网格（按时间倒序） |
+| `src/server/db/queries.ts` 加 `listProjects(userId)` | 查询用户的所有 projects + generations |
+
+Day 6 还可能做的事（根据实际用户反馈决定）：
+- 生成请求并发限制（同用户 30 秒内只能 1 次）
+- UI 打磨：手机端体验、loading 骨架、错误页等
+- SEO 基础（meta tags / og:image）
+
+### 8.9 Day 6 开始前用户需要确认
+
+- [x] 跑通 `npm run build`：✅（Day 5 验证通过）
+- [x] 端到端跑通购买 + 发放 credits：✅（Day 5 Task 7 全流程验证）
+- [ ] 准备：Day 6 不需要外部依赖，纯前端 + DB 查询
 
 ---
 
@@ -471,6 +579,10 @@ Day 4 详细任务见 `docs/mvp-plan.md` 的 Day 4 章节。
 | KIE 没做 429 重试 | 低 | 首版直接抛错；如生产环境频繁 429 再加指数退避 |
 | KIE recordInfo 接口未在文档页公布精确字段（猜的字段名） | 低 | 已跑通 `verify-day3.mjs` 验证；若生产跑挂了再用 DevTools 抓真实响应 |
 | `.env.local` 没在 git（正常） | 无 | 团队成员需各自配置（参考 `.env.example`） |
+| Stripe webhook metadata 校验依赖客户端写入 | 低 | metadata 是服务端在 `/api/checkout` 创建 session 时写入，客户端无法篡改；webhook 端的 `user_id` 与 DB 比对防御性检查已加 |
+| 用户支付时关闭浏览器，payments 永远 pending | 低 | Stripe 不发 webhook；Day 6/7 加 cron 清理 >7 天 pending 记录 |
+| `react-hooks/set-state-in-effect` 规则在动画逻辑里绕过 | 低 | 用 useReducer dispatch 模式，符合规则；如果未来要加更多动画，沿用此模式 |
+| Stripe webhook secret 在本地 stripe listen 重启时会变 | 低 | 开发体验问题，不是 bug；每次重启 listen 后更新 `.env.local` + 重启 dev server |
 
 ---
 
