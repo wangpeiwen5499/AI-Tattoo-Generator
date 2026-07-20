@@ -127,7 +127,23 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     throw new Error('user_id mismatch between metadata and DB')
   }
 
-  // 1. UPDATE payments.status='paid' + paid_at + stripe_payment_intent
+  // 1. RPC add_credits（先发积分）
+  // 顺序很关键：先 RPC 后 UPDATE。
+  // 如果 RPC 失败 → throw → Stripe 重试 → status 还是 'pending'，重新走完整流程。
+  // 如果先 UPDATE 后 RPC 且 RPC 失败，重试时 status='paid' 直接 return，永远不发积分。
+  // 副作用：RPC 成功但 UPDATE 失败时重试会重复加积分，但 UPDATE 单行失败概率极低，
+  // 且"用户多得"比"用户少得"对客诉损害小。
+  const { error: rpcError } = await supabaseAdmin.rpc('add_credits', {
+    p_user_id: userId,
+    p_amount: existing.credits_purchased, // 用 DB 里的值，更可信
+  })
+
+  if (rpcError) {
+    console.error('[stripe-webhook] add_credits RPC failed:', rpcError)
+    throw rpcError
+  }
+
+  // 2. UPDATE payments.status='paid'（标志已发放，幂等保护）
   const { error: updateError } = await supabaseAdmin
     .from('payments')
     .update({
@@ -141,22 +157,9 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   if (updateError) {
     console.error('[stripe-webhook] UPDATE payment status failed:', updateError)
+    // 此时 credits 已加但 DB 状态没更新。Stripe 重试会再走一遍 RPC（重复加）。
+    // 抛错让上层返回 500，由人工介入修 DB（标 paid 防止再次重试触发）。
     throw updateError
-  }
-
-  // 2. RPC add_credits（原子加 N）
-  const { error: rpcError } = await supabaseAdmin.rpc('add_credits', {
-    p_user_id: userId,
-    p_amount: existing.credits_purchased, // 用 DB 里的值，更可信
-  })
-
-  if (rpcError) {
-    console.error('[stripe-webhook] add_credits RPC failed:', rpcError)
-    // 这里抛错让 Stripe 重试。重试时上面 status 检查会发现已 'paid'，
-    // 会跳过 UPDATE 直接 return（不会重复加 credits）。但本函数已 UPDATE 为 'paid'，
-    // 所以需要在下面修正——用 status='paid_pending_credits' 之类？MVP 阶段先简单：
-    // 假设 RPC 几乎不失败；失败就手动在 DB 修。
-    throw rpcError
   }
 
   console.log('[stripe-webhook] credits added:', {
@@ -175,10 +178,12 @@ async function handleAsyncPaymentFailed(session: Stripe.Checkout.Session) {
   if (!paymentId) return
 
   const supabaseAdmin = getSupabaseAdmin()
+  // 状态守卫：只允许 pending → failed。已 paid 的记录不能被覆盖。
   const { error } = await supabaseAdmin
     .from('payments')
     .update({ status: 'failed' })
     .eq('id', paymentId)
+    .eq('status', 'pending')
 
   if (error) {
     console.error('[stripe-webhook] UPDATE async_payment_failed status:', error)
