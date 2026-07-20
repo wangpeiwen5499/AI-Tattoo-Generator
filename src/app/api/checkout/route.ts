@@ -4,7 +4,7 @@ import { ensureUser } from '@/server/db/ensure-user'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { getStripe } from '@/lib/stripe'
 import { CREDIT_PACKAGES } from '@/lib/constants'
-import type { CheckoutRequestBody, CheckoutResponse, PackageId } from '@/types'
+import type { CheckoutRequestBody, CheckoutResponse } from '@/types'
 
 export const dynamic = 'force-dynamic'
 

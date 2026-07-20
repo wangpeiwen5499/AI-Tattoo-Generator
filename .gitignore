@@ -49,3 +49,6 @@ next-env.d.ts
 
 # playwright mcp debug artifacts (snapshots/console logs)
 .playwright-mcp/
+
+# stripe cli local binary (Windows)
+stripe.exe

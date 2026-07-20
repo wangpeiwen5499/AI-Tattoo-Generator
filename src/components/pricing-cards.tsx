@@ -46,8 +46,8 @@ export function PricingCards() {
       }
       const data: CheckoutResponse = await res.json()
       if (!data.url) throw new Error('Stripe returned no URL')
-      // 跳转 Stripe Checkout（同窗口）
-      window.location.href = data.url
+      // 跳转 Stripe Checkout（同窗口，用 assign 避免 react-hooks/immutability 报警）
+      window.location.assign(data.url)
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Checkout failed'
       toast.error(msg)
