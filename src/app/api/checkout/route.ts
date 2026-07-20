@@ -90,7 +90,7 @@ export async function POST(req: Request) {
             },
           },
         ],
-        success_url: `${origin}/?success=true`,
+        success_url: `${origin}/?success=true&credits=${pkg.credits}`,
         cancel_url: `${origin}/pricing?canceled=true`,
         metadata: {
           user_id: session.userId,
