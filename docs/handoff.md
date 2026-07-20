@@ -37,6 +37,7 @@
 ## 3. Git 历史
 
 ```
+20c00a0  docs: 更新交接文档，Day 5 完成，准备 Day 6                  ← Day 5（最新）
 4fcfb30  fix: credits "+N" 动效改用 URL 参数驱动（不再依赖 sessionStorage） ← Day 5
 b97c50e  feat: credits 徽章加浮动 "+N" 动效                              ← Day 5
 864215d  fix: credits 徽章动效跨页面跳转失效                             ← Day 5
@@ -478,7 +479,7 @@ Day 4 详细任务见 `docs/mvp-plan.md` 的 Day 4 章节。
 
 ### 8.7 Day 5 完成回顾 + Day 6 准备清单
 
-**Commit 范围**：`de80391` ~ `4fcfb30`，共 15 个 commit（全部在 main，未推送）。
+**Commit 范围**：`de80391` ~ `20c00a0`，共 16 个 commit（全部已推送到 `origin/main`）。
 
 ✅ **Day 5 已完成事项**：
 
@@ -617,10 +618,16 @@ npx kill-port 3000 && npm run dev
 1. 读这份文档（`docs/handoff.md`）
 2. 读 `CLAUDE.md`（协作规范：中文回答 + 中文 commit）
 3. 读 `docs/mvp-plan.md` 的 Day N 章节（N = 当前要做的天）
-4. 跑 `npm run verify:db` 确认数据库和 R2 还能正常工作
-5. 跑 `npm run verify:day3` 确认 KIE 链路通（仅在 Day 3 之后需要）
-6. 跑 `npm run build` 确认编译干净
-7. 问用户：「准备好开始 Day N 了吗？需要你提前准备 X / Y / Z」
+4. 如果是 Day 5 之后：读 `docs/superpowers/specs/` 和 `docs/superpowers/plans/` 看历天的设计与计划文档
+5. 跑 `npm run verify:db` 确认数据库和 R2 还能正常工作
+6. 跑 `npm run verify:day3` 确认 KIE 链路通（仅在 Day 3 之后需要）
+7. 跑 `npm run build` 确认编译干净
+8. **如果是 Day 6+**：用户可能要在新窗口继续，按 `superpowers:brainstorming` 流程开始 Day N 的设计 → 计划 → 实施
+
+**Day 6 具体准备**：
+- 读 `docs/mvp-plan.md` 的 Day 6 章节（历史记录 + UI 打磨）
+- Day 6 不需要外部依赖，纯前端 + DB 查询
+- 可选改进：生成请求并发限制、UI 打磨（手机端 / loading 骨架 / 错误页）、SEO 基础
 
 **永远不要**：
 - 在没读 `docs/mvp-plan.md` 的情况下臆测范围
