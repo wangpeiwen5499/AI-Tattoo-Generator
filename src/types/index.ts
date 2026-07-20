@@ -81,3 +81,18 @@ export interface GenerateResponse {
   /** 全失败时后端会带这个字段，提示已退款 */
   error?: string
 }
+
+/* ============ Day 5: Stripe 支付 ============ */
+
+/** 定价档位 ID（与 CREDIT_PACKAGES 的 id 字段对应） */
+export type PackageId = 'starter' | 'popular' | 'pro'
+
+/** POST /api/checkout 请求体 */
+export interface CheckoutRequestBody {
+  packageId: PackageId
+}
+
+/** POST /api/checkout 成功响应 */
+export interface CheckoutResponse {
+  url: string
+}
