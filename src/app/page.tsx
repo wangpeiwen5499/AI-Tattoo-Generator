@@ -1,10 +1,16 @@
+import { Suspense } from 'react'
 import { SignInButton, Show } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
 import { TattooGenerator } from '@/components/tattoo-generator'
+import { PaymentFeedback } from '@/components/payment-feedback'
 
 export default function HomePage() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:py-16">
+      <Suspense fallback={null}>
+        <PaymentFeedback />
+      </Suspense>
+
       <section className="mx-auto max-w-3xl text-center">
         <h1 className="text-4xl font-bold tracking-tight text-balance sm:text-6xl">
           See Your Tattoo Before You Ink

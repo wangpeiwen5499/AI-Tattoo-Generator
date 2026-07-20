@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -19,6 +20,7 @@ import { CREDITS_PER_GENERATION } from '@/lib/constants'
  * 持有状态机（来自 useGeneration）+ 余额（来自 useCredits）。
  */
 export function TattooGenerator() {
+  const router = useRouter()
   const credits = useCredits()
   const gen = useGeneration()
 
@@ -55,7 +57,13 @@ export function TattooGenerator() {
       return
     }
     if (credits.credits < CREDITS_PER_GENERATION) {
-      toast.error("You're out of credits. Pricing is coming soon.")
+      toast.error("You're out of credits", {
+        description: 'Buy credits to keep generating',
+        action: {
+          label: 'Buy Credits',
+          onClick: () => router.push('/pricing'),
+        },
+      })
       return
     }
     try {
