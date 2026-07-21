@@ -32,12 +32,19 @@ export function HistoryImageDialog({ tattooDesignUrl, bodyParts }: Props) {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
 
   // 拍平成 Dialog 切换列表：[设计稿（若有）, 部位1（若成功）, 部位2（若成功）, ...]
+  // 同时记录每个 bodyPart 在 images 数组里的索引，避免后续用 url 反查（防 url 重复时定位错位）
   const images: DialogImage[] = []
+  const bodyPartDialogIndex: number[] = []
   if (tattooDesignUrl) {
     images.push({ url: tattooDesignUrl, title: 'Tattoo Design' })
   }
   bodyParts.forEach((bp) => {
-    if (bp.url) images.push({ url: bp.url, title: bp.label })
+    if (bp.url) {
+      bodyPartDialogIndex.push(images.length)
+      images.push({ url: bp.url, title: bp.label })
+    } else {
+      bodyPartDialogIndex.push(-1)
+    }
   })
 
   const designIndex = tattooDesignUrl ? 0 : -1
@@ -75,12 +82,12 @@ export function HistoryImageDialog({ tattooDesignUrl, bodyParts }: Props) {
 
         {/* 右：4 部位 2x2 */}
         <div className="grid flex-1 grid-cols-2 gap-3">
-          {bodyParts.map((bp) => (
+          {bodyParts.map((bp, i) => (
             <BodyPartCell
               key={bp.label}
               bodyPart={bp}
               onClick={() => {
-                const idx = images.findIndex((img) => img.url === bp.url)
+                const idx = bodyPartDialogIndex[i]
                 if (idx >= 0) setOpenIndex(idx)
               }}
             />
