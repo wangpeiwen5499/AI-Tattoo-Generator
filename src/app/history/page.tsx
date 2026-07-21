@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { HistoryList } from '@/components/history-list'
 import { ensureUser } from '@/server/db/ensure-user'
 import { listProjects } from '@/server/db/queries'
+import type { ProjectWithGenerations } from '@/types'
 
 export const metadata = {
   title: 'History — AI Tattoo Generator',
@@ -24,6 +25,9 @@ export const metadata = {
  *   4. 渲染 HistoryList（含空状态）
  *
  * 错误兜底：任何步骤失败渲染友好错误页 + Retry 按钮。
+ *
+ * 注意：React 19 lint 规则 react-hooks/error-boundaries 禁止在 try/catch 内构造 JSX，
+ * 所以数据获取和渲染分离——try 只取数据，JSX 在 try 外构造。
  */
 export default async function HistoryPage() {
   const { userId } = await auth()
@@ -39,22 +43,27 @@ export default async function HistoryPage() {
     return <HistoryError />
   }
 
+  let projects: ProjectWithGenerations[] | null = null
   try {
     await ensureUser(userId, email)
-    const projects = await listProjects(userId)
-    return (
-      <div className="mx-auto max-w-4xl px-4 py-12 sm:py-16">
-        <HistoryList projects={projects} />
-      </div>
-    )
+    projects = await listProjects(userId)
   } catch (e) {
     console.error('[/history] failed to load:', e)
+  }
+
+  if (projects === null) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-12 sm:py-16">
         <HistoryError />
       </div>
     )
   }
+
+  return (
+    <div className="mx-auto max-w-4xl px-4 py-12 sm:py-16">
+      <HistoryList projects={projects} />
+    </div>
+  )
 }
 
 function HistoryError() {
