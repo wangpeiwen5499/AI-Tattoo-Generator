@@ -96,3 +96,10 @@ export interface CheckoutRequestBody {
 export interface CheckoutResponse {
   url: string
 }
+
+/* ============ Day 6: 历史记录页 ============ */
+
+/** 单个 project 关联其 4 条 generations（Supabase join 查询返回结构） */
+export type ProjectWithGenerations = ProjectRow & {
+  generations: GenerationRow[]
+}

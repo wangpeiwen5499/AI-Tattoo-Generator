@@ -1,5 +1,5 @@
 import { getSupabaseAdmin } from '@/lib/supabase/server'
-import type { GenerationRow, ProjectRow, UserRow } from '@/types'
+import type { GenerationRow, ProjectRow, ProjectWithGenerations, UserRow } from '@/types'
 
 /**
  * 数据库查询封装（服务端专用，配合 service_role key）。
@@ -131,4 +131,24 @@ export async function refundCredits(userId: string, amount: number): Promise<voi
     p_amount: amount,
   })
   if (error) throw error
+}
+
+/**
+ * 拉取用户所有已完成的 projects（含关联的 generations）。
+ * 按 created_at desc 排序，最新的在前。
+ * Supabase 嵌套 select '*, generations(*)' 会自动按 project_id 外键关联。
+ */
+export async function listProjects(
+  userId: string
+): Promise<ProjectWithGenerations[]> {
+  const supabaseAdmin = getSupabaseAdmin()
+  const { data, error } = await supabaseAdmin
+    .from('projects')
+    .select('*, generations(*)')
+    .eq('user_id', userId)
+    .eq('status', 'completed')
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return (data ?? []) as ProjectWithGenerations[]
 }
