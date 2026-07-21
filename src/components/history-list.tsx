@@ -14,7 +14,7 @@ export function HistoryList({ projects }: { projects: ProjectWithGenerations[] }
   if (projects.length === 0) {
     return (
       <div className="mx-auto flex max-w-md flex-col items-center gap-4 rounded-xl border border-dashed border-border/60 bg-card/50 p-12 text-center">
-        <Sparkles className="h-10 w-10 text-muted-foreground" />
+        <Sparkles className="h-10 w-10 text-muted-foreground" aria-hidden="true" />
         <div>
           <h2 className="text-lg font-semibold">No tattoos yet</h2>
           <p className="mt-1 text-sm text-muted-foreground">
