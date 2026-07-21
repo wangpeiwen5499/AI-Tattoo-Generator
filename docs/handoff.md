@@ -1,8 +1,8 @@
 # 项目交接文档
 
-> 上次更新：2026-07-20  
-> 当前进度：**Day 1 + Day 2 + Day 3 + Day 4 + Day 5 已完成，准备进入 Day 6**  
-> 主分支：`main`（Day 5 多个 commit 暂未推送，可由用户决定何时 `git push`）
+> 上次更新：2026-07-21  
+> 当前进度：**Day 1 + Day 2 + Day 3 + Day 4 + Day 5 + Day 6 已完成，准备进入 Day 7**  
+> 主分支：`main`（Day 6 所有 commit 已推送到 `origin/main`）
 
 ---
 
@@ -29,15 +29,26 @@
 | 3 | AI 生成核心流程（KIE 中转 + 两步流程） | ✅ 已完成（commit `bafb944`，已推送）|
 | 4 | 前端生成页（上传 + 4 图结果网格） | ✅ 已完成（Day 4 多个 commit）|
 | 5 | Stripe 支付（Checkout + Webhook + Credits 发放） | ✅ 已完成（Day 5 共 15 个 commit）|
-| **6** | **历史记录 + UI 打磨** | ⏳ **下一步开始** |
-| 7 | 部署 Vercel + 端到端验证 | ⏳ |
+| 6 | 历史记录页（/history + 缩略图 + 大图 Dialog） | ✅ 已完成（Day 6 共 11 个 commit，已推送）|
+| **7** | **部署 Vercel + 端到端验证** | ⏳ **下一步开始** |
 
 ---
 
 ## 3. Git 历史
 
 ```
-20c00a0  docs: 更新交接文档，Day 5 完成，准备 Day 6                  ← Day 5（最新）
+791ac9e  fix: /history 数据获取与渲染分离以通过 react-hooks/error-boundaries  ← Day 6（最新）
+1ceb4dd  feat: 添加 /history 历史记录页                                       ← Day 6
+f16265c  fix: HistoryList 空状态图标加 aria-hidden                            ← Day 6
+c8bd08e  feat: 添加 HistoryList 历史列表容器与空状态                          ← Day 6
+f4cca02  refactor: HistoryCard 去掉冗余的 as BodyPart 断言                    ← Day 6
+00cd39f  feat: 添加 HistoryCard 单条历史卡片组件                              ← Day 6
+77c6048  refactor: HistoryImageDialog 改用显式索引映射替代 findIndex          ← Day 6
+18dbe20  feat: 添加 HistoryImageDialog 组件（缩略图网格 + 大图 Dialog）       ← Day 6
+29d0f37  feat: 添加 listProjects 查询用户历史生成记录                         ← Day 6
+d290d73  docs: 添加 Day 6 历史记录页实施计划                                  ← Day 6
+04109a5  docs: 添加 Day 6 历史记录页设计文档                                  ← Day 6
+20c00a0  docs: 更新交接文档，Day 5 完成，准备 Day 6                           ← Day 5
 4fcfb30  fix: credits "+N" 动效改用 URL 参数驱动（不再依赖 sessionStorage） ← Day 5
 b97c50e  feat: credits 徽章加浮动 "+N" 动效                              ← Day 5
 864215d  fix: credits 徽章动效跨页面跳转失效                             ← Day 5
@@ -219,6 +230,11 @@ d751367  feat: 通过预签名 URL 实现 R2 直传上传              ← Day 2
     - 用 sessionStorage 持久化 prev 不可靠（跨版本升级时是旧值，delta 计算错误）
     - **最终方案**：URL 参数驱动 — PaymentFeedback 检测 `?credits=N` 时通过 `window.dispatchEvent(new CustomEvent('credits:added', { detail: { amount: N } }))` 通知 CreditsBadge 播放 "+N" 动画，delta 直接来自 URL，绝对准确
 
+20. **React 19 react-hooks/error-boundaries 规则**（Day 6 已踩）：
+    - lint 报错：`Avoid constructing JSX within try/catch`，禁止在 try/catch 内 return JSX
+    - Server Component 用 try/catch 包数据获取时，**try 只用于取数据**（赋值给 `let` 变量），**JSX 在 try 外构造**（外面判断 null/默认值走错误兜底）
+    - Day 6 的 `src/app/history/page.tsx` 就是这个模式：`let projects = null` → try 里赋值 → try 外判断 `if (projects === null) return <Error />` → 正常 `return <HistoryList projects={projects} />`
+
 ---
 
 ## 5. 环境变量状态
@@ -260,6 +276,7 @@ src/
 │   ├── sign-in/[[...sign-in]]/page.tsx     # Clerk 登录页
 │   ├── sign-up/[[...sign-up]]/page.tsx     # Clerk 注册页
 │   ├── pricing/page.tsx                    # ⭐ Day 5 定价页（Server Component + Suspense）
+│   ├── history/page.tsx                    # ⭐ Day 6 历史记录页（Server Component）
 │   └── api/
 │       ├── upload-url/route.ts             # POST 返回 R2 预签名上传 URL（Day 2）
 │       ├── generate/route.ts               # POST 串联 AI 生成完整流程（Day 3，核心）
@@ -275,6 +292,9 @@ src/
 │   ├── credits-badge.tsx                   # 余额徽章（Day 5 加了 count-up + 浮动 +N 动效）
 │   ├── pricing-cards.tsx                   # ⭐ Day 5 3 档定价卡片
 │   ├── payment-feedback.tsx                # ⭐ Day 5 监听 ?success=true 触发 toast + credits:added 事件
+│   ├── history-list.tsx                    # ⭐ Day 6 历史列表容器 + 空状态（Server Component）
+│   ├── history-card.tsx                    # ⭐ Day 6 单条历史卡片（Server Component）
+│   ├── history-image-dialog.tsx            # ⭐ Day 6 缩略图网格 + 大图 Dialog（Client Component）
 │   └── ui/                                 # Shadcn 原子组件（7 个）
 ├── lib/
 │   ├── utils.ts                            # cn()
@@ -295,9 +315,9 @@ src/
 │   │   └── apply-to-body.ts                # Step 2：4 部位并发融合（image-to-image, 3:4）
 │   └── db/
 │       ├── ensure-user.ts                  # Clerk id → upsert Supabase user（送 1 credit）
-│       └── queries.ts                      # getCredits / createProject / deductCredits / refundCredits / recordGenerations / updateProjectStatus
+│       └── queries.ts                      # getCredits / createProject / deductCredits / refundCredits / recordGenerations / updateProjectStatus / listProjects（Day 6）
 ├── types/
-│   └── index.ts                            # DB 行 TS 类型 + Day 5 加的 PackageId/CheckoutRequestBody/CheckoutResponse
+│   └── index.ts                            # DB 行 TS 类型 + Day 5 PackageId/CheckoutRequestBody/CheckoutResponse + Day 6 ProjectWithGenerations
 └── middleware.ts                           # Clerk 路由保护（仅 /history）
 
 supabase/migrations/0001_init.sql           # 4 表 + 2 RPC + 触发器（已在 Supabase 执行）
@@ -522,24 +542,85 @@ Day 4 详细任务见 `docs/mvp-plan.md` 的 Day 4 章节。
 - 防重复测试：resend `checkout.session.completed` 事件，dev server 打印 `payment already paid, skipping`，credits 不重复加
 - 错误场景：无效 packageId → 400；未登录调用 → 401
 
-### 8.8 Day 6 要做的事（历史记录 + UI 打磨）
+### 8.8 Day 6 要做的事（历史记录页）— 已完成
 
-| 文件 | 作用 |
-|---|---|
-| `src/app/history/page.tsx` | 历史记录页（用户的所有 projects 列表） |
-| `src/components/history-list.tsx` 或类似 | 项目卡片网格（按时间倒序） |
-| `src/server/db/queries.ts` 加 `listProjects(userId)` | 查询用户的所有 projects + generations |
+**实际范围（与用户确认后收窄）**：只做核心历史记录页。可选项（并发限制 / Hero 打磨 / SEO）推迟到 Day 7 之后看用户反馈。
 
-Day 6 还可能做的事（根据实际用户反馈决定）：
-- 生成请求并发限制（同用户 30 秒内只能 1 次）
-- UI 打磨：手机端体验、loading 骨架、错误页等
-- SEO 基础（meta tags / og:image）
-
-### 8.9 Day 6 开始前用户需要确认
+### 8.9 Day 6 开始前确认事项
 
 - [x] 跑通 `npm run build`：✅（Day 5 验证通过）
 - [x] 端到端跑通购买 + 发放 credits：✅（Day 5 Task 7 全流程验证）
-- [ ] 准备：Day 6 不需要外部依赖，纯前端 + DB 查询
+- [x] Day 6 不需要外部依赖，纯前端 + DB 查询：✅
+
+### 8.10 Day 6 完成回顾 + Day 7 准备清单
+
+**Commit 范围**：`04109a5`（spec）+ `d290d73`（plan）+ 9 个实现/修复 commit = **共 11 个 commit**，全部已推送到 `origin/main`。
+
+✅ **Day 6 已完成事项**：
+
+**设计文档 + 实施计划**：
+- `docs/superpowers/specs/2026-07-21-day6-history-page-design.md` — 设计文档（架构 / 关键决策 / 错误处理 / 测试验证）
+- `docs/superpowers/plans/2026-07-21-day6-history.md` — 7 个 task 的分步实施计划（每 task 含完整代码 + 验证命令 + commit 命令）
+
+**新增模块**：
+- `src/types/index.ts` — 加 `ProjectWithGenerations = ProjectRow & { generations: GenerationRow[] }`
+- `src/server/db/queries.ts` — 加 `listProjects(userId)`（Supabase 嵌套 select `'*, generations(*)'` 自动按 project_id 外键关联）
+- `src/components/history-image-dialog.tsx` — Client Component，缩略图网格 + Dialog 大图 + 左右切换（ChevronLeft/ChevronRight）
+- `src/components/history-card.tsx` — Server Component，单条卡片静态布局，把图片区整个委托给 HistoryImageDialog
+- `src/components/history-list.tsx` — Server Component，标题 + 数量 + 空状态 + 卡片列表
+- `src/app/history/page.tsx` — Server Component，auth + ensureUser + listProjects + 渲染容器 + 错误兜底
+
+**Day 6 设计要点**：
+- Server Component 直查 DB（与 `/pricing` 一致），SEO 友好、首屏快
+- 只查 `status='completed'`，失败记录不显示
+- 全量返回无分页（MVP 用户量小）
+- 时间用 `toLocaleDateString('en-US', { year, month: 'short', day: 'numeric' })` → "Jul 21, 2026"（避免 SSR/CSR 相对时间不一致）
+- `HistoryImageDialog` 同时负责「缩略图网格」+「Dialog 大图」，因为它们共享 `openIndex` state；HistoryCard 保持 Server Component
+- Dialog 支持左右切换，用 `(i ± 1) % images.length` 模运算
+- 缩略图点击时通过 `bodyPartDialogIndex` 数组显式映射到 Dialog 索引（避免 findIndex 在 url 重复时错位，防御性更强）
+
+**Day 6 实际遇到的坑**：
+
+| 坑 | 修复 |
+|---|---|
+| **React 19 react-hooks/error-boundaries 规则禁止 try/catch 内构造 JSX** | lint 报 `Avoid constructing JSX within try/catch`。重构 `/history/page.tsx`：try 只赋值 `let projects = null`，JSX 在 try 外构造（null 走错误兜底，非 null 走正常渲染）。详见 §4 第 20 项 |
+| **HistoryImageDialog 用 findIndex 反查 url 定位 Dialog 索引**（code review 提出） | 改为构建时显式记录 `bodyPartDialogIndex: number[]`，避免 url 重复时 findIndex 返回错位（虽当前数据不触发，防御性更强）。commit `77c6048` |
+| **HistoryCard 用 `as BodyPart` 断言冗余**（code review 提出） | `BODY_PARTS` 已是 `as const` 元组，map 回调参数类型已推断为字面量联合，删除断言。commit `f4cca02` |
+
+**Day 6 端到端验证**（全部 ✅）：
+- 已登录访问 `/history` → 显示所有 completed projects，按 created_at 倒序
+- 每条卡片：prompt + 时间 + N/4 succeeded + 纹身设计稿缩略图 + 4 部位 2x2 缩略图
+- 点任一缩略图 → Dialog 弹大图，左右箭头切换流畅 + "N / M" 索引显示 + Esc 关闭
+- 空状态：新 Clerk 账号访问 → "No tattoos yet" + CTA 跳 `/`
+- 未登录访问 → middleware 重定向 sign-in
+- `npm run lint` + `npm run build` 全部通过
+
+**复用既有资源**（零修改）：
+- `src/middleware.ts` 已保护 `/history`（Day 1 配）
+- `src/components/navbar.tsx` 已有 History 链接（Day 4 加）
+- `src/lib/constants.ts` 的 `BODY_PARTS` / `BODY_PART_LABELS`
+- `src/lib/r2.ts` 的 `getPublicUrl(key)`
+- Shadcn `Dialog` / `Button` 组件（Day 4 已加）
+
+### 8.11 Day 7 要做的事（部署 + 端到端验证）
+
+详见 `docs/mvp-plan.md` Day 7 章节。核心：
+
+- [ ] GitHub 仓库已就绪（`origin/main` 已是最新）
+- [ ] Vercel 关联仓库，部署
+- [ ] **Vercel 环境变量**全部填入生产值（参考 `.env.example` 顺序）
+- [ ] Clerk：配置 Production origins + redirect URLs（生产域名）
+- [ ] Stripe：Webhook endpoint 改为 `https://<domain>/api/stripe-webhook`，记录生产 signing secret 填到 Vercel
+- [ ] R2：绑定自定义域名（可选，或继续用 `r2.dev`）
+- [ ] 自定义域名绑定 Vercel + DNS（可选）
+
+**Day 7 端到端验证清单**（生产域名）：
+- [ ] Google 登录成功
+- [ ] 上传照片 + 生成 4 张图（注意 Vercel 函数超时，可能需要升级 Pro）
+- [ ] credits 扣减正确
+- [ ] 购买 credits，支付成功，余额增加
+- [ ] 历史记录可见（Day 6 新功能）
+- [ ] 移动端基本可用
 
 ---
 
@@ -564,6 +645,10 @@ Day 6 还可能做的事（根据实际用户反馈决定）：
 | R2 URL→存储（AI 输出落盘） | `src/lib/r2.ts` | `fetchUrlAndUpload()` |
 | Clerk 用户首入库 | `src/server/db/ensure-user.ts` | `ensureUser()` |
 | Credits 扣减 / 退还 | `src/server/db/queries.ts` | `deductCredits` / `refundCredits` |
+| 历史记录查询（Day 6） | `src/server/db/queries.ts` | `listProjects(userId)` |
+| 历史记录页架构 | `src/app/history/page.tsx` | `HistoryPage()` + `HistoryError()` |
+| Dialog 大图 + 左右切换 | `src/components/history-image-dialog.tsx` | `HistoryImageDialog` + `BodyPartCell` |
+| R2 key → 公开 URL | `src/lib/r2.ts` | `getPublicUrl(key)` |
 
 ---
 
@@ -576,12 +661,14 @@ Day 6 还可能做的事（根据实际用户反馈决定）：
 | `scripts/verify-day2.mjs` 绕过 supabase-js（因 Node 20 Realtime bug） | 低 | 升级 Node 22 后可改用 supabase-js |
 | AWS SDK 警告 "node >=22 required"（2027 年 1 月后） | 低 | 升级 Node 22 即可消除 |
 | Playwright 自动化注册被 Turnstile 拦 | 低 | 不影响真实用户；如需 e2e 测试用 Clerk 测试用户 API |
-| 没做生成请求的并发限制（同一用户 30 秒内可重复刷） | 中 | Day 6 加：在 deductCredits 前查 `projects` 表最近 30 秒记录 |
+| 没做生成请求的并发限制（同一用户 30 秒内可重复刷） | 中 | Day 6 范围收窄后未做，Day 7+ 看是否被薅羊毛再决定是否补 |
 | KIE 没做 429 重试 | 低 | 首版直接抛错；如生产环境频繁 429 再加指数退避 |
 | KIE recordInfo 接口未在文档页公布精确字段（猜的字段名） | 低 | 已跑通 `verify-day3.mjs` 验证；若生产跑挂了再用 DevTools 抓真实响应 |
 | `.env.local` 没在 git（正常） | 无 | 团队成员需各自配置（参考 `.env.example`） |
 | Stripe webhook metadata 校验依赖客户端写入 | 低 | metadata 是服务端在 `/api/checkout` 创建 session 时写入，客户端无法篡改；webhook 端的 `user_id` 与 DB 比对防御性检查已加 |
-| 用户支付时关闭浏览器，payments 永远 pending | 低 | Stripe 不发 webhook；Day 6/7 加 cron 清理 >7 天 pending 记录 |
+| 用户支付时关闭浏览器，payments 永远 pending | 低 | Stripe 不发 webhook；Day 7+ 后续可加 cron 清理 >7 天 pending 记录 |
+| 历史记录页只显示 `status='completed'`，失败记录用户看不到 | 低 | Day 5 已有退款兜底；若客诉增多再补「显示失败记录 + 错误原因」 |
+| 历史记录页全量加载无分页 | 低 | MVP 用户 ≤ 50 次生成记录；重度用户出现后再加分页 |
 | `react-hooks/set-state-in-effect` 规则在动画逻辑里绕过 | 低 | 用 useReducer dispatch 模式，符合规则；如果未来要加更多动画，沿用此模式 |
 | Stripe webhook secret 在本地 stripe listen 重启时会变 | 低 | 开发体验问题，不是 bug；每次重启 listen 后更新 `.env.local` + 重启 dev server |
 
@@ -622,12 +709,13 @@ npx kill-port 3000 && npm run dev
 5. 跑 `npm run verify:db` 确认数据库和 R2 还能正常工作
 6. 跑 `npm run verify:day3` 确认 KIE 链路通（仅在 Day 3 之后需要）
 7. 跑 `npm run build` 确认编译干净
-8. **如果是 Day 6+**：用户可能要在新窗口继续，按 `superpowers:brainstorming` 流程开始 Day N 的设计 → 计划 → 实施
+8. **如果是 Day 7+**：用户可能要在新窗口继续，按 `superpowers:brainstorming` 流程开始 Day N 的设计 → 计划 → 实施
 
-**Day 6 具体准备**：
-- 读 `docs/mvp-plan.md` 的 Day 6 章节（历史记录 + UI 打磨）
-- Day 6 不需要外部依赖，纯前端 + DB 查询
-- 可选改进：生成请求并发限制、UI 打磨（手机端 / loading 骨架 / 错误页）、SEO 基础
+**Day 7 具体准备**：
+- 读 `docs/mvp-plan.md` 的 Day 7 章节（部署 + 端到端验证）
+- Day 7 需要准备：Vercel 账号 + GitHub 仓库访问权 + 生产域名（可选）
+- Clerk / Stripe / R2 各平台都需要配置生产环境的 redirect URLs / webhook endpoints / CORS
+- 注意 Vercel Hobby 函数超时 10 秒，单次生成 8-13 秒可能超时，可能需要升级 Vercel Pro（60 秒）
 
 **永远不要**：
 - 在没读 `docs/mvp-plan.md` 的情况下臆测范围
