@@ -1,4 +1,4 @@
-import { BODY_PARTS, BODY_PART_LABELS, type BodyPart } from '@/lib/constants'
+import { BODY_PARTS, BODY_PART_LABELS } from '@/lib/constants'
 import { getPublicUrl } from '@/lib/r2'
 import { HistoryImageDialog } from '@/components/history-image-dialog'
 import type { ProjectWithGenerations } from '@/types'
@@ -24,7 +24,7 @@ export function HistoryCard({ project }: { project: ProjectWithGenerations }) {
   // 按 BODY_PARTS 顺序排列 generations（DB 返回顺序不保证）
   const bodyPartThumbs = BODY_PARTS.map((part) => {
     const gen = project.generations.find((g) => g.body_part === part)
-    const label = BODY_PART_LABELS[part as BodyPart]
+    const label = BODY_PART_LABELS[part]
     return {
       label,
       url: gen?.result_image_url ?? null,
