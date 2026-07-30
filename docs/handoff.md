@@ -1,8 +1,8 @@
 # 项目交接文档
 
-> 上次更新：2026-07-21  
-> 当前进度：**Day 1 + Day 2 + Day 3 + Day 4 + Day 5 + Day 6 已完成，准备进入 Day 7**  
-> 主分支：`main`（Day 6 所有 commit 已推送到 `origin/main`）
+> 上次更新：2026-07-30  
+> 当前进度：**Day 1-6 完成 + Stripe→Creem 支付迁移完成（端到端验证通过），准备进入 Day 7 部署**  
+> 主分支：`main`（Day 6 已推送；迁移 commit `3d160ed`..`722b470` 已提交，尚未推送）
 
 ---
 
@@ -12,7 +12,7 @@
 
 **商业假设（30 天内回答）**：世界上是否有人愿意为"AI 纹身预览"付费？
 
-**MVP 严格边界**：3 个页面 + 1 个 AI 流程 + Stripe 支付。不做 AR / 视频 / 3D / 纹身师系统 / 博客 SEO。
+**MVP 严格边界**：3 个页面 + 1 个 AI 流程 + Creem 支付（2026-07-30 从 Stripe 迁移）。不做 AR / 视频 / 3D / 纹身师系统 / 博客 SEO。
 
 **定价**：Credits 制 5/20/50 次，$4.99 / $14.99 / $29.99。注册送 1 次免费。
 
@@ -30,6 +30,7 @@
 | 4 | 前端生成页（上传 + 4 图结果网格） | ✅ 已完成（Day 4 多个 commit）|
 | 5 | Stripe 支付（Checkout + Webhook + Credits 发放） | ✅ 已完成（Day 5 共 15 个 commit）|
 | 6 | 历史记录页（/history + 缩略图 + 大图 Dialog） | ✅ 已完成（Day 6 共 11 个 commit，已推送）|
+| 迁移 | **Stripe → Creem 支付迁移**（2026-07-30） | ✅ 已完成（commits `3d160ed`..`722b470`，端到端验证通过；详见 `docs/superpowers/specs/2026-07-30-stripe-to-creem-migration-design.md`）|
 | **7** | **部署 Vercel + 端到端验证** | ⏳ **下一步开始** |
 
 ---
@@ -101,7 +102,16 @@ d751367  feat: 通过预签名 URL 实现 R2 直传上传              ← Day 2
 | 数据库 | **Supabase**（PostgreSQL，仅用 service_role key） | **不用** Supabase Auth；所有访问走 API Route，靠 Clerk session + userId 校验鉴权 |
 | 存储 | **Cloudflare R2**（S3 兼容，预签名 URL 直传） | 客户端直传不经 Next.js 服务器，省带宽；AI 输出图也落 R2（fetchUrlAndUpload） |
 | AI | **Kie.ai 中转 OpenAI `gpt-image-2`**（弃用直连 OpenAI） | 两步流程：text-to-image 生成纹身 → image-to-image 融合到 4 部位。异步任务模型 + URL 输入输出，详见 `docs/kie-ai-api.md` |
-| 支付 | **Stripe Checkout** | Webhook 发放 Credits，需防重复 |
+| 支付 | **Creem.io**（Merchant of Record，官方 `creem` SDK；2026-07-30 从 Stripe 迁移） | webhook 发放 Credits（`/api/creem-webhook`），需防重复；MoR 自动处理全球税务（抽成侵蚀毛利，部署前确认费率） |
+
+### 4.1 Stripe→Creem 迁移要点（2026-07-30）
+
+完整设计 `docs/superpowers/specs/2026-07-30-stripe-to-creem-migration-design.md` + 实施 `docs/superpowers/plans/2026-07-30-stripe-to-creem-migration.md`。核心：
+
+- **彻底移除 Stripe**：删 `lib/stripe.ts` + `api/stripe-webhook`、卸 `stripe` 包、DB 列 `stripe_session_id`/`stripe_payment_intent` → `creem_checkout_id`/`creem_order_id`（migration `0002_creem.sql`，已在 Supabase 执行）。
+- **Creem 接入**：`lib/creem.ts`（SDK 单例，`server:'test'` 切 test/live endpoint）+ `/api/checkout`（`productId` 从环境变量取，返回 `checkout.checkoutUrl`，`{url}` 契约不变）+ `/api/creem-webhook`（`constructWebhookEventEntity` 验签 + `checkout.completed` + 先 RPC `add_credits` 后 UPDATE paid，防重复）。
+- **成功页方案 A**：Creem 跳回 `/?success=true`（无 `credits=N`），`payment-feedback` 只 toast + 发 `credits:refresh` 信号；`tattoo-generator` 监听后 refresh + 2.5s 兜底（webhook 异步）；放弃精确 `+N` 动画。
+- **踩过的坑**：① Creem 后台 webhook URL **必须带 `/api/creem-webhook` 路径**（只填根域名会送到首页，webhook 不触发——本次验证踩过）；② ngrok 免费版每次重启网址变，dashboard endpoint 要同步；③ Creem 测试卡 = Stripe 的 `4242 4242 4242 4242`（底层用 Stripe）；④ `creem` npm 包附带 MCP server 是特性非 bug；⑤ Creem 不支持 per-checkout cancel URL，需 dashboard 配全局 cancel URL 跳 `/pricing?canceled=true`。
 
 ### ⚠️ 关键技术陷阱（已踩过的坑）
 
@@ -258,8 +268,11 @@ d751367  feat: 通过预签名 URL 实现 R2 直传上传              ← Day 2
 | ✅ | `R2_PUBLIC_URL` | `https://pub-xxxxx.r2.dev`（r2.dev 公开域名已开启） |
 | ✅ | `KIE_API_KEY` | Kie.ai API Key（Day 3 已配） |
 | ✅ | `KIE_BASE_URL` | `https://api.kie.ai`（Day 3 已配） |
-| ✅ | `STRIPE_SECRET_KEY` | Stripe 私钥（sk_test_，Day 5 已配） |
-| ✅ | `STRIPE_WEBHOOK_SECRET` | Stripe webhook 验签密钥（whsec_，Day 5 已配；本地 stripe listen 每次重启会变，重启后需更新此值） |
+| ✅ | `CREEM_API_KEY` | Creem API key（creem_test_，迁移已配；test/live 各一套） |
+| ✅ | `CREEM_WEBHOOK_SECRET` | Creem webhook 验签密钥（whsec_，dashboard 注册 endpoint 时生成；test/live 各一套，不随本地重启变化） |
+| ✅ | `CREEM_PRODUCT_STARTER` | Creem product id（5 credits，prod_782s…） |
+| ✅ | `CREEM_PRODUCT_POPULAR` | Creem product id（20 credits，prod_2rNS…） |
+| ✅ | `CREEM_PRODUCT_PRO` | Creem product id（50 credits，prod_6gXJ…） |
 
 参考 `.env.example` 看完整字段。
 
@@ -610,7 +623,9 @@ Day 4 详细任务见 `docs/mvp-plan.md` 的 Day 4 章节。
 - [ ] Vercel 关联仓库，部署
 - [ ] **Vercel 环境变量**全部填入生产值（参考 `.env.example` 顺序）
 - [ ] Clerk：配置 Production origins + redirect URLs（生产域名）
-- [ ] Stripe：Webhook endpoint 改为 `https://<domain>/api/stripe-webhook`，记录生产 signing secret 填到 Vercel
+- [ ] Creem（生产）：切 Live mode → 复制 live `CREEM_API_KEY` + 建 3 个 live product 拿 `prod_xxx`（填 Vercel `CREEM_PRODUCT_*`）+ 注册生产 webhook endpoint `https://<domain>/api/creem-webhook` 拿 live `CREEM_WEBHOOK_SECRET` 填 Vercel
+- [ ] Creem dashboard 配置全局 cancel URL → `https://<domain>/pricing?canceled=true`（Creem 不支持 per-checkout cancel URL）
+- [ ] 生产 Supabase 执行 `supabase/migrations/0002_creem.sql`（rename payments 列）
 - [ ] R2：绑定自定义域名（可选，或继续用 `r2.dev`）
 - [ ] 自定义域名绑定 Vercel + DNS（可选）
 
