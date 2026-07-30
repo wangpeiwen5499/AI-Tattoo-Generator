@@ -40,8 +40,8 @@ export type PaymentStatus = 'pending' | 'paid' | 'failed'
 export interface PaymentRow {
   id: string
   user_id: string
-  stripe_session_id: string
-  stripe_payment_intent: string | null
+  creem_checkout_id: string
+  creem_order_id: string | null
   amount: number
   credits_purchased: number
   status: PaymentStatus

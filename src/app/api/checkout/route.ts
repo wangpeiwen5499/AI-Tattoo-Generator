@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { ensureUser } from '@/server/db/ensure-user'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
-import { getStripe } from '@/lib/stripe'
+import { getCreem } from '@/lib/creem'
 import { CREDIT_PACKAGES } from '@/lib/constants'
 import type { CheckoutRequestBody, CheckoutResponse } from '@/types'
 
@@ -11,9 +11,9 @@ export const dynamic = 'force-dynamic'
 /**
  * POST /api/checkout
  *
- * 创建 Stripe Checkout Session（Hosted 模式）。
- * 用户付费成功后 Stripe 跳回 /?success=true，
- * 同时 Stripe 服务器异步 POST /api/stripe-webhook 发放 credits。
+ * 创建 Creem checkout session（替换 Stripe Checkout）。
+ * 用户付费成功后 Creem 跳回 /?success=true，
+ * 同时 Creem 服务器异步 POST /api/creem-webhook 发放 credits。
  */
 export async function POST(req: Request) {
   // 1. Clerk 鉴权
@@ -48,15 +48,22 @@ export async function POST(req: Request) {
       )
     }
 
-    // 4. INSERT payments 记录（status='pending'）
-    //    stripe_session_id 是 NOT NULL UNIQUE，需先写占位符，等 Stripe 返回 session.id 后 UPDATE
+    // 4. 取 productId（从环境变量）
+    const productId = process.env[pkg.creemProductId]
+    if (!productId) {
+      console.error(`[checkout] product env var not set: ${pkg.creemProductId}`)
+      return NextResponse.json({ error: 'Product not configured' }, { status: 500 })
+    }
+
+    // 5. INSERT payments 记录（status='pending'）
+    //    creem_checkout_id 是 NOT NULL UNIQUE，需先写占位符，等 Creem 返回 checkout.id 后 UPDATE
     const supabaseAdmin = getSupabaseAdmin()
-    const placeholderSessionId = `pending_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
+    const placeholderCheckoutId = `pending_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
     const { data: paymentRow, error: insertError } = await supabaseAdmin
       .from('payments')
       .insert({
         user_id: session.userId,
-        stripe_session_id: placeholderSessionId,
+        creem_checkout_id: placeholderCheckoutId,
         amount: pkg.priceUsdCents,
         credits_purchased: pkg.credits,
         status: 'pending',
@@ -69,29 +76,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Failed to create payment record' }, { status: 500 })
     }
 
-    // 5. 创建 Stripe Checkout Session
-    const stripe = getStripe()
+    // 6. 创建 Creem checkout session
+    const creem = getCreem()
     const origin = new URL(req.url).origin
-    let stripeSession
+    let checkout
     try {
-      stripeSession = await stripe.checkout.sessions.create({
-        mode: 'payment',
-        customer_email: email,
-        line_items: [
-          {
-            quantity: 1,
-            price_data: {
-              currency: 'usd',
-              unit_amount: pkg.priceUsdCents,
-              product_data: {
-                name: `${pkg.name} — ${pkg.credits} Tattoo Previews`,
-                description: pkg.description,
-              },
-            },
-          },
-        ],
-        success_url: `${origin}/?success=true&credits=${pkg.credits}`,
-        cancel_url: `${origin}/pricing?canceled=true`,
+      checkout = await creem.checkouts.create({
+        productId,
+        successUrl: `${origin}/?success=true`,
+        customer: { email },
+        requestId: paymentRow.id,
         metadata: {
           user_id: session.userId,
           payment_id: paymentRow.id,
@@ -99,37 +93,37 @@ export async function POST(req: Request) {
           package_id: pkg.id,
         },
       })
-    } catch (stripeError) {
-      console.error('[checkout] stripe.checkout.sessions.create failed:', stripeError)
-      // Stripe 创建失败，把 payment 标 failed（保留记录方便排查）
+    } catch (creemError) {
+      console.error('[checkout] creem.checkouts.create failed:', creemError)
+      // Creem 创建失败，把 payment 标 failed（保留记录方便排查）
       await supabaseAdmin
         .from('payments')
         .update({ status: 'failed' })
         .eq('id', paymentRow.id)
       return NextResponse.json(
-        { error: 'Failed to create Stripe checkout session' },
+        { error: 'Failed to create Creem checkout session' },
         { status: 500 }
       )
     }
 
-    // 6. UPDATE payments.stripe_session_id = 真实 session.id
+    // 7. UPDATE payments.creem_checkout_id = 真实 checkout.id（ch_xxx）
     const { error: updateError } = await supabaseAdmin
       .from('payments')
-      .update({ stripe_session_id: stripeSession.id })
+      .update({ creem_checkout_id: checkout.id })
       .eq('id', paymentRow.id)
 
     if (updateError) {
-      // UPDATE 失败很罕见（只可能是 DB 抖动）。Stripe session 已创建，
-      // 用户仍能付费，webhook 会通过 metadata.payment_id 找回记录。
-      console.error('[checkout] UPDATE stripe_session_id failed:', updateError)
+      // UPDATE 失败很罕见。Creem session 已创建，用户仍能付费，
+      // webhook 会通过 metadata.payment_id 找回记录。
+      console.error('[checkout] UPDATE creem_checkout_id failed:', updateError)
     }
 
-    // 7. 返回 URL
-    if (!stripeSession.url) {
-      console.error('[checkout] stripeSession.url is null', stripeSession.id)
-      return NextResponse.json({ error: 'Stripe returned no URL' }, { status: 500 })
+    // 8. 返回 checkout_url（接口契约不变，前端仍取 data.url）
+    if (!checkout.checkoutUrl) {
+      console.error('[checkout] checkout.checkoutUrl is null', checkout.id)
+      return NextResponse.json({ error: 'Creem returned no URL' }, { status: 500 })
     }
-    return NextResponse.json<CheckoutResponse>({ url: stripeSession.url })
+    return NextResponse.json<CheckoutResponse>({ url: checkout.checkoutUrl })
   } catch (err) {
     console.error('[checkout] unhandled error:', err)
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
