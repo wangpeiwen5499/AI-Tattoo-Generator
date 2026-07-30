@@ -82,7 +82,7 @@ export interface GenerateResponse {
   error?: string
 }
 
-/* ============ Day 5: Stripe 支付 ============ */
+/* ============ Stripe→Creem 支付 ============ */
 
 /** 定价档位 ID（与 CREDIT_PACKAGES 的 id 字段对应） */
 export type PackageId = 'starter' | 'popular' | 'pro'

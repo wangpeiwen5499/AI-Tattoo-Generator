@@ -13,7 +13,7 @@ import type { CheckoutResponse, PackageId } from '@/types'
 /**
  * 3 档定价卡片。
  *
- * - 已登录：点 Buy → POST /api/checkout → 跳转 Stripe
+ * - 已登录：点 Buy → POST /api/checkout → 跳转 Creem 托管页
  * - 未登录：按钮变 "Sign in to buy"，点击弹 SignIn modal
  * - URL 查询参数：
  *   - ?canceled=true → toast「Checkout canceled」
@@ -45,8 +45,8 @@ export function PricingCards() {
         throw new Error(body.error || `Checkout failed (HTTP ${res.status})`)
       }
       const data: CheckoutResponse = await res.json()
-      if (!data.url) throw new Error('Stripe returned no URL')
-      // 跳转 Stripe Checkout（同窗口，用 assign 避免 react-hooks/immutability 报警）
+      if (!data.url) throw new Error('Checkout returned no URL')
+      // 跳转 Creem 托管页（同窗口，用 assign 避免 react-hooks/immutability 报警）
       window.location.assign(data.url)
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Checkout failed'
