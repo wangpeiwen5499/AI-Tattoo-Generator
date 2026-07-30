@@ -42,6 +42,24 @@ export function TattooGenerator() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gen.status])
 
+  // 付款成功后刷新余额（PaymentFeedback dispatch 'credits:refresh'）
+  // webhook 异步，立即 refresh 可能拿旧值，延迟重试兜底
+  useEffect(() => {
+    const retryTimer = { current: 0 as number }
+    const handleRefresh = () => {
+      credits.refresh()
+      window.clearTimeout(retryTimer.current)
+      retryTimer.current = window.setTimeout(() => credits.refresh(), 2500)
+    }
+    window.addEventListener('credits:refresh', handleRefresh)
+    return () => {
+      window.removeEventListener('credits:refresh', handleRefresh)
+      window.clearTimeout(retryTimer.current)
+    }
+    // 故意不依赖 credits.refresh（避免 refresh 改变导致重复绑定）
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   async function handleFile(file: File) {
     try {
       await gen.uploadPhoto(file)

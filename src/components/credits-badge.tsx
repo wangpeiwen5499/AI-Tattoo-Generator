@@ -80,8 +80,8 @@ function reducer(state: State, action: Action): State {
  * 行为：
  * - loading 时显示 "…"，error/null 时显示 "—"
  * - 同一组件实例内 credits 变化：count-up 滚动 + 高亮 + 浮动 "+N"
- * - 跨页面跳转（付款跳回主页）：监听 window 'credits:added' 事件，
- *   由 PaymentFeedback 通过 URL 参数触发，delta 直接来自 URL，绝对准确
+ *   （付款后由 PaymentFeedback dispatch 'credits:refresh'，TattooGenerator 监听
+ *   并刷新 useCredits，props.credits 变化即驱动本组件的 count-up 动画）
  */
 export function CreditsBadge({ credits, loading }: Props) {
   const [state, dispatch] = useReducer(reducer, initialState)
@@ -122,20 +122,6 @@ export function CreditsBadge({ credits, loading }: Props) {
     return () => clearInterval(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [credits])
-
-  // 监听 PaymentFeedback 的事件（跨页面跳转触发动画）
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent<{ amount: number }>).detail
-      if (!detail || typeof detail.amount !== 'number') return
-      if (detail.amount <= 0) return
-      dispatch({ type: 'forceDelta', amount: detail.amount })
-      // 浮动 +N 动画持续 1.5s（CSS），高亮也跟着 1.5s 后淡出
-      window.setTimeout(() => dispatch({ type: 'stopHighlight' }), 1500)
-    }
-    window.addEventListener('credits:added', handler)
-    return () => window.removeEventListener('credits:added', handler)
-  }, [])
 
   // 浮动 "+N" 只在数字增加时显示（减少时不显示，避免误导）
   const showFloatingDelta = state.highlight && state.lastDelta > 0
