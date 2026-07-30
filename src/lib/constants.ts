@@ -36,6 +36,8 @@ export interface CreditPackage {
   priceUsdCents: number
   /** Stripe 价格描述，用于 checkout 显示 */
   description: string
+  /** 该档位对应的 Creem product 环境变量名（值在 .env.local，如 CREEM_PRODUCT_STARTER） */
+  creemProductId: string
   highlighted?: boolean
 }
 
@@ -46,6 +48,7 @@ export const CREDIT_PACKAGES: CreditPackage[] = [
     credits: 5,
     priceUsdCents: 499,
     description: '5 tattoo previews',
+    creemProductId: 'CREEM_PRODUCT_STARTER',
   },
   {
     id: 'popular',
@@ -53,6 +56,7 @@ export const CREDIT_PACKAGES: CreditPackage[] = [
     credits: 20,
     priceUsdCents: 1499,
     description: '20 tattoo previews · Best value per preview',
+    creemProductId: 'CREEM_PRODUCT_POPULAR',
     highlighted: true,
   },
   {
@@ -61,6 +65,7 @@ export const CREDIT_PACKAGES: CreditPackage[] = [
     credits: 50,
     priceUsdCents: 2999,
     description: '50 tattoo previews · For serious shoppers',
+    creemProductId: 'CREEM_PRODUCT_PRO',
   },
 ]
 
