@@ -51,4 +51,3 @@ next-env.d.ts
 .playwright-mcp/
 
 # stripe cli local binary (Windows)
-stripe.exe
