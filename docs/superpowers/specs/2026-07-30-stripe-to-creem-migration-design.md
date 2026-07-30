@@ -232,9 +232,9 @@ Creem POST /api/creem-webhook（checkout.completed）
 - **`pricing-cards.tsx`**：`POST /api/checkout` 调用**不变**（仍 `{packageId}` → `{url}`），只改注释里的 "Stripe"、错误文案 `"Stripe returned no URL"` → `"Checkout returned no URL"`；跳转仍用 `window.location.assign`（不退化回 `href=`，避免 handoff 第 17 项的 react-hooks/immutability 报警）。
 - **`pricing/page.tsx`**：底部文案 `🔒 Secured by Stripe · Test mode` → `🔒 Secured by Creem · Test mode`。
 - **`payment-feedback.tsx`（方案 A）**：Creem 跳回 `/?success=true&checkout_id=...`，**没有** `credits=N`。
-  - 简化为：监听 `?success=true` → 通用 toast `Payment successful! Your credits have been added.` → 不再 dispatch `credits:added`（amount 未知）。
-  - 余额更新改由 `useCredits` 在返回站点时自动 `fetch /api/credits` 完成（机制已存在）。
-  - `CreditsBadge`：保留 count-up + 高亮；移除依赖 `credits:added` amount 的精确「+N 浮动」文字（方案 A 的明确代价）。
+  - 监听 `?success=true` → 通用 toast `Payment successful! Your credits have been added.`
+  - 仍 dispatch `credits:added` 事件（**不带 amount**，仅作「刷新」信号），触发 `CreditsBadge` 调 `useCredits.refresh()` 拉新余额。
+  - `CreditsBadge`：收到事件 → refresh → 余额数字更新 + 高亮闪烁提示；**移除 count-up 和「+N 浮动」**。原因：跨页面挂载会丢失旧余额，无法可靠计算 delta（handoff 第 19 项踩过的坑），这是方案 A「放弃精确 +N」的明确代价。
 
 ---
 
