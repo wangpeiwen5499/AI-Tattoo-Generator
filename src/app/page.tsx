@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import Link from 'next/link'
 import { SignInButton, Show } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
 import { TattooGenerator } from '@/components/tattoo-generator'
@@ -18,6 +19,13 @@ export default function HomePage() {
         <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground text-pretty">
           Upload a photo, describe your idea, and let AI preview the tattoo on
           your arm, shoulder, and calf.
+        </p>
+
+        <p className="mt-5 text-sm text-muted-foreground">
+          Pricing starts at <span className="font-medium text-foreground">$4.99</span> for 5 previews ·{' '}
+          <Link href="/pricing" className="underline underline-offset-4 transition-colors hover:text-foreground">
+            See full pricing
+          </Link>
         </p>
 
         <Show when="signed-out">
