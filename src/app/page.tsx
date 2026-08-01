@@ -4,6 +4,16 @@ import { SignInButton, Show } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
 import { TattooGenerator } from '@/components/tattoo-generator'
 import { PaymentFeedback } from '@/components/payment-feedback'
+import { Showcase } from '@/components/showcase'
+import { SHOWCASE_EXAMPLES } from '@/lib/showcase-examples'
+import { getPublicUrl } from '@/lib/r2'
+
+// Server 端解析示例图 URL（getPublicUrl 用 process.env.R2_PUBLIC_URL，
+// 且 lib/r2.ts import 了 @aws-sdk/client-s3，不能进 Client bundle）
+const showcaseImages = SHOWCASE_EXAMPLES.map((ex) => ({
+  url: getPublicUrl(ex.key),
+  alt: ex.alt,
+}))
 
 export default function HomePage() {
   return (
@@ -33,7 +43,7 @@ export default function HomePage() {
             <SignInButton mode="modal">
               <Button size="lg">Try it free</Button>
             </SignInButton>
-            <Button size="lg" variant="outline">
+            <Button size="lg" variant="outline" render={<Link href="#examples" />}>
               See examples
             </Button>
           </div>
@@ -42,6 +52,10 @@ export default function HomePage() {
           </p>
         </Show>
       </section>
+
+      <Show when="signed-out">
+        <Showcase images={showcaseImages} />
+      </Show>
 
       <Show when="signed-in">
         <div className="mt-10">
