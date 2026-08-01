@@ -1,7 +1,7 @@
 # 项目交接文档
 
 > 上次更新：2026-08-01  
-> 当前进度：**Day 7 部署中 — tattoovis.ink 已上线（域名 ✅ / Clerk production ✅ / R2 CORS ✅ / 合规页 ✅ / 邮箱 ✅）；生成超时待改异步，详见 [docs/handoff-async-generation.md](./handoff-async-generation.md)（方案 A：`after()`）**  
+> 当前进度：**Day 7 已上线 — tattoovis.ink 运行中（域名 ✅ / Clerk production ✅ / R2 CORS ✅ / 合规页 ✅ / 邮箱 ✅）；异步生成已上线（方案 A `after()` + 前端轮询，生产端到端跑通），详见 [docs/handoff-async-generation.md](./handoff-async-generation.md)**  
 > 主分支：`main`（已推送 origin/main）
 
 ---
@@ -631,7 +631,7 @@ Day 4 详细任务见 `docs/mvp-plan.md` 的 Day 4 章节。
 
 **Day 7 端到端验证清单**（生产域名）：
 - [ ] Google 登录成功
-- [ ] 上传照片 + 生成 4 张图（注意 Vercel 函数超时，可能需要升级 Pro）
+- [x] 上传照片 + 生成 4 张图 ✅（异步改造后跑通，不再受 Vercel 网关 ~100s 超时限制）
 - [ ] credits 扣减正确
 - [ ] 购买 credits，支付成功，余额增加
 - [ ] 历史记录可见（Day 6 新功能）

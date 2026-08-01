@@ -5,6 +5,8 @@
 > **新会话接手**：先读本文件 + `docs/handoff.md`，即可开始实施
 > **方案已与用户确认**：方案 A（`after()` 后台执行），不选 B（Vercel Workflow）/ C（分段函数）
 
+> **✅ 已上线（2026-08-01）**：方案 A 全部实施完毕并推送生产（commits `ed87b34`..`078bd2d`）。生产端到端跑通——上传 → prompt → 秒回 `projectId` → 轮询 ~250s → 出 4 张图，**不再 `ERR_CONNECTION_CLOSED`**。实施中额外修复一个预存 bug（pollTask 只认 KIE `'failed'` 不认实测的 `'fail'`，commit `078bd2d`）。详见文末「§12 实施回顾」。
+
 ---
 
 ## 1. 背景：为什么要改
@@ -377,3 +379,35 @@ const pollStatus = (projectId: string) => new Promise((resolve, reject) => {
 3. 读 `src/app/api/generate/route.ts` + `src/hooks/use-generation.ts` + `src/server/ai/apply-to-body.ts` 理解现有同步流程。
 4. 按 §7 实施步骤逐 task 做（建议走 superpowers 的 writing-plans → subagent-driven-development 流程）。
 5. 第 3 步改造 generate route 时，**先本地 `npm run dev` 测一次**（确认 after() 在本地 work），再 push 到 Vercel 测生产。
+
+---
+
+## 12. 实施回顾（2026-08-01 已上线）
+
+**状态**：✅ 方案 A 全部实施 + 生产端到端跑通。
+
+**Commits**（`main`，已推送 origin）：
+
+| commit | 内容 |
+|---|---|
+| `ed87b34` | 抽 `runGeneration`（后台 AI 流程 + try/catch + 退款） |
+| `44b2438` | 加 `getProjectWithGenerations` 查询 |
+| `66e41b7` | `/api/generate` 改 `after()` + 立即返回 `{ projectId }`（+14/−78） |
+| `ba95953` | 加 `GET /api/generate/status` 轮询接口 |
+| `83fd376` | 前端改异步轮询（fetch 拿 projectId + `setTimeout` 链） |
+| `078bd2d` | fix: pollTask 兼容 KIE `'fail'` 失败态（实施时暴露的预存 bug） |
+
+**生产实测**：
+- ✅ 完整成功链路：上传 → prompt → 秒回 `projectId` → 轮询 ~250s → 出 4 张图。
+- ✅ 不再 `ERR_CONNECTION_CLOSED`（核心目标达成）。
+- ✅ 失败路径正确：用"派大星"触发 OpenAI 内容审核拒绝 → `runGeneration` catch → `project=failed` + 退款 + status 返回（验证了失败兜底）。
+
+**实施时发现并修复的预存 bug**（`078bd2d`）：
+- KIE 失败态实测是 `'fail'`，`pollTask` 原只认 `'failed'` → 失败被当"未知状态"轮询到超时（240s）+ error 显示 `timeout` 而非真实 `failMsg`。
+- 修后：失败 ~67s 返回，error 含真实原因（如内容审核）。Step2 任一部位被拒也不再拖满 300s。
+
+**内容审核注意**：`gpt-image-2` 会拒绝版权角色（如"派大星"/SpongeBob）等，`failMsg=...may violate OpenAI's content policies.`，`creditsConsumed=0`（不扣 KIE credits）。当前前端 error 直接显示技术性 `failMsg`，未来可做友好映射（"内容被拒，换个想法"）。
+
+**已知遗留**（MVP 接受，见 §6）：
+- `after()` 进程偶发被 `maxDuration`(300s) 杀 → project 卡 `processing` → 前端 5.5min 轮询超时兜底，credits 暂不退（长期升级方案 B Vercel Workflow）。
+- 同一用户无并发限制（防刷 credits），可在 generate/status 加检查。
