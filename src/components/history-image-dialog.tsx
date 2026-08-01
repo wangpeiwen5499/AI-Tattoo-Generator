@@ -1,8 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { Lightbox, type LightboxImage } from '@/components/lightbox'
 
 /**
  * 历史卡片里的图片区域。
@@ -16,7 +15,8 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/compone
  * HistoryCard（Server）只渲染静态文本（prompt/时间），把图片区整个委托给本组件。
  */
 
-type DialogImage = { url: string; title: string }
+// 复用 Lightbox 的图片类型（alt 取代 title）
+type DialogImage = LightboxImage
 
 type BodyPartThumb = {
   label: string
@@ -36,23 +36,18 @@ export function HistoryImageDialog({ tattooDesignUrl, bodyParts }: Props) {
   const images: DialogImage[] = []
   const bodyPartDialogIndex: number[] = []
   if (tattooDesignUrl) {
-    images.push({ url: tattooDesignUrl, title: 'Tattoo Design' })
+    images.push({ url: tattooDesignUrl, alt: 'Tattoo Design' })
   }
   bodyParts.forEach((bp) => {
     if (bp.url) {
       bodyPartDialogIndex.push(images.length)
-      images.push({ url: bp.url, title: bp.label })
+      images.push({ url: bp.url, alt: bp.label })
     } else {
       bodyPartDialogIndex.push(-1)
     }
   })
 
   const designIndex = tattooDesignUrl ? 0 : -1
-
-  const goPrev = () =>
-    setOpenIndex((i) => (i === null ? null : (i - 1 + images.length) % images.length))
-  const goNext = () =>
-    setOpenIndex((i) => (i === null ? null : (i + 1) % images.length))
 
   return (
     <>
@@ -95,51 +90,12 @@ export function HistoryImageDialog({ tattooDesignUrl, bodyParts }: Props) {
         </div>
       </div>
 
-      <Dialog open={openIndex !== null} onOpenChange={(open) => !open && setOpenIndex(null)}>
-        <DialogContent className="max-w-3xl bg-background p-2 sm:p-3">
-          <DialogTitle className="sr-only">
-            {openIndex !== null ? images[openIndex]?.title : 'Image preview'}
-          </DialogTitle>
-          <DialogDescription className="sr-only">
-            Enlarged preview of the generated tattoo image. Use left and right arrows to navigate.
-          </DialogDescription>
-
-          {openIndex !== null && images[openIndex] && (
-            <div className="relative">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={images[openIndex].url}
-                alt={images[openIndex].title}
-                className="h-auto w-full rounded-lg object-contain"
-              />
-
-              {images.length > 1 && (
-                <>
-                  <button
-                    type="button"
-                    onClick={goPrev}
-                    aria-label="Previous image"
-                    className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 p-2 backdrop-blur transition hover:bg-background"
-                  >
-                    <ChevronLeft className="h-5 w-5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={goNext}
-                    aria-label="Next image"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 p-2 backdrop-blur transition hover:bg-background"
-                  >
-                    <ChevronRight className="h-5 w-5" />
-                  </button>
-                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-background/80 px-3 py-1 text-xs text-muted-foreground backdrop-blur">
-                    {openIndex + 1} / {images.length}
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <Lightbox
+        images={images}
+        index={openIndex}
+        onClose={() => setOpenIndex(null)}
+        onIndexChange={setOpenIndex}
+      />
     </>
   )
 }
