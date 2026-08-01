@@ -6,6 +6,7 @@ import { TattooGenerator } from '@/components/tattoo-generator'
 import { PaymentFeedback } from '@/components/payment-feedback'
 import { Showcase } from '@/components/showcase'
 import { HowItWorks } from '@/components/how-it-works'
+import { PricingCards } from '@/components/pricing-cards'
 import { Faq } from '@/components/faq'
 import { SHOWCASE_EXAMPLES } from '@/lib/showcase-examples'
 
@@ -53,6 +54,26 @@ export default function HomePage() {
       <Show when="signed-out">
         <Showcase images={showcaseImages} />
         <HowItWorks />
+
+        <section className="mt-24">
+          <div className="mx-auto max-w-5xl px-4">
+            <h2 className="text-center text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+              Pick a package
+            </h2>
+            <p className="mx-auto mt-3 max-w-md text-center text-base text-muted-foreground text-pretty">
+              One-time payment · No subscription · Credits never expire
+            </p>
+            <div className="mt-12">
+              <Suspense fallback={null}>
+                <PricingCards />
+              </Suspense>
+            </div>
+            <p className="mt-8 text-center text-xs text-muted-foreground">
+              🔒 Secured by Creem · Test mode — no real charges
+            </p>
+          </div>
+        </section>
+
         <Faq />
       </Show>
 
