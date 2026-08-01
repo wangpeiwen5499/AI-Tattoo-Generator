@@ -171,3 +171,14 @@ export async function getProjectWithGenerations(
   if (error) throw error
   return data as ProjectWithGenerations | null
 }
+
+/**
+ * 认领一次游客免费额度（按 IP/天 限流）。
+ * 调 claim_guest_free RPC：超限（每 IP/天 ≥3）返回 -1（不占额度），否则 +1 返回新 count。
+ */
+export async function claimGuestFree(ip: string): Promise<number> {
+  const supabaseAdmin = getSupabaseAdmin()
+  const { data, error } = await supabaseAdmin.rpc('claim_guest_free', { p_ip: ip })
+  if (error) throw error
+  return data as number
+}
