@@ -152,3 +152,22 @@ export async function listProjects(
   if (error) throw error
   return (data ?? []) as ProjectWithGenerations[]
 }
+
+/**
+ * 查单个 project + 它的 generations（/api/generate/status 轮询用）。
+ * 参考 listProjects 的嵌套 select '*, generations(*)'（自动按 project_id 外键关联）。
+ * 不带 user_id 过滤 —— 归属校验由调用方（status route）负责。
+ */
+export async function getProjectWithGenerations(
+  projectId: string
+): Promise<ProjectWithGenerations | null> {
+  const supabaseAdmin = getSupabaseAdmin()
+  const { data, error } = await supabaseAdmin
+    .from('projects')
+    .select('*, generations(*)')
+    .eq('id', projectId)
+    .maybeSingle()
+
+  if (error) throw error
+  return data as ProjectWithGenerations | null
+}
