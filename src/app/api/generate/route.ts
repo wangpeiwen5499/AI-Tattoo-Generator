@@ -1,3 +1,4 @@
+import { after } from 'next/server'
 import { NextResponse } from 'next/server'
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { ensureUser } from '@/server/db/ensure-user'
@@ -6,12 +7,9 @@ import {
   deductCredits,
   refundCredits,
   createProject,
-  recordGenerations,
-  updateProjectStatus,
 } from '@/server/db/queries'
 import { CREDITS_PER_GENERATION } from '@/lib/constants'
-import { generateTattooDesign } from '@/server/ai/generate-tattoo'
-import { applyTattooToBody } from '@/server/ai/apply-to-body'
+import { runGeneration } from '@/server/ai/run-generation'
 
 /**
  * POST /api/generate
@@ -21,11 +19,14 @@ import { applyTattooToBody } from '@/server/ai/apply-to-body'
  *   - prompt 是用户的纹身描述（≤ 500 字符）
  *
  * 响应：
- *   200 { projectId, tattooDesignUrl, images: [{bodyPart, status, url}] }
+ *   200 { projectId }                  立即返回，AI 在 after() 后台跑（异步）
  *   400 校验失败
  *   401 未登录
  *   402 credits 不足
- *   500 服务端错误（已 refund credits）
+ *   500 ensureUser / 扣费 / createProject 失败（已退款）
+ *
+ * 异步说明：AI 流程（Step1 + Step2 + 入库 + 退款）在 after() 里执行，
+ * 进度/结果由前端轮询 GET /api/generate/status?id=<projectId> 获取。
  *
  * 退款策略：
  *   - Step 1（生成纹身）失败 → 全额退款
@@ -124,82 +125,17 @@ export async function POST(req: Request): Promise<Response> {
     return NextResponse.json({ error: 'Failed to create project' }, { status: 500 })
   }
 
-  /* 7. 执行 AI 流程（Step 1 + Step 2） */
-  try {
-    // Step 1：生成纹身图案
-    const tattoo = await generateTattooDesign({
-      prompt,
-      userId,
+  /* 7. 立即返回 projectId，after() 在响应发出后后台跑 AI（异步） */
+  after(() =>
+    runGeneration({
       projectId: project.id,
-    })
-
-    // Step 2：4 部位并发融合
-    const fusionResults = await applyTattooToBody({
+      userId,
       bodyPhotoUrl,
-      tattooDesignUrl: tattoo.r2Url,
-      userId,
-      projectId: project.id,
+      prompt,
     })
+  )
 
-    // 8. 入库 generations（4 条，含共享的 tattoo_image_key）
-    await recordGenerations(
-      project.id,
-      userId,
-      tattoo.r2Key,
-      fusionResults.map((r) => ({
-        bodyPart: r.bodyPart,
-        status: r.status,
-        resultImageKey: r.image?.r2Key ?? null,
-        resultImageUrl: r.image?.r2Url ?? null,
-      }))
-    )
-
-    // 9. 判断整体状态
-    const successCount = fusionResults.filter((r) => r.status === 'completed').length
-
-    if (successCount === 0) {
-      // 4 张全失败 → 退款
-      await updateProjectStatus(project.id, 'failed', 'All 4 body parts failed')
-      await safeRefund(userId, CREDITS_PER_GENERATION)
-      return NextResponse.json(
-        {
-          projectId: project.id,
-          tattooDesignUrl: tattoo.r2Url,
-          images: fusionResults.map((r) => ({
-            bodyPart: r.bodyPart,
-            status: r.status,
-            url: r.image?.r2Url ?? null,
-            error: r.error,
-          })),
-          error: 'All generations failed, credits refunded',
-        },
-        { status: 500 }
-      )
-    }
-
-    // 至少 1 张成功 → 视为成功
-    await updateProjectStatus(project.id, 'completed')
-    return NextResponse.json({
-      projectId: project.id,
-      tattooDesignUrl: tattoo.r2Url,
-      images: fusionResults.map((r) => ({
-        bodyPart: r.bodyPart,
-        status: r.status,
-        url: r.image?.r2Url ?? null,
-        error: r.error,
-      })),
-    })
-  } catch (e) {
-    // Step 1 失败 / 其他未预期错误
-    console.error('[generate] AI flow failed:', e)
-    const errorMessage = e instanceof Error ? e.message : String(e)
-    await updateProjectStatus(project.id, 'failed', errorMessage)
-    await safeRefund(userId, CREDITS_PER_GENERATION)
-    return NextResponse.json(
-      { error: 'Generation failed', detail: errorMessage },
-      { status: 500 }
-    )
-  }
+  return NextResponse.json({ projectId: project.id })
 }
 
 /** 安全退款：即使退款本身失败也不抛错，只记日志（避免吞掉原始错误） */
