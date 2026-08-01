@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { SignInButton, Show } from '@clerk/nextjs'
+import { Show } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
 import { TattooGenerator } from '@/components/tattoo-generator'
 import { PaymentFeedback } from '@/components/payment-feedback'
@@ -38,17 +38,21 @@ export default function HomePage() {
 
         <Show when="signed-out">
           <div className="mt-8 flex items-center justify-center gap-3">
-            <SignInButton mode="modal">
-              <Button size="lg">Try it free</Button>
-            </SignInButton>
+            <Button size="lg" render={<Link href="#generate" />}>
+              Try it free
+            </Button>
             <Button size="lg" variant="outline" render={<Link href="#examples" />}>
               See examples
             </Button>
           </div>
           <p className="mt-4 text-xs text-muted-foreground">
-            1 free generation on sign up · No credit card required
+            Try 1 free preview · 3 more on sign up · No credit card required
           </p>
         </Show>
+      </section>
+
+      <section id="generate" className="mt-10 scroll-mt-20">
+        <TattooGenerator />
       </section>
 
       <Show when="signed-out">
@@ -77,11 +81,6 @@ export default function HomePage() {
         <Faq />
       </Show>
 
-      <Show when="signed-in">
-        <div className="mt-10">
-          <TattooGenerator />
-        </div>
-      </Show>
     </div>
   )
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { useUser } from '@clerk/nextjs'
 import { toast } from 'sonner'
 import { Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -23,6 +24,7 @@ export function TattooGenerator() {
   const router = useRouter()
   const credits = useCredits()
   const gen = useGeneration()
+  const { isSignedIn } = useUser()
 
   // 错误 → toast（去重避免重复弹相同错误）
   const lastErrorRef = useRef<string | null>(null)
@@ -75,13 +77,17 @@ export function TattooGenerator() {
       return
     }
     if (credits.credits < CREDITS_PER_GENERATION) {
-      toast.error("You're out of credits", {
-        description: 'Buy credits to keep generating',
-        action: {
-          label: 'Buy Credits',
-          onClick: () => router.push('/pricing'),
-        },
-      })
+      if (isSignedIn) {
+        toast.error("You're out of credits", {
+          description: 'Buy credits to keep generating',
+          action: { label: 'Buy Credits', onClick: () => router.push('/pricing') },
+        })
+      } else {
+        toast.error("You've used your free preview", {
+          description: 'Sign up to get 3 more previews',
+          action: { label: 'Sign up', onClick: () => router.push('/sign-up') },
+        })
+      }
       return
     }
     try {
