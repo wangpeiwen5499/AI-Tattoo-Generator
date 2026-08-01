@@ -3,12 +3,7 @@
 import { useState } from 'react'
 import { AlertTriangle, RotateCcw, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog'
+import { Lightbox, type LightboxImage } from '@/components/lightbox'
 import { BODY_PART_LABELS, type BodyPart } from '@/lib/constants'
 import type { GenerateImage } from '@/types'
 
@@ -33,9 +28,25 @@ export function GenerationResults({
   onRegenerate,
   onReset,
 }: Props) {
-  const [zoom, setZoom] = useState<{ url: string; title: string } | null>(null)
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
 
   const successCount = images.filter((i) => i.status === 'completed').length
+
+  // Lightbox 图片列表：设计稿 + 成功部位；记录每个 bodyPart 在列表里的索引（失败=-1）
+  const lightboxImages: LightboxImage[] = [
+    { url: tattooDesignUrl, alt: 'Generated tattoo design' },
+  ]
+  const partLightboxIndex: number[] = images.map((img) => {
+    if (img.status === 'completed' && img.url) {
+      const idx = lightboxImages.length
+      lightboxImages.push({
+        url: img.url,
+        alt: `Tattoo on ${BODY_PART_LABELS[img.bodyPart as BodyPart] ?? img.bodyPart}`,
+      })
+      return idx
+    }
+    return -1
+  })
 
   return (
     <div className="flex flex-col gap-6">
@@ -56,7 +67,7 @@ export function GenerationResults({
         </div>
         <button
           type="button"
-          onClick={() => setZoom({ url: tattooDesignUrl, title: 'Tattoo Design' })}
+          onClick={() => setLightboxIndex(0)}
           className="group block w-full overflow-hidden rounded-lg border border-border/50 bg-muted"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -76,11 +87,14 @@ export function GenerationResults({
           </span>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          {images.map((img) => (
+          {images.map((img, i) => (
             <ResultCell
               key={img.bodyPart}
               image={img}
-              onZoom={(url, title) => setZoom({ url, title })}
+              onZoom={() => {
+                const idx = partLightboxIndex[i]
+                if (idx >= 0) setLightboxIndex(idx)
+              }}
             />
           ))}
         </div>
@@ -96,24 +110,12 @@ export function GenerationResults({
         </Button>
       </div>
 
-      <Dialog open={zoom !== null} onOpenChange={(open) => !open && setZoom(null)}>
-        <DialogContent className="max-w-3xl bg-background p-2 sm:p-3">
-          <DialogTitle className="sr-only">
-            {zoom?.title ?? 'Image preview'}
-          </DialogTitle>
-          <DialogDescription className="sr-only">
-            Enlarged preview of the generated tattoo image.
-          </DialogDescription>
-          {zoom && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={zoom.url}
-              alt={zoom.title}
-              className="h-auto w-full rounded-lg object-contain"
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      <Lightbox
+        images={lightboxImages}
+        index={lightboxIndex}
+        onClose={() => setLightboxIndex(null)}
+        onIndexChange={setLightboxIndex}
+      />
     </div>
   )
 }
@@ -123,7 +125,7 @@ function ResultCell({
   onZoom,
 }: {
   image: GenerateImage
-  onZoom: (url: string, title: string) => void
+  onZoom: () => void
 }) {
   const label = BODY_PART_LABELS[image.bodyPart as BodyPart] ?? image.bodyPart
 
@@ -140,7 +142,7 @@ function ResultCell({
   return (
     <button
       type="button"
-      onClick={() => onZoom(image.url!, label)}
+      onClick={onZoom}
       className="group relative block aspect-[3/4] w-full overflow-hidden rounded-lg border border-border/50 bg-muted"
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
