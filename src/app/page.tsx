@@ -6,14 +6,9 @@ import { TattooGenerator } from '@/components/tattoo-generator'
 import { PaymentFeedback } from '@/components/payment-feedback'
 import { Showcase } from '@/components/showcase'
 import { SHOWCASE_EXAMPLES } from '@/lib/showcase-examples'
-import { getPublicUrl } from '@/lib/r2'
 
-// Server 端解析示例图 URL（getPublicUrl 用 process.env.R2_PUBLIC_URL，
-// 且 lib/r2.ts import 了 @aws-sdk/client-s3，不能进 Client bundle）
-const showcaseImages = SHOWCASE_EXAMPLES.map((ex) => ({
-  url: getPublicUrl(ex.key),
-  alt: ex.alt,
-}))
+// showcaseImages 直接用数据文件里的 url（临时占位图；换真实图时恢复 getPublicUrl）
+const showcaseImages = SHOWCASE_EXAMPLES
 
 export default function HomePage() {
   return (
