@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
-import { auth, currentUser } from '@clerk/nextjs/server'
-import { ensureUser } from '@/server/db/ensure-user'
+import { currentUser } from '@clerk/nextjs/server'
+import { getActor } from '@/server/auth/actor'
+import { ensureUser, ensureGuest } from '@/server/db/ensure-user'
 import { getUploadUrl, makeObjectKey } from '@/lib/r2'
 import { ALLOWED_UPLOAD_CONTENT_TYPES, MAX_UPLOAD_BYTES } from '@/lib/constants'
 
@@ -16,20 +17,10 @@ import { ALLOWED_UPLOAD_CONTENT_TYPES, MAX_UPLOAD_BYTES } from '@/lib/constants'
  * 副作用：首次调用会 ensureUser 创建用户记录（送 1 免费 credit）。
  */
 export async function POST(req: Request): Promise<Response> {
-  // 1. 验证登录
-  const { userId } = await auth()
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  // 2. 拿 email（用于 ensureUser）
-  const user = await currentUser()
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-  const email = user.emailAddresses?.[0]?.emailAddress
-  if (!email) {
-    return NextResponse.json({ error: 'Email is required. Please add an email in your account.' }, { status: 400 })
+  // 1. 身份：登录用 userId，游客用 guest_id cookie
+  const actor = await getActor()
+  if (!actor) {
+    return NextResponse.json({ error: 'Failed to identify session' }, { status: 500 })
   }
 
   // 3. 解析并校验请求体
@@ -57,17 +48,29 @@ export async function POST(req: Request): Promise<Response> {
     )
   }
 
-  // 4. 首次调用自动建用户记录（送 1 credit）
+  // 4. 确保数据库有该身份的行（登录 ensureUser + email；游客 ensureGuest）
   try {
-    await ensureUser(userId, email)
+    if (actor.type === 'user') {
+      const user = await currentUser()
+      const email = user?.emailAddresses?.[0]?.emailAddress
+      if (!email) {
+        return NextResponse.json(
+          { error: 'Email is required. Please add an email in your account.' },
+          { status: 400 }
+        )
+      }
+      await ensureUser(actor.id, email)
+    } else {
+      await ensureGuest(actor.id)
+    }
   } catch (e) {
-    console.error('[upload-url] ensureUser failed:', e)
+    console.error('[upload-url] ensureUser/Guest failed:', e)
     return NextResponse.json({ error: 'Failed to initialize user' }, { status: 500 })
   }
 
-  // 5. 生成 R2 预签名上传 URL
+  // 5. 生成 R2 预签名上传 URL（用 actor.id 拼 key）
   const ext = body.ext || contentType!.split('/')[1] || 'jpg'
-  const key = makeObjectKey(userId, ext)
+  const key = makeObjectKey(actor.id, ext)
 
   try {
     const { uploadUrl, publicUrl } = await getUploadUrl({ key, contentType: contentType!, contentLength })
