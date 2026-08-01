@@ -97,6 +97,10 @@ export function TattooGenerator() {
     }
   }
 
+  // 游客用完免费额度：按钮直接变 "Sign up"（常驻，比 toast 显眼，无法错过）
+  const isGuestOutOfCredits =
+    !isSignedIn && credits.credits !== null && credits.credits < CREDITS_PER_GENERATION
+
   // generating 中：渲染进度
   if (gen.status === 'generating') {
     return (
@@ -175,11 +179,15 @@ export function TattooGenerator() {
             </p>
             <Button
               size="lg"
-              onClick={handleGenerate}
-              disabled={!ready || !gen.prompt.trim() || gen.status === 'uploading'}
+              onClick={isGuestOutOfCredits ? () => router.push('/sign-up') : handleGenerate}
+              disabled={!isGuestOutOfCredits && (!ready || !gen.prompt.trim() || gen.status === 'uploading')}
               className="sm:min-w-[180px]"
             >
-              {gen.status === 'uploading' ? 'Uploading...' : 'Generate'}
+              {isGuestOutOfCredits
+                ? 'Sign up for 3 more'
+                : gen.status === 'uploading'
+                  ? 'Uploading...'
+                  : 'Generate'}
             </Button>
           </div>
         </CardContent>

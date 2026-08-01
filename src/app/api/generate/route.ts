@@ -125,10 +125,11 @@ export async function POST(req: Request): Promise<Response> {
     return NextResponse.json({ error: 'Failed to check credits' }, { status: 500 })
   }
   if (credits < CREDITS_PER_GENERATION) {
-    return NextResponse.json(
-      { error: 'Insufficient credits', credits },
-      { status: 402 }
-    )
+    const msg =
+      actor.type === 'guest'
+        ? "You've used your free preview. Sign up for 3 more."
+        : 'Insufficient credits'
+    return NextResponse.json({ error: msg, credits }, { status: 402 })
   }
 
   /* 5. 扣 credits（原子 RPC；并发竞争时会抛 'Insufficient credits'） */
