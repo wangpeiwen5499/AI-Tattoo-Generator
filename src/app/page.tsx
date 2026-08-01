@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button'
 import { TattooGenerator } from '@/components/tattoo-generator'
 import { PaymentFeedback } from '@/components/payment-feedback'
 import { Showcase } from '@/components/showcase'
+import { HowItWorks } from '@/components/how-it-works'
+import { Faq } from '@/components/faq'
 import { SHOWCASE_EXAMPLES } from '@/lib/showcase-examples'
 
 // showcaseImages 直接用数据文件里的 url（临时占位图；换真实图时恢复 getPublicUrl）
@@ -50,6 +52,8 @@ export default function HomePage() {
 
       <Show when="signed-out">
         <Showcase images={showcaseImages} />
+        <HowItWorks />
+        <Faq />
       </Show>
 
       <Show when="signed-in">
