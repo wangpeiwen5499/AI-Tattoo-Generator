@@ -25,3 +25,30 @@ export async function ensureUser(clerkUserId: string, email: string): Promise<Us
   if (!data) throw new Error(`ensureUser: no row returned for ${clerkUserId}`)
   return data as UserRow
 }
+
+/**
+ * 确保数据库存在该游客的记录（id = guest_<uuid>，由 cookie 发放）。
+ *
+ * ⚠️ 必须用 ignoreDuplicates: true：upsert {credits:1} 默认会 update 已存在行，
+ *    把游客用完后的 credits=0 重置回 1（刷漏洞）。ignoreDuplicates 让首次
+ *    insert 给 credits=1，已存在则不动。
+ * email 用占位（users.email not null）。
+ */
+export async function ensureGuest(guestId: string): Promise<UserRow> {
+  const supabaseAdmin = getSupabaseAdmin()
+  await supabaseAdmin
+    .from('users')
+    .upsert(
+      { id: guestId, email: `${guestId}@guest.local`, credits: 1 },
+      { onConflict: 'id', ignoreDuplicates: true }
+    )
+  const { data, error } = await supabaseAdmin
+    .from('users')
+    .select('*')
+    .eq('id', guestId)
+    .single<UserRow>()
+
+  if (error) throw error
+  if (!data) throw new Error(`ensureGuest: no row returned for ${guestId}`)
+  return data
+}

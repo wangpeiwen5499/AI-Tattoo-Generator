@@ -13,8 +13,8 @@ export const BODY_PART_LABELS: Record<BodyPart, string> = {
   calf: 'Calf',
 }
 
-/** 注册赠送 Credits 数量 */
-export const FREE_SIGNUP_CREDITS = 1
+/** 注册赠送 Credits 数量（与 users.credits DB default 对齐） */
+export const FREE_SIGNUP_CREDITS = 3
 
 /** 每次生成消耗的 Credits 数量（一次生成 4 张图） */
 export const CREDITS_PER_GENERATION = 1
