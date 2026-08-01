@@ -1,8 +1,8 @@
 # 项目交接文档
 
-> 上次更新：2026-07-30  
-> 当前进度：**Day 1-6 完成 + Stripe→Creem 支付迁移完成（端到端验证通过），准备进入 Day 7 部署**  
-> 主分支：`main`（Day 6 已推送；迁移 commit `3d160ed`..`722b470` 已提交，尚未推送）
+> 上次更新：2026-08-01  
+> 当前进度：**Day 7 部署中 — tattoovis.ink 已上线（域名 ✅ / Clerk production ✅ / R2 CORS ✅ / 合规页 ✅ / 邮箱 ✅）；生成超时待改异步，详见 [docs/handoff-async-generation.md](./handoff-async-generation.md)（方案 A：`after()`）**  
+> 主分支：`main`（已推送 origin/main）
 
 ---
 
