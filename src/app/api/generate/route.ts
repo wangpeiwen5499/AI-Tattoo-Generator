@@ -34,6 +34,15 @@ import { applyTattooToBody } from '@/server/ai/apply-to-body'
  */
 const MAX_PROMPT_LENGTH = 500
 
+/**
+ * Vercel 函数最大执行时间（秒）。
+ * AI 生成（KIE 两步：text-to-image + 4 部位并发融合）耗时较长，
+ * 不设的话 Vercel 用默认超时（10-60s）会直接杀进程导致 502/超时。
+ * 设到 300s（Vercel 各计划上限）覆盖大部分生成。
+ * 若 KIE 极慢（总耗时 >5min）仍会超时，需改异步架构。
+ */
+export const maxDuration = 300
+
 export async function POST(req: Request): Promise<Response> {
   /* 1. Clerk 鉴权 + ensureUser */
   const { userId } = await auth()
