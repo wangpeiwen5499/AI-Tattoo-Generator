@@ -1,12 +1,15 @@
 import { after } from 'next/server'
 import { NextResponse } from 'next/server'
-import { auth, currentUser } from '@clerk/nextjs/server'
-import { ensureUser } from '@/server/db/ensure-user'
+import { headers } from 'next/headers'
+import { currentUser } from '@clerk/nextjs/server'
+import { getActor } from '@/server/auth/actor'
+import { ensureUser, ensureGuest } from '@/server/db/ensure-user'
 import {
   getCredits,
   deductCredits,
   refundCredits,
   createProject,
+  claimGuestFree,
 } from '@/server/db/queries'
 import { CREDITS_PER_GENERATION } from '@/lib/constants'
 import { runGeneration } from '@/server/ai/run-generation'
@@ -45,19 +48,12 @@ const MAX_PROMPT_LENGTH = 500
 export const maxDuration = 300
 
 export async function POST(req: Request): Promise<Response> {
-  /* 1. Clerk 鉴权 + ensureUser */
-  const { userId } = await auth()
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  /* 1. 身份：登录 userId / 游客 guest_id */
+  const actor = await getActor()
+  if (!actor) {
+    return NextResponse.json({ error: 'Failed to identify session' }, { status: 500 })
   }
-  const user = await currentUser()
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-  const email = user.emailAddresses?.[0]?.emailAddress
-  if (!email) {
-    return NextResponse.json({ error: 'Email is required' }, { status: 400 })
-  }
+  const userId = actor.id
 
   /* 2. 解析请求体 */
   let body: { bodyPhotoKey?: string; bodyPhotoUrl?: string; prompt?: string }
@@ -84,12 +80,40 @@ export async function POST(req: Request): Promise<Response> {
     )
   }
 
-  /* 3. ensureUser（首次入库 + 拿 credits 前置条件） */
+  /* 3. 确保数据库有该身份的行 + 游客 IP 限流 */
   try {
-    await ensureUser(userId, email)
+    if (actor.type === 'user') {
+      const user = await currentUser()
+      const email = user?.emailAddresses?.[0]?.emailAddress
+      if (!email) {
+        return NextResponse.json({ error: 'Email is required' }, { status: 400 })
+      }
+      await ensureUser(userId, email)
+    } else {
+      // 游客：建 users 行（credits=1，已存在不重置）
+      await ensureGuest(userId)
+    }
   } catch (e) {
-    console.error('[generate] ensureUser failed:', e)
+    console.error('[generate] ensureUser/Guest failed:', e)
     return NextResponse.json({ error: 'Failed to initialize user' }, { status: 500 })
+  }
+
+  // 游客额外：每 IP 3 次/天 限流（在扣 credits 之前拦，超限不占额度）
+  if (actor.type === 'guest') {
+    try {
+      const fwd = (await headers()).get('x-forwarded-for')
+      const ip = fwd?.split(',')[0]?.trim() || 'unknown'
+      const claimed = await claimGuestFree(ip)
+      if (claimed === -1) {
+        return NextResponse.json(
+          { error: 'Guest free limit reached for today. Sign up for 3 more previews.' },
+          { status: 429 }
+        )
+      }
+    } catch (e) {
+      console.error('[generate] claimGuestFree failed:', e)
+      return NextResponse.json({ error: 'Failed to check guest limit' }, { status: 500 })
+    }
   }
 
   /* 4. 余额检查（提前拦截，减少无意义 RPC） */
