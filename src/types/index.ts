@@ -82,6 +82,21 @@ export interface GenerateResponse {
   error?: string
 }
 
+/** POST /api/generate 响应（异步：立即返回，只给 projectId） */
+export interface GenerateTriggerResponse {
+  projectId: string
+}
+
+/** GET /api/generate/status 响应（前端轮询） */
+export interface GenerationStatusResponse {
+  status: 'processing' | 'completed' | 'failed'
+  /** Step1 成功后从 generations[0].tattoo_image_key 还原；Step1 失败时为 null */
+  tattooDesignUrl: string | null
+  images: GenerateImage[]
+  /** failed 时有值（project.error_message） */
+  error?: string | null
+}
+
 /* ============ Stripe→Creem 支付 ============ */
 
 /** 定价档位 ID（与 CREDIT_PACKAGES 的 id 字段对应） */

@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type {
   GenerateResponse,
+  GenerateTriggerResponse,
+  GenerationStatusResponse,
   UploadUrlResponse,
 } from '@/types'
 
@@ -48,6 +50,10 @@ const STAGE1_END_SEC = 110      // 0-110s: Step 1（纹身图案生成）
 const STAGE2_END_SEC = 250      // 110-250s: Step 2（4 部位融合）
 const PROGRESS_CAP = 95         // 不冲到 100%，避免假象
 
+/** 轮询参数 */
+const POLL_INTERVAL_MS = 3000           // 每 3s 轮询一次
+const POLL_TIMEOUT_MS = 5.5 * 60 * 1000 // 略超 maxDuration(5min)，兜底防永久轮询
+
 function computeStage(elapsedSec: number): { label: string; progress: number } {
   if (elapsedSec < STAGE1_END_SEC) {
     const ratio = elapsedSec / STAGE1_END_SEC
@@ -64,8 +70,8 @@ export function useGeneration() {
   const [state, setState] = useState<GenState>(INITIAL_STATE)
   const abortRef = useRef<AbortController | null>(null)
   const progressTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const pollTimerRef = useRef<NodeJS.Timeout | null>(null)
   const elapsedStartRef = useRef<number>(0)
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // stateRef 让 generate 能读到最新状态（避免 stale closure）
   // 必须在任何使用 stateRef.current 的 callback 之前声明
@@ -79,9 +85,9 @@ export function useGeneration() {
       clearInterval(progressTimerRef.current)
       progressTimerRef.current = null
     }
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current)
-      timeoutRef.current = null
+    if (pollTimerRef.current) {
+      clearTimeout(pollTimerRef.current)
+      pollTimerRef.current = null
     }
   }, [])
 
@@ -170,6 +176,57 @@ export function useGeneration() {
     }))
   }, [])
 
+  /**
+   * 轮询 /api/generate/status 直到 completed/failed 或超时。
+   * - resolve 返回最终状态对象（completed 或 failed 都 resolve，由 generate 判定）
+   * - reject 表示真错误：超时 / reset 主动取消（AbortError）
+   * 单次轮询的网络错误不致命，排下一次重试。
+   * 用 setTimeout 链（而非 setInterval）避免上一次 fetch 慢导致请求堆积。
+   */
+  const pollStatus = useCallback(
+    (projectId: string): Promise<GenerationStatusResponse> => {
+      return new Promise((resolve, reject) => {
+        const startedAt = Date.now()
+
+        const tick = async () => {
+          // 超时兜底
+          if (Date.now() - startedAt > POLL_TIMEOUT_MS) {
+            reject(new Error('Generation timed out. Check /history later.'))
+            return
+          }
+
+          let data: GenerationStatusResponse
+          try {
+            const res = await fetch(`/api/generate/status?id=${projectId}`, {
+              signal: abortRef.current?.signal,
+            })
+            data = (await res.json()) as GenerationStatusResponse
+          } catch (e) {
+            // reset()/卸载主动 abort → 终止轮询
+            if (e instanceof DOMException && e.name === 'AbortError') {
+              reject(e)
+              return
+            }
+            // 单次网络错误 → 排下一次重试（不致命）
+            pollTimerRef.current = setTimeout(tick, POLL_INTERVAL_MS)
+            return
+          }
+
+          if (data.status === 'completed' || data.status === 'failed') {
+            resolve(data)
+            return
+          }
+          // processing → 继续轮询
+          pollTimerRef.current = setTimeout(tick, POLL_INTERVAL_MS)
+        }
+
+        // 首次立即跑一次（不等 3s），让"刚触发"也能很快拿到 processing
+        tick()
+      })
+    },
+    []
+  )
+
   const generate = useCallback(async () => {
     // 防止双击并发：如果已在 generating，先 abort 上一个
     if (stateRef.current.status === 'generating') {
@@ -213,11 +270,10 @@ export function useGeneration() {
       refunded: false,
     }))
 
-    // AbortController 15 分钟超时兜底
     abortRef.current = new AbortController()
-    timeoutRef.current = setTimeout(() => abortRef.current?.abort(), 15 * 60 * 1000)
 
     try {
+      // 1. 触发生成，立即拿 projectId（后端 after() 后台跑 AI）
       const res = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -229,29 +285,39 @@ export function useGeneration() {
         signal: abortRef.current.signal,
       })
 
-      let data: GenerateResponse
+      let trigger: GenerateTriggerResponse
       try {
-        data = await res.json()
+        trigger = (await res.json()) as GenerateTriggerResponse
       } catch {
         throw new Error('Invalid response from server')
       }
 
-      // 4 张全失败的语义判定（后端在 allFailed 时返回 HTTP 500 + 完整 body）
-      const allFailed =
-        data.images.length > 0 && data.images.every((img) => img.status === 'failed')
-
-      // allFailed 是业务结果（虽然 HTTP 500），不当作服务器错误，走退款路径
-      if ((!res.ok && !allFailed) || !data.projectId) {
-        throw new Error(data.error || `Generation failed (HTTP ${res.status})`)
+      if (!res.ok || !trigger.projectId) {
+        const errBody = trigger as unknown as { error?: string }
+        throw new Error(errBody.error || `Generation failed (HTTP ${res.status})`)
       }
 
+      // 2. 轮询 status 直到 completed/failed
+      const data = await pollStatus(trigger.projectId)
+
       clearTimers()
+      const allFailed = data.status === 'failed'
+      // Step1 失败时后端 project=failed 且 generations 为空 → tattooDesignUrl=null
+      // 此时 result 保持 null，走纯 error 路径（与原同步行为一致，避免渲染 broken img）
+      const hasDesign = !!data.tattooDesignUrl
       setState((s) => ({
         ...s,
         status: allFailed ? 'error' : 'completed',
         generateProgress: 100,
         stageLabel: allFailed ? 'All parts failed' : 'Done!',
-        result: data,
+        result: hasDesign
+          ? {
+              projectId: trigger.projectId,
+              tattooDesignUrl: data.tattooDesignUrl as string,
+              images: data.images,
+              error: data.error ?? undefined,
+            }
+          : null,
         refunded: allFailed,
         error: allFailed ? data.error || 'All 4 body parts failed' : null,
       }))
@@ -262,7 +328,7 @@ export function useGeneration() {
       if (stateRef.current.status === 'idle') return
       const aborted = e instanceof DOMException && e.name === 'AbortError'
       const msg = aborted
-        ? 'Generation timed out after 15 minutes. Please try again.'
+        ? 'Generation canceled'
         : e instanceof Error
           ? e.message
           : String(e)
@@ -274,7 +340,7 @@ export function useGeneration() {
       }))
       throw new Error(msg)
     }
-  }, [clearTimers])
+  }, [clearTimers, pollStatus])
 
   const reset = useCallback(() => {
     clearTimers()
