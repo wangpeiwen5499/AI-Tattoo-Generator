@@ -151,7 +151,7 @@ export interface PollOptions {
  * - failed  → 返回 failMsg（不抛错，让业务层决定怎么处理）
  * - 超时    → 抛 KiePollTimeoutError（错误信息含最后一次完整 state）
  *
- * 已知的状态值：created / generating / success / failed
+ * 已知的状态值：created / generating / success / failed / fail（实测失败态为 'fail'）
  * 其他未知状态一律视为"进行中"继续等。
  */
 export async function pollTask(taskId: string, opts: PollOptions = {}): Promise<KieTaskResult> {
@@ -178,7 +178,8 @@ export async function pollTask(taskId: string, opts: PollOptions = {}): Promise<
         creditsConsumed: data.creditsConsumed,
       }
     }
-    if (data.state === 'failed') {
+    // KIE 失败态实测为 'fail'（过去式动词），与早期注释假设的 'failed' 都认
+    if (data.state === 'failed' || data.state === 'fail') {
       return {
         taskId,
         state: 'failed',

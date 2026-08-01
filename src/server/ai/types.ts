@@ -64,11 +64,11 @@ export interface KieRecordInfoResponse {
 /**
  * 任务状态：KIE 的 code 字段语义不规则（示例里 code:505 但 msg:success），所以只看 state。
  *
- * 实测见过的值：created / generating / success / failed
- * （文档示例只提到 success，但实际中间态可能是 generating 而非 running）
+ * 实测见过的值：created / generating / success / fail
+ * （文档示例只提到 success；失败态实测是 'fail'，不是 'failed'）
  *
  * 用 string 而不是 union，避免 KIE 后续加新状态值时 TypeScript 报错。
- * 业务层只在 state === 'success' 或 'failed' 时停止轮询。
+ * 业务层（pollTask）在 state === 'success' 或 'fail'/'failed' 时停止轮询。
  */
 export type KieTaskState = string
 
