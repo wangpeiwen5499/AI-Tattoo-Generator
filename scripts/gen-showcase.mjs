@@ -2,10 +2,9 @@
 //
 // 用法: node --env-file=.env.local scripts/gen-showcase.mjs
 //
-// 前置（二选一，在 BODY_PHOTOS 填好后再跑）：
-//   A. 上传无脸局部身体照（只拍手臂/腿/肩，不含头）到 R2 showcase/body/，填 public URL
-//   B. 直接填 Unsplash 直链 URL（无脸局部身体照，免费商用）
 // 消耗：~48 KIE credits ≈ $0.24（8 × (text-to-image 6 + image-to-image 6)）
+// 耗时：~20-25 分钟（8 题材串行，每题材 text-to-image ~110s + image-to-image ~80s）
+// 单个题材失败不阻塞其他（最后报告成功/失败清单），失败的可注释掉 EXAMPLES 重跑。
 
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 
@@ -31,26 +30,24 @@ const EXAMPLES = [
   { slug: 'phoenix', prompt: 'phoenix rising, japanese, black and red' },
 ]
 
-/* 无脸身体照（长度 ≥ 1；少于 8 张则循环复用）。
-   ⚠️ 跑脚本前在这里填好 URL（R2 showcase/body/* 或 Unsplash 直链）。 */
+/* 无脸局部身体照（用户提供的 4 张，循环复用到 8 个题材） */
 const BODY_PHOTOS = [
-  // `${R2_PUBLIC_URL}/showcase/body/body-1.jpg`,
-  // 'https://images.unsplash.com/photo-xxx?w=1024',
+  'https://pub-09b8af828637484ca056b0f2d8067a94.r2.dev/uploads/samples/left%20arm.jpg',
+  'https://pub-09b8af828637484ca056b0f2d8067a94.r2.dev/uploads/samples/left.jpg',
+  'https://pub-09b8af828637484ca056b0f2d8067a94.r2.dev/uploads/samples/right%20arm.jpg',
+  'https://pub-09b8af828637484ca056b0f2d8067a94.r2.dev/uploads/samples/shoulder.jpg',
 ]
-if (BODY_PHOTOS.length === 0) {
-  fail('BODY_PHOTOS 为空：请上传无脸身体照到 R2 showcase/body/ 或填 Unsplash URL 后再跑')
-}
 
-/* ---- KIE 封装（与 src/server/ai/kie-client.ts 同构） ---- */
+/* ---- KIE 封装（与 src/server/ai/kie-client.ts 同构；错误 throw 交主循环 catch） ---- */
 async function createTask(body) {
   const res = await fetch(`${KIE_BASE_URL}/api/v1/jobs/createTask`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${KIE_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
-  if (!res.ok) fail(`createTask HTTP ${res.status}: ${await res.text().catch(() => '')}`)
+  if (!res.ok) throw new Error(`createTask HTTP ${res.status}: ${await res.text().catch(() => '')}`)
   const json = await res.json()
-  if (json.code !== 200 || !json.data?.taskId) fail(`createTask 失败: code=${json.code} msg=${json.msg}`)
+  if (json.code !== 200 || !json.data?.taskId) throw new Error(`createTask 失败: code=${json.code} msg=${json.msg}`)
   return json.data.taskId
 }
 
@@ -58,9 +55,9 @@ async function getRecordInfo(taskId) {
   const res = await fetch(`${KIE_BASE_URL}/api/v1/jobs/recordInfo?taskId=${encodeURIComponent(taskId)}`, {
     headers: { Authorization: `Bearer ${KIE_API_KEY}` },
   })
-  if (!res.ok) fail(`recordInfo HTTP ${res.status}`)
+  if (!res.ok) throw new Error(`recordInfo HTTP ${res.status}`)
   const json = await res.json()
-  if (!json.data) fail(`recordInfo 空 data: ${JSON.stringify(json)}`)
+  if (!json.data) throw new Error(`recordInfo 空 data: ${JSON.stringify(json)}`)
   return json.data
 }
 
@@ -94,8 +91,7 @@ async function pollTask(taskId, { intervalMs = 2000, timeoutMs = 240_000 } = {})
     process.stdout.write(`  [poll #${polls}] state=${data.state} progress=${data.progress ?? 'n/a'}%  \r`)
     await sleep(intervalMs)
   }
-  console.error('\n最后一次 recordInfo:', JSON.stringify(last, null, 2))
-  fail(`轮询超时（polls=${polls}），last state=${last?.state}`)
+  throw new Error(`轮询超时（polls=${polls}），last state=${last?.state} failMsg=${last?.failMsg ?? 'n/a'}`)
 }
 
 /* ---- R2 封装（与 src/lib/r2.ts fetchUrlAndUpload 同构） ---- */
@@ -109,7 +105,7 @@ function getR2() {
 
 async function fetchAndUpload(sourceUrl, key) {
   const r = await fetch(sourceUrl)
-  if (!r.ok) fail(`下载失败 ${sourceUrl}: HTTP ${r.status}`)
+  if (!r.ok) throw new Error(`下载失败 ${sourceUrl}: HTTP ${r.status}`)
   const buf = await r.arrayBuffer()
   const contentType = r.headers.get('content-type')?.split(';')[0].trim() || 'image/png'
   await getR2().send(new PutObjectCommand({
@@ -121,7 +117,7 @@ async function fetchAndUpload(sourceUrl, key) {
   return `${R2_PUBLIC_URL.replace(/\/+$/, '')}/${key}`
 }
 
-/* ---- 生成流程 ---- */
+/* ---- 生成流程（单题材失败不阻塞） ---- */
 const FUSION_PROMPT = (desc) =>
   `Apply this tattoo design naturally on the body of the person in the photo. ` +
   `Make it look real with natural skin texture, lighting, perspective, and wrap slightly to follow the body contour. ` +
@@ -129,39 +125,49 @@ const FUSION_PROMPT = (desc) =>
 
 console.log('\n── 生成 showcase 示例图 ──')
 console.log(`KIE_BASE_URL = ${KIE_BASE_URL}`)
-console.log(`身体照数量 = ${BODY_PHOTOS.length}（将循环复用到 ${EXAMPLES.length} 个题材）`)
+console.log(`身体照数量 = ${BODY_PHOTOS.length}（循环复用到 ${EXAMPLES.length} 个题材）`)
 
 let totalCredits = 0
+const succeeded = []
+const failed = []
 for (let i = 0; i < EXAMPLES.length; i++) {
   const { slug, prompt } = EXAMPLES[i]
   const bodyPhotoUrl = BODY_PHOTOS[i % BODY_PHOTOS.length]
   console.log(`\n[${i + 1}/${EXAMPLES.length}] ${slug}: ${prompt}`)
+  try {
+    // 1. text-to-image：生成纹身图案
+    const designTaskId = await createTask({
+      model: 'gpt-image-2-text-to-image',
+      input: { prompt: `${prompt}, tattoo design, white background, clean bold lines, high contrast, stencil style`, aspect_ratio: '1:1' },
+    })
+    const design = await pollTask(designTaskId)
+    if (design.state !== 'success' || design.urls.length === 0) throw new Error(`纹身图生成失败: ${design.failMsg}`)
 
-  // 1. text-to-image：生成纹身图案
-  const designTaskId = await createTask({
-    model: 'gpt-image-2-text-to-image',
-    input: { prompt: `${prompt}, tattoo design, white background, clean bold lines, high contrast, stencil style`, aspect_ratio: '1:1' },
-  })
-  const design = await pollTask(designTaskId)
-  if (design.state !== 'success' || design.urls.length === 0) fail(`${slug} 纹身图生成失败: ${design.failMsg}`)
+    // 纹身图临时落 R2（作 image-to-image 输入）
+    const designUrl = await fetchAndUpload(design.urls[0], `showcase/_tmp/${slug}-design-${Date.now()}.png`)
 
-  // 纹身图临时落 R2（作 image-to-image 输入）
-  const designUrl = await fetchAndUpload(design.urls[0], `showcase/_tmp/${slug}-design-${Date.now()}.png`)
+    // 2. image-to-image：融合到身体（3:4）
+    const fusionTaskId = await createTask({
+      model: 'gpt-image-2-image-to-image',
+      input: { prompt: FUSION_PROMPT(prompt), input_urls: [bodyPhotoUrl, designUrl], aspect_ratio: '3:4' },
+    })
+    const fusion = await pollTask(fusionTaskId)
+    if (fusion.state !== 'success' || fusion.urls.length === 0) throw new Error(`融合失败: ${fusion.failMsg}`)
 
-  // 2. image-to-image：融合到身体（3:4）
-  const fusionTaskId = await createTask({
-    model: 'gpt-image-2-image-to-image',
-    input: { prompt: FUSION_PROMPT(prompt), input_urls: [bodyPhotoUrl, designUrl], aspect_ratio: '3:4' },
-  })
-  const fusion = await pollTask(fusionTaskId)
-  if (fusion.state !== 'success' || fusion.urls.length === 0) fail(`${slug} 融合失败: ${fusion.failMsg}`)
-
-  // 3. 最终图落到 R2 showcase/<slug>.png
-  const finalUrl = await fetchAndUpload(fusion.urls[0], `showcase/${slug}.png`)
-  totalCredits += (design.credits || 0) + (fusion.credits || 0)
-  console.log(`  -> ${finalUrl} (credits: ${design.credits}+${fusion.credits})`)
-  ok(`${slug} 完成`)
+    // 3. 最终图落到 R2 showcase/<slug>.png
+    const finalUrl = await fetchAndUpload(fusion.urls[0], `showcase/${slug}.png`)
+    totalCredits += (design.credits || 0) + (fusion.credits || 0)
+    console.log(`  -> ${finalUrl} (credits: ${design.credits}+${fusion.credits})`)
+    ok(`${slug} 完成`)
+    succeeded.push(slug)
+  } catch (e) {
+    console.error(`\n  ⚠️ ${slug} 失败: ${e.message || e}`)
+    failed.push(slug)
+  }
 }
 
-console.log(`\n🎉 全部完成！8 张图已落到 R2 showcase/，共消耗 ${totalCredits} KIE credits`)
-console.log('   首页 showcase 现在应显示真实示例图。')
+console.log(`\n── 总结 ──`)
+console.log(`✅ 成功 ${succeeded.length}/${EXAMPLES.length}: ${succeeded.join(', ') || '无'}`)
+if (failed.length) console.log(`⚠️ 失败 ${failed.length}: ${failed.join(', ')}（可注释掉 EXAMPLES 里对应项重跑）`)
+console.log(`共消耗 ${totalCredits} KIE credits`)
+console.log(`公开 URL 前缀: ${R2_PUBLIC_URL}/showcase/<slug>.png`)
