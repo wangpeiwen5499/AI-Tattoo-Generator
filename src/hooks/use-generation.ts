@@ -355,6 +355,8 @@ export function useGeneration() {
       ...INITIAL_STATE,
       photoKey: s.photoKey,
       photoUrl: s.photoUrl,
+      // 照片还在 → 保持可生成态（ready），否则回 idle
+      status: s.photoKey ? 'ready' : 'idle',
     }))
   }, [clearTimers])
 

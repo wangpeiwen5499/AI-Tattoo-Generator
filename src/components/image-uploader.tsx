@@ -63,7 +63,7 @@ export function ImageUploader({
         <img
           src={photoUrl}
           alt="Body photo preview"
-          className="h-full w-full object-cover"
+          className="h-full w-full object-contain"
         />
         {!disabled && (
           <button
