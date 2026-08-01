@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
+import { getActor } from '@/server/auth/actor'
 import { getProjectWithGenerations } from '@/server/db/queries'
 import { getPublicUrl } from '@/lib/r2'
 import { BODY_PARTS, type BodyPart } from '@/lib/constants'
@@ -21,9 +21,9 @@ export const dynamic = 'force-dynamic'
  * 状态码：200 正常；401 未登录；400 缺 id；404 project 不存在或不属于该用户。
  */
 export async function GET(req: Request): Promise<Response> {
-  const { userId } = await auth()
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const actor = await getActor()
+  if (!actor) {
+    return NextResponse.json({ error: 'Failed to identify session' }, { status: 500 })
   }
 
   const id = new URL(req.url).searchParams.get('id')
@@ -32,7 +32,7 @@ export async function GET(req: Request): Promise<Response> {
   }
 
   const project = await getProjectWithGenerations(id)
-  if (!project || project.user_id !== userId) {
+  if (!project || project.user_id !== actor.id) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
