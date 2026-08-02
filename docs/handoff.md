@@ -1,7 +1,7 @@
 # 项目交接文档
 
 > 上次更新：2026-08-02  
-> 当前进度：**tattoovis.ink 上线运行中（异步生成 + 游客免费 1 次 + 注册送 3 已上线）；Creem→Waffo 支付迁移：代码 + 本地端到端 + 外部配置（域名验证/env/migration/webhook）全完成，待 `git push` + 生产端到端**（Creem 审核不过，换 `@waffo/pancake-ts`），详见 §12 当前待办；异步改造见 [handoff-async-generation.md](./handoff-async-generation.md)  
+> 当前进度：**tattoovis.ink 上线运行中（异步生成 + 游客免费 1 次 + 注册送 3 已上线）；Creem→Waffo 支付迁移：已 push 上线（`3303fcc..5caaad6`，代码+本地端到端+外部配置全完成），待生产端到端验证 + PaymentFeedback toast fix**（Creem 审核不过，换 `@waffo/pancake-ts`），详见 §12 当前待办；异步改造见 [handoff-async-generation.md](./handoff-async-generation.md)  
 > 主分支：`main`（已推送 origin/main）
 
 ---
@@ -35,7 +35,7 @@
 | 8 | 异步生成（after() + 前端轮询，破网关超时） | ✅ 已上线（[handoff-async-generation.md](./handoff-async-generation.md)） |
 | 9 | 落地页内容（showcase 横向 carousel + How it works + FAQ + 定价区 + 全屏 Lightbox） | ✅ 已上线 |
 | 10 | 游客免费 1 次 + 注册送 3 次（Cookie guest + 每 IP 3 次/天限流 + 不迁移数据） | ✅ 已上线 |
-| 11 | **Creem → Waffo 支付迁移**（`@waffo/pancake-ts`，Creem 审核不过） | ⏳ **代码 + 本地验证 + 外部配置全完成，待 `git push` + 生产端到端** → [spec](./superpowers/specs/2026-08-02-creem-to-waffo-migration-design.md) + [plan](./superpowers/plans/2026-08-02-creem-to-waffo-migration.md) |
+| 11 | **Creem → Waffo 支付迁移**（`@waffo/pancake-ts`，Creem 审核不过） | ⏳ **已 push 上线**（代码+本地+外部全完成），待生产端到端验证 + toast fix → [spec](./superpowers/specs/2026-08-02-creem-to-waffo-migration-design.md) + [plan](./superpowers/plans/2026-08-02-creem-to-waffo-migration.md) |
 
 ---
 
@@ -723,7 +723,9 @@ npx kill-port 3000 && npm run dev
 
 **✅ 外部配置（步骤 0-5）已于 2026-08-02 全部完成**：① PRIVATE_KEY 已轮换（原 test key 曾粘对话，已废弃）；② 生产 Supabase 跑了 `0004_waffo.sql`（payments 列 rename）；③ Vercel 环境变量配好（`WAFFO_MERCHANT_ID` / `WAFFO_PRIVATE_KEY` / 3 个 `WAFFO_PRODUCT_*`，已删 `CREEM_*`）；④ 生产 webhook 配好（`https://tattoovis.ink/api/waffo-webhook`，prod，`order.completed`）；⑤ 域名验证通过（DNS TXT 在 Vercel）。
 
-**剩 3 件**：① `git push origin main`（10 commit）→ Vercel 部署；② 生产 tattoovis.ink 端到端（live 测试卡或真卡）；③ PaymentFeedback toast 未弹的小 bug 待修（见下）。
+**剩 2 件**：① **生产 tattoovis.ink 端到端验证**（live 测试卡或真卡小额，看 `/pricing`→Starter→Waffo checkout→跳回+credits+5，Vercel logs 出现 `[waffo-webhook] credits added`，Supabase payments paid）；② PaymentFeedback toast 未弹的小 bug 待修（见下）。
+
+**✅ `git push origin main` 已完成**（2026-08-02，`3303fcc..5caaad6`，12 commit；Vercel 已部署带新 env）。
 
 ### 上线步骤（按序）
 1. **Waffo Dashboard 域名验证**：DNS 加 TXT `_waffo-challenge.www` = `waffo-verify=06a82b9bd444e7ff5c6e1f067f6c6447`（DNS 在 **Vercel** 管：项目 Settings → Domains → DNS Records；已确认 `tattoovis.ink` 的 NS = `ns1/ns2.vercel-dns.com`）。**进行中**。
