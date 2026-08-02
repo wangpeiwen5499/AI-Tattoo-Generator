@@ -24,9 +24,9 @@ export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024 // 10 MB
 export const ALLOWED_UPLOAD_CONTENT_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const
 
 /**
- * Creem 定价档位。amount 单位：分（沿用 Stripe 美元分约定，Creem 也按此显示）。
- * Creem checkout 用 productId 引用 dashboard 预建的 product
- * （creemProductId 指向环境变量名，值在 .env.local）。
+ * Waffo 定价档位。amount 单位：分（沿用 Stripe 美元分约定，Waffo 也按此显示）。
+ * Waffo checkout 用 productId 引用 dashboard 预建的 product
+ * （waffoProductId 指向环境变量名，值在 .env.local）。
  */
 export interface CreditPackage {
   id: string
@@ -34,10 +34,10 @@ export interface CreditPackage {
   credits: number
   /** 单位：美元分（499 = $4.99） */
   priceUsdCents: number
-  /** Creem 价格描述，用于 checkout 显示 */
+  /** Waffo 价格描述，用于 checkout 显示 */
   description: string
-  /** 该档位对应的 Creem product 环境变量名（值在 .env.local，如 CREEM_PRODUCT_STARTER） */
-  creemProductId: string
+  /** 该档位对应的 Waffo product 环境变量名（值在 .env.local，如 WAFFO_PRODUCT_STARTER） */
+  waffoProductId: string
   highlighted?: boolean
 }
 
@@ -48,7 +48,7 @@ export const CREDIT_PACKAGES: CreditPackage[] = [
     credits: 5,
     priceUsdCents: 499,
     description: '5 tattoo previews',
-    creemProductId: 'CREEM_PRODUCT_STARTER',
+    waffoProductId: 'WAFFO_PRODUCT_STARTER',
   },
   {
     id: 'popular',
@@ -56,7 +56,7 @@ export const CREDIT_PACKAGES: CreditPackage[] = [
     credits: 20,
     priceUsdCents: 1499,
     description: '20 tattoo previews · Best value per preview',
-    creemProductId: 'CREEM_PRODUCT_POPULAR',
+    waffoProductId: 'WAFFO_PRODUCT_POPULAR',
     highlighted: true,
   },
   {
@@ -65,11 +65,11 @@ export const CREDIT_PACKAGES: CreditPackage[] = [
     credits: 50,
     priceUsdCents: 2999,
     description: '50 tattoo previews · For serious shoppers',
-    creemProductId: 'CREEM_PRODUCT_PRO',
+    waffoProductId: 'WAFFO_PRODUCT_PRO',
   },
 ]
 
-/** 根据 credits 数量查找套餐（Creem metadata 反查用） */
+/** 根据 credits 数量查找套餐（Waffo metadata 反查用） */
 export function findPackageByCredits(credits: number): CreditPackage | undefined {
   return CREDIT_PACKAGES.find((p) => p.credits === credits)
 }
