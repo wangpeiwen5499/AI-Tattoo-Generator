@@ -73,7 +73,7 @@ export default function HomePage() {
               </Suspense>
             </div>
             <p className="mt-8 text-center text-xs text-muted-foreground">
-              🔒 Secured by Creem · Test mode — no real charges
+              🔒 Secured by Waffo · Test mode — no real charges
             </p>
           </div>
         </section>

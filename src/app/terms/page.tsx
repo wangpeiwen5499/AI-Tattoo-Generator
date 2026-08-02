@@ -30,7 +30,7 @@ export default function TermsPage() {
 
         <section>
           <h2>4. Credits &amp; Payment</h2>
-          <p>The Service uses a one-time credit system: $4.99 for 5 previews, $14.99 for 20 previews, and $29.99 for 50 previews. New accounts receive 1 free preview. Credits do not expire. Payments are processed by Creem as Merchant of Record. All purchases are non-refundable except where required by applicable law.</p>
+          <p>The Service uses a one-time credit system: $4.99 for 5 previews, $14.99 for 20 previews, and $29.99 for 50 previews. New accounts receive 1 free preview. Credits do not expire. Payments are processed by Waffo as Merchant of Record. All purchases are non-refundable except where required by applicable law.</p>
         </section>
 
         <section>

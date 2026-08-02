@@ -25,7 +25,7 @@ export default function PrivacyPage() {
             <li><strong className="text-foreground">Account:</strong> your email address, collected via our authentication provider (Clerk) when you sign in with Google or email.</li>
             <li><strong className="text-foreground">Photos &amp; prompts:</strong> the body photo you upload and the text description of your tattoo idea.</li>
             <li><strong className="text-foreground">Generated images:</strong> the AI-produced tattoo previews returned to you.</li>
-            <li><strong className="text-foreground">Payment information:</strong> handled by Creem (our payment provider). We do not store your card details.</li>
+            <li><strong className="text-foreground">Payment information:</strong> handled by Waffo (our payment provider). We do not store your card details.</li>
             <li><strong className="text-foreground">Usage data:</strong> basic technical data (browser, device) used to operate the Service.</li>
           </ul>
         </section>
@@ -47,7 +47,7 @@ export default function PrivacyPage() {
             <li><strong className="text-foreground">Supabase</strong> — database for accounts, projects, and payments.</li>
             <li><strong className="text-foreground">Cloudflare R2</strong> — storage for your uploaded photos and generated images.</li>
             <li><strong className="text-foreground">Kie.ai / OpenAI</strong> — AI image generation.</li>
-            <li><strong className="text-foreground">Creem</strong> — payment processing as Merchant of Record (handles taxes and compliance).</li>
+            <li><strong className="text-foreground">Waffo</strong> — payment processing as Merchant of Record (handles taxes and compliance).</li>
           </ul>
           <p>Each provider processes data under its own privacy policy and applicable law.</p>
         </section>

@@ -40,8 +40,8 @@ export type PaymentStatus = 'pending' | 'paid' | 'failed'
 export interface PaymentRow {
   id: string
   user_id: string
-  creem_checkout_id: string
-  creem_order_id: string | null
+  waffo_session_id: string
+  waffo_order_id: string | null
   amount: number
   credits_purchased: number
   status: PaymentStatus
@@ -97,7 +97,7 @@ export interface GenerationStatusResponse {
   error?: string | null
 }
 
-/* ============ Stripe→Creem 支付 ============ */
+/* ============ Stripe→Waffo 支付 ============ */
 
 /** 定价档位 ID（与 CREDIT_PACKAGES 的 id 字段对应） */
 export type PackageId = 'starter' | 'popular' | 'pro'
