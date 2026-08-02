@@ -726,7 +726,7 @@ npx kill-port 3000 && npm run dev
 2. **Supabase 生产跑 `0004_waffo.sql`**：rename payments 列 creem→waffo（本地已跑）。
 3. **Vercel 环境变量**：加 `WAFFO_MERCHANT_ID` + `WAFFO_PRIVATE_KEY`（⚠️ 原 key 曾粘到对话，**必须去 Dashboard 轮换新 key**）+ `WAFFO_PRODUCT_STARTER/POPULAR/PRO`（已建：`PROD_5GdIMzJzJlUpdrBCyuaX2x` / `PROD_10hOkpFlMDiWFiqLxcWXHi` / `PROD_1COeqPCRSNk89LbIyHY5nC`）；删 `CREEM_*`。
 4. **Waffo Dashboard 配生产 webhook**：URL=`https://tattoovis.ink/api/waffo-webhook`，事件 `order.completed`。
-5. **Waffo Dashboard 配全局 cancel URL** → `/pricing?canceled=true`。
+5. ~~cancel URL~~：**Waffo 不支持自定义 cancel URL**（SDK `createSession` 只有 `successUrl`、无 `cancelUrl`；store 设置也没有该字段）。与 Creem 不同。用户在 checkout 页取消时由 Waffo 默认处理（通常跳回来源页）。**此步跳过**。
 6. **PaymentFeedback toast 未弹**（已知小 bug）：支付成功跳回 `/?success=true` 后没成功 toast（credits 已正常加）。待排查——URL 是否真带回 `?success=true` / sonner toast 位置。spec/plan 未含此 fix。
 7. `git push origin main`（Waffo 代码 9 commit：spec/plan + WF1-6）→ Vercel 部署 → 生产端到端。
 
