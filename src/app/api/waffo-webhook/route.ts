@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { verifyWebhook, WebhookEventType, type WebhookEvent } from '@waffo/pancake-ts'
+import { verifyWebhook, WebhookEventType, type WebhookEvent, type WebhookEventData } from '@waffo/pancake-ts'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
@@ -30,7 +30,7 @@ export async function POST(req: Request) {
   // 1. 验签（SDK 内嵌公钥；失败 → 401，Waffo 不重试验签失败）
   let event
   try {
-    event = verifyWebhook(body, sig)
+    event = verifyWebhook<WebhookEventData>(body, sig)
   } catch (err) {
     console.error('[waffo-webhook] signature verification failed:', err)
     return new Response('Invalid signature', { status: 401 })
