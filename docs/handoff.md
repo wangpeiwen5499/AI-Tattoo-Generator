@@ -1,7 +1,7 @@
 # 项目交接文档
 
-> 上次更新：2026-08-01  
-> 当前进度：**Day 7 已上线 — tattoovis.ink 运行中（域名 ✅ / Clerk production ✅ / R2 CORS ✅ / 合规页 ✅ / 邮箱 ✅）；异步生成已上线（方案 A `after()` + 前端轮询，生产端到端跑通），详见 [docs/handoff-async-generation.md](./handoff-async-generation.md)**  
+> 上次更新：2026-08-02  
+> 当前进度：**tattoovis.ink 上线运行中（异步生成 + 游客免费 1 次 + 注册送 3 已上线）；Creem→Waffo 支付迁移代码完成、本地端到端验证中**（Creem 审核不过，换 `@waffo/pancake-ts`），Waffo 待办见文末「§当前待办」；异步改造见 [handoff-async-generation.md](./handoff-async-generation.md)  
 > 主分支：`main`（已推送 origin/main）
 
 ---
@@ -12,9 +12,9 @@
 
 **商业假设（30 天内回答）**：世界上是否有人愿意为"AI 纹身预览"付费？
 
-**MVP 严格边界**：3 个页面 + 1 个 AI 流程 + Creem 支付（2026-07-30 从 Stripe 迁移）。不做 AR / 视频 / 3D / 纹身师系统 / 博客 SEO。
+**MVP 严格边界**：3 个页面 + 1 个 AI 流程 + Waffo 支付（2026-08-02 从 Creem 迁移，本地验证中）。不做 AR / 视频 / 3D / 纹身师系统 / 博客 SEO。
 
-**定价**：Credits 制 5/20/50 次，$4.99 / $14.99 / $29.99。注册送 1 次免费。
+**定价**：Credits 制 5/20/50 次，$4.99 / $14.99 / $29.99。**游客免费 1 次 + 注册送 3 次**。
 
 **完整计划文档**：[`docs/mvp-plan.md`](./mvp-plan.md)（744 行，含 schema、AI 代码、API 设计、7 天任务分解）
 
@@ -30,8 +30,12 @@
 | 4 | 前端生成页（上传 + 4 图结果网格） | ✅ 已完成（Day 4 多个 commit）|
 | 5 | Stripe 支付（Checkout + Webhook + Credits 发放） | ✅ 已完成（Day 5 共 15 个 commit）|
 | 6 | 历史记录页（/history + 缩略图 + 大图 Dialog） | ✅ 已完成（Day 6 共 11 个 commit，已推送）|
-| 迁移 | **Stripe → Creem 支付迁移**（2026-07-30） | ✅ 已完成（commits `3d160ed`..`722b470`，端到端验证通过；详见 `docs/superpowers/specs/2026-07-30-stripe-to-creem-migration-design.md`）|
-| **7** | **部署 Vercel + 端到端验证** | ⏳ **下一步开始** |
+| 迁移 | Stripe → Creem 支付迁移（2026-07-30） | ✅ 已完成 |
+| 7 | 部署 Vercel + 端到端验证 | ✅ 已上线（tattoovis.ink 运行中） |
+| 8 | 异步生成（after() + 前端轮询，破网关超时） | ✅ 已上线（[handoff-async-generation.md](./handoff-async-generation.md)） |
+| 9 | 落地页内容（showcase 横向 carousel + How it works + FAQ + 定价区 + 全屏 Lightbox） | ✅ 已上线 |
+| 10 | 游客免费 1 次 + 注册送 3 次（Cookie guest + 每 IP 3 次/天限流 + 不迁移数据） | ✅ 已上线 |
+| 11 | **Creem → Waffo 支付迁移**（`@waffo/pancake-ts`，Creem 审核不过） | ⏳ **代码完成（WF1-6: `b1dcc9f`..`f0fc9bf`），本地验证中** → [spec](./superpowers/specs/2026-08-02-creem-to-waffo-migration-design.md) + [plan](./superpowers/plans/2026-08-02-creem-to-waffo-migration.md) |
 
 ---
 
@@ -713,7 +717,33 @@ npx kill-port 3000 && npm run dev
 
 ---
 
-## 12. 给新会话的开场建议
+## 12. 当前待办（Waffo 支付迁移上线）
+
+代码已完成（WF1-6，commit `b1dcc9f`..`f0fc9bf`），**本地端到端已跑通**（checkout → 测试卡 `4576 7500 0000 0110` → webhook → credits +5 → DB paid）。**未 push 生产**（push 前必须先配好生产 env/migration/webhook，否则生产支付会坏）。
+
+### 上线步骤（按序）
+1. **Waffo Dashboard 域名验证**：DNS 加 TXT `_waffo-challenge.www` = `waffo-verify=06a82b9bd444e7ff5c6e1f067f6c6447`（DNS 在 **Vercel** 管：项目 Settings → Domains → DNS Records；已确认 `tattoovis.ink` 的 NS = `ns1/ns2.vercel-dns.com`）。**进行中**。
+2. **Supabase 生产跑 `0004_waffo.sql`**：rename payments 列 creem→waffo（本地已跑）。
+3. **Vercel 环境变量**：加 `WAFFO_MERCHANT_ID` + `WAFFO_PRIVATE_KEY`（⚠️ 原 key 曾粘到对话，**必须去 Dashboard 轮换新 key**）+ `WAFFO_PRODUCT_STARTER/POPULAR/PRO`（已建：`PROD_5GdIMzJzJlUpdrBCyuaX2x` / `PROD_10hOkpFlMDiWFiqLxcWXHi` / `PROD_1COeqPCRSNk89LbIyHY5nC`）；删 `CREEM_*`。
+4. **Waffo Dashboard 配生产 webhook**：URL=`https://tattoovis.ink/api/waffo-webhook`，事件 `order.completed`。
+5. **Waffo Dashboard 配全局 cancel URL** → `/pricing?canceled=true`。
+6. **PaymentFeedback toast 未弹**（已知小 bug）：支付成功跳回 `/?success=true` 后没成功 toast（credits 已正常加）。待排查——URL 是否真带回 `?success=true` / sonner toast 位置。spec/plan 未含此 fix。
+7. `git push origin main`（Waffo 代码 9 commit：spec/plan + WF1-6）→ Vercel 部署 → 生产端到端。
+
+### 关键文件（Waffo）
+- `src/lib/waffo.ts`（`getWaffo` 单例，merchantId + privateKey）
+- `src/app/api/checkout/route.ts`（`waffo.checkout.createSession`）
+- `src/app/api/waffo-webhook/route.ts`（`verifyWebhook` + `event.data.orderMetadata` 发 credits，**不需 WEBHOOK_SECRET**）
+- `supabase/migrations/0004_waffo.sql`（payments 列 rename）
+- 已删：`src/lib/creem.ts` / `src/app/api/creem-webhook/` / 卸 `creem` 包 / 删 `CREEM_*` env
+
+### 实施中的两个发现（避坑）
+- SDK 0.16.1 的 `checkout.createSession` **不需 `productType`**（文档过时，SDK 用 productId 自动查产品类型）。
+- checkout 的 metadata 透传到 webhook 的字段是 **`event.data.orderMetadata`**（不是 `metadata`，SDK `.d.ts` 的 `WebhookEventData.orderMetadata` 确认）——不必兜底。
+
+---
+
+## 13. 给新会话的开场建议
 
 如果你是新接手的 Claude 实例，第一次对话应该：
 
