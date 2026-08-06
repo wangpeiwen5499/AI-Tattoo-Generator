@@ -29,7 +29,7 @@ export default function PricingPage() {
       </div>
 
       <p className="mx-auto mt-12 max-w-xl text-center text-sm text-muted-foreground">
-        🔒 Secured by Waffo · Test mode — no real charges
+        🔒 Secured by Waffo
       </p>
     </div>
   )
