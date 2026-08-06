@@ -1,8 +1,59 @@
 # 项目交接文档
 
-> 上次更新：2026-08-02  
-> 当前进度：**tattoovis.ink 上线运行中（异步生成 + 游客免费 1 次 + 注册送 3 已上线）；Creem→Waffo 支付迁移：已 push 上线（`3303fcc..5caaad6`，代码+本地端到端+外部配置全完成），待生产端到端验证 + PaymentFeedback toast fix**（Creem 审核不过，换 `@waffo/pancake-ts`），详见 §12 当前待办；异步改造见 [handoff-async-generation.md](./handoff-async-generation.md)  
-> 主分支：`main`（已推送 origin/main）
+> 上次更新：2026-08-06  
+> 当前进度：**Demo 已上线运行；决定用 ShipAny Two 模板重建成企业级 SaaS；Phase 1 已开始（.env.local 已配置、npm install 已完成），被 DATABASE_URL 阻塞中**  
+> 主分支：`main`（已推送 origin/main）  
+> ShipAny Two 模板路径：`D:\code\ShipAny模板\shipany-template-two-dev`（v1.7.1，Next.js 16 + React 19 + Tailwind v4）
+
+---
+
+## 🔴 2026-08-06 最新状态
+
+### 已完成的变更（当前项目）
+
+1. **修复 Clerk DNS 问题**：`clerk.tattoovis.ink` 的 CNAME 记录缺失导致 Clerk JS 无法加载 + session handshake 重定向死循环。已在 **NameSilo** DNS 添加 CNAME 记录修复。
+
+2. **移除 Test mode 文案**：`src/app/pricing/page.tsx` 和 `src/app/page.tsx` 中的 `🔒 Secured by Waffo · Test mode — no real charges` 改为 `🔒 Secured by Waffo`。**已 commit + push**（`1bc8f2d`）。
+
+### 重大决策：Demo → ShipAny Two 企业级 SaaS 重建
+
+用户决定用 **ShipAny Two** 模板（`D:\code\ShipAny模板\shipany-template-two-dev\`）作为底座重建项目，从 Demo 升级到企业级 SaaS。
+
+**保留**：Waffo 支付、KIE 纹身 AI 生成、R2 存储  
+**替换**：Clerk → better-auth、Supabase JS → Drizzle ORM + PostgreSQL 直连、自建 UI → ShipAny Two 主题系统  
+**新增**：RBAC 管理后台、FIFO 积分体系、国际化(中/英)、完整落地页
+
+完整迁移计划见：[`docs/superpowers/plans/2026-08-06-shipany-two-migration.md`](./superpowers/plans/2026-08-06-shipany-two-migration.md)
+
+### Phase 1 进行中：底座搭建
+
+**已完成**：
+- `.env.local` 已创建在 `D:\code\ShipAny模板\shipany-template-two-dev\.env.local`，包含：
+  - `NEXT_PUBLIC_APP_NAME = "AI Tattoo Generator"`
+  - `NEXT_PUBLIC_APPEARANCE = "dark"`
+  - `AUTH_SECRET` 已生成
+  - Waffo / KIE / R2 环境变量已填入（复用当前项目的值）
+- `npm install --legacy-peer-deps` 已跑通
+
+**阻塞中**：
+-`DATABASE_URL` 未配置 — 需要用 Supabase PostgreSQL 直连 URI，而不是 Supabase JS client key。
+  - Supabase 项目：`pguputwunoedvbvlqons`
+  - 获取方式：Supabase Dashboard → Settings → Database → Connection string → URI 标签
+  - 格式：`postgresql://postgres:[PASSWORD]@db.pguputwunoedvbvlqons.supabase.co:5432/postgres`
+  - 如忘记密码，同页面 Database Password 区域可重置
+
+### 下一步
+
+拿到 DATABASE_URL 后，填到 `.env.local`，然后：
+```bash
+cd "D:\code\ShipAny模板\shipany-template-two-dev"
+# 生成 Drizzle schema（从已有迁移文件）
+npm run db:push
+# 启动开发服务器
+npm run dev
+```
+
+验证：首页可访问、better-auth 注册/登录正常、管理后台 `/admin` 可访问。
 
 ---
 
