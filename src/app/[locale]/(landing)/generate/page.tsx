@@ -1,12 +1,14 @@
 import { setRequestLocale } from 'next-intl/server';
 
-import { getMetadata } from '@/shared/lib/seo';
+import { getThemePage } from '@/core/theme';
 import { TattooGenerator } from '@/shared/blocks/tattoo/tattoo-generator';
+import { getMetadata } from '@/shared/lib/seo';
+import { DynamicPage } from '@/shared/types/blocks/landing';
 
 export const revalidate = 3600;
 
 export const generateMetadata = getMetadata({
-  title: 'AI Tattoo Generator - Preview Your Tattoo Before You Ink',
+  title: 'AI Tattoo Generator — Preview Your Tattoo Before You Ink',
   description:
     'Upload your photo, describe your tattoo idea, and AI generates realistic tattoo previews on your body. Try it free — no artist appointment needed.',
   keywords: 'AI tattoo, tattoo preview, tattoo generator, AI tattoo design, body art preview',
@@ -21,9 +23,20 @@ export default async function GeneratePage({
   const { locale } = await params;
   setRequestLocale(locale);
 
-  return (
-    <div className="container mx-auto max-w-4xl px-4 py-12">
-      <TattooGenerator />
-    </div>
-  );
+  const page: DynamicPage = {
+    sections: {
+      hero: {
+        title: 'AI Tattoo Generator',
+        description:
+          'Upload your photo, describe your idea, and see how your tattoo will look before you commit. AI generates 4 realistic previews on different body parts.',
+      },
+      generator: {
+        component: <TattooGenerator />,
+      },
+    },
+  };
+
+  const Page = await getThemePage('dynamic-page');
+
+  return <Page locale={locale} page={page} />;
 }

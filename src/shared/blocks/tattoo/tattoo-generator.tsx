@@ -238,11 +238,7 @@ export function TattooGenerator() {
 
 function Header({ credits, creditsLoading }: { credits: number | null; creditsLoading: boolean }) {
   return (
-    <div className="flex items-center justify-between">
-      <div>
-        <h2 className="text-xl font-bold tracking-tight">Generate your tattoo preview</h2>
-        <p className="text-sm text-muted-foreground">Upload a photo, describe your idea, AI does the rest</p>
-      </div>
+    <div className="flex items-center justify-end">
       <CreditsBadge credits={credits} loading={creditsLoading} />
     </div>
   )
