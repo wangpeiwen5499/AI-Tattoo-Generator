@@ -180,7 +180,7 @@ export async function POST(req: Request) {
     // build checkout price with correct amount for selected currency
     const checkoutPrice: PaymentPrice = {
       amount: checkoutAmount,
-      currency: checkoutCurrency,
+      currency: checkoutCurrency.toUpperCase(),
     };
 
     if (!paymentProductId) {
@@ -253,7 +253,7 @@ export async function POST(req: Request) {
       userEmail: user.email,
       status: OrderStatus.PENDING,
       amount: Math.round(checkoutAmount * 100), // convert to cents (integer)
-      currency: checkoutCurrency,
+      currency: checkoutCurrency.toUpperCase(),
       productId: pricingItem.product_id,
       paymentType: paymentType,
       paymentInterval: paymentInterval,
