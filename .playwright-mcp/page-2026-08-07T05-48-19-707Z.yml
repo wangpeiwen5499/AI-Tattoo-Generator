@@ -1,0 +1,85 @@
+- generic [active] [ref=f1e1]:
+  - generic [ref=f1e2]:
+    - banner:
+      - generic [ref=f1e6]:
+        - link "AI Tattoo" [ref=f1e7] [cursor=pointer]:
+          - /url: /
+        - button "Open Menu" [ref=f1e9] [cursor=pointer]
+    - generic [ref=f1e12]:
+      - heading "AI Tattoo Generator" [level=1] [ref=f1e13]
+      - paragraph [ref=f1e14]: Upload your photo, describe your idea, and see how your tattoo will look before you commit. AI generates 4 realistic previews on different body parts.
+    - generic [ref=f1e15]:
+      - generic [ref=f1e18]:
+        - generic [ref=f1e19]: Credits
+        - generic [ref=f1e20]: …
+      - generic [ref=f1e22]:
+        - generic [ref=f1e23]:
+          - generic [ref=f1e24]: "1"
+          - generic [ref=f1e25]:
+            - heading "Upload your photo" [level=3] [ref=f1e26]
+            - paragraph [ref=f1e27]: Take a clear photo of the body part you want tattooed — good lighting works best
+        - button [ref=f1e29] [cursor=pointer]:
+          - generic [ref=f1e35]:
+            - paragraph [ref=f1e36]: Click to upload or drag and drop
+            - paragraph [ref=f1e37]: JPG, PNG or WebP · max 10MB
+      - generic [ref=f1e39]:
+        - generic [ref=f1e40]:
+          - generic [ref=f1e41]: "2"
+          - generic [ref=f1e42]:
+            - heading "Describe your tattoo idea" [level=3] [ref=f1e43]
+            - paragraph [ref=f1e44]: Be specific — mention style, colors, size, and any reference elements
+        - generic [ref=f1e45]:
+          - textbox "e.g. A dragon wrapped around my forearm in Japanese irezumi style, bold black lines with crimson red accents, detailed scales, half-sleeve size" [ref=f1e46]
+          - paragraph [ref=f1e48]: 0/500 characters
+      - generic [ref=f1e49]:
+        - generic [ref=f1e54]:
+          - paragraph [ref=f1e55]: 1 credit · Free preview
+          - paragraph [ref=f1e56]: Generates 4 previews — left arm, right arm, shoulder & calf
+        - button "Generate My Tattoo Preview" [disabled]
+    - contentinfo [ref=f1e57]:
+      - generic [ref=f1e58]:
+        - generic [ref=f1e59]:
+          - generic [ref=f1e60]:
+            - link "AI Tattoo Generator" [ref=f1e61] [cursor=pointer]:
+              - /url: /
+            - paragraph [ref=f1e63]: See your tattoo before you ink. Upload a photo, describe your idea, and AI generates realistic tattoo previews.
+          - generic [ref=f1e64]:
+            - generic [ref=f1e65]:
+              - generic [ref=f1e66]: Product
+              - generic [ref=f1e67]:
+                - link "Features" [ref=f1e68] [cursor=pointer]:
+                  - /url: /#features
+                - link "Pricing" [ref=f1e69] [cursor=pointer]:
+                  - /url: /pricing
+                - link "Generate" [ref=f1e70] [cursor=pointer]:
+                  - /url: /generate
+            - generic [ref=f1e71]:
+              - generic [ref=f1e72]: Resources
+              - link "Chat" [ref=f1e74] [cursor=pointer]:
+                - /url: /chat
+        - generic [ref=f1e75]:
+          - link "Built with ❤️ ShipAny" [ref=f1e76] [cursor=pointer]:
+            - /url: https://shipany.ai
+          - radiogroup [ref=f1e77]:
+            - radio "Switch to light mode" [ref=f1e78] [cursor=pointer]
+            - radio "Switch to dark mode" [checked] [ref=f1e79] [cursor=pointer]
+            - radio "Switch to system mode" [ref=f1e80] [cursor=pointer]
+          - button "English" [ref=f1e81] [cursor=pointer]
+        - generic [ref=f1e83]:
+          - generic [ref=f1e84]:
+            - text: © 2026
+            - link "AI Tattoo Generator" [ref=f1e85] [cursor=pointer]:
+              - /url: /
+            - text: ", All rights reserved"
+          - generic [ref=f1e87]:
+            - link "Privacy Policy" [ref=f1e88] [cursor=pointer]:
+              - /url: /privacy-policy
+            - link "Terms of Service" [ref=f1e89] [cursor=pointer]:
+              - /url: /terms-of-service
+          - generic [ref=f1e90]:
+            - link "Github" [ref=f1e91] [cursor=pointer]:
+              - /url: https://github.com/wangpeiwen5499/AI-Tattoo-Generator
+            - link "Email" [ref=f1e95] [cursor=pointer]:
+              - /url: mailto:support@tattoovis.ink
+  - region "Notifications alt+T"
+  - alert [ref=f1e99]

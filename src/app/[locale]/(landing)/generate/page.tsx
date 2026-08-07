@@ -24,12 +24,8 @@ export default async function GeneratePage({
   setRequestLocale(locale);
 
   const page: DynamicPage = {
+    title: 'AI Tattoo Generator',
     sections: {
-      hero: {
-        title: 'AI Tattoo Generator',
-        description:
-          'Upload your photo, describe your idea, and see how your tattoo will look before you commit. AI generates 4 realistic previews on different body parts.',
-      },
       generator: {
         component: <TattooGenerator />,
       },

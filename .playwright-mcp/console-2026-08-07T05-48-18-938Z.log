@@ -1,0 +1,3 @@
+[    1012ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ https://www.tattoovis.ink/api/credits:0
+[    1173ms] [ERROR] Access to fetch at 'https://tattoovis.ink/api/auth/get-session' from origin 'https://www.tattoovis.ink' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource. @ https://www.tattoovis.ink/generate:0
+[    1173ms] [ERROR] Failed to load resource: net::ERR_FAILED @ https://tattoovis.ink/api/auth/get-session:0
