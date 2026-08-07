@@ -34,11 +34,11 @@
         "show_avatars": true,
         "avatars_tip": "全球纹身爱好者的信赖之选",
         "image": {
-          "src": "/imgs/hero.png",
+          "src": "/imgs/cases/1.png",
           "alt": "AI 纹身生成器预览"
         },
         "image_invert": {
-          "src": "/imgs/hero.png",
+          "src": "/imgs/cases/1.png",
           "alt": "AI 纹身生成器预览"
         }
       },

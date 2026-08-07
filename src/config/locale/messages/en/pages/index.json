@@ -34,11 +34,11 @@
         "show_avatars": true,
         "avatars_tip": "Trusted by tattoo enthusiasts worldwide",
         "image": {
-          "src": "/imgs/hero.png",
+          "src": "/imgs/cases/1.png",
           "alt": "AI Tattoo Generator preview"
         },
         "image_invert": {
-          "src": "/imgs/hero.png",
+          "src": "/imgs/cases/1.png",
           "alt": "AI Tattoo Generator preview"
         }
       },
