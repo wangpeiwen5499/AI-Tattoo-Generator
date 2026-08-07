@@ -1,0 +1,940 @@
+# 项目交接文档
+
+> 上次更新：2026-08-07  
+> 当前进度：**✅ Phase 1-6 全部完成（底座→支付→AI核心→UI组件→游客+积分→部署上线）**  
+> 主分支：`main`（旧 Demo，Clerk+Stripe/Creem）  
+> 新分支：**`shipany-two`**（ShipAny Two 迁移，better-auth+Waffo，已部署 Vercel）  
+> 项目路径：`D:\code\AI Tattoo Generator Template`（原 `D:\code\ShipAny模板\shipany-template-two-dev` 的拷贝）
+
+---
+
+## 🔴 2026-08-06 最新状态
+
+### 已完成的变更（当前项目）
+
+1. **修复 Clerk DNS 问题**：`clerk.tattoovis.ink` 的 CNAME 记录缺失导致 Clerk JS 无法加载 + session handshake 重定向死循环。已在 **NameSilo** DNS 添加 CNAME 记录修复。
+
+2. **移除 Test mode 文案**：`src/app/pricing/page.tsx` 和 `src/app/page.tsx` 中的 `🔒 Secured by Waffo · Test mode — no real charges` 改为 `🔒 Secured by Waffo`。**已 commit + push**（`1bc8f2d`）。
+
+### 重大决策：Demo → ShipAny Two 企业级 SaaS 重建
+
+用户决定用 **ShipAny Two** 模板（`D:\code\ShipAny模板\shipany-template-two-dev\`）作为底座重建项目，从 Demo 升级到企业级 SaaS。
+
+**保留**：Waffo 支付、KIE 纹身 AI 生成、R2 存储  
+**替换**：Clerk → better-auth、Supabase JS → Drizzle ORM + PostgreSQL 直连、自建 UI → ShipAny Two 主题系统  
+**新增**：RBAC 管理后台、FIFO 积分体系、国际化(中/英)、完整落地页
+
+完整迁移计划见：[`docs/superpowers/plans/2026-08-06-shipany-two-migration.md`](./superpowers/plans/2026-08-06-shipany-two-migration.md)
+
+### Phase 1 进行中：底座搭建
+
+**已完成**：
+- `.env.local` 已创建在 `D:\code\ShipAny模板\shipany-template-two-dev\.env.local`，包含：
+  - `NEXT_PUBLIC_APP_NAME = "AI Tattoo Generator"`
+  - `NEXT_PUBLIC_APPEARANCE = "dark"`
+  - `AUTH_SECRET` 已生成
+  - Waffo / KIE / R2 环境变量已填入（复用当前项目的值）
+- `npm install --legacy-peer-deps` 已跑通
+
+**✅ 已解决（2026-08-06）**：
+- `DATABASE_URL` 已填入 Session pooler URI：`postgresql://postgres.pguputwunoedvbvlqons:[PASSWORD]@aws-0-us-east-1.pooler.supabase.com:5432/postgres`
+  - Supabase Dashboard 改版了！旧路径 **Settings → Database → Connection string** 已不存在
+  - ⚠️ **新路径**：项目 Dashboard 顶部点 **「Connect」** 按钮 → 选 **Session pooler** → URI → 复制
+  - ⚠️ **不要用 Direct connection**（免费版 IPv6-only，Windows IPv4 网络连不上）
+  - ⚠️ **Session pooler 用户名格式**：`postgres.[项目ref]`（如 `postgres.pguputwunoedvbvlqons`），不是裸 `postgres`
+  - 如忘记密码：Dashboard → Settings → Database → Database Password 可重置
+- 18 张 ShipAny Two 表已通过 `drizzle-kit generate` + `migrate` 推送到 Supabase（与 Demo 的 5 张旧表共存）
+- `npm run dev` ✅ 首页 `/` 200、`/admin` 重定向到登录 ✅
+
+⚠️ **drizzle-kit 工作区方案**：
+- drizzle-kit 内置的 dotenvx 不解析 `.env.local`（`"injected env (0)"`），需通过 node 脚本预加载 dotenv：
+```bash
+cd "D:\code\ShipAny模板\shipany-template-two-dev"
+node -e "require('dotenv').config({path:'.env.local',quiet:true});const{spawnSync}=require('child_process');spawnSync('npx',['drizzle-kit','generate','--config=src/core/db/config.ts'],{stdio:'inherit',env:process.env,shell:true}).status"
+# 或用 env: DATABASE_URL='postgresql://...' npx drizzle-kit push ...
+```
+- `db:push` 有 TTy 交互冲突 → 改用 `db:generate` + `db:migrate` 两步走
+
+### 下一步（Phase 2-6）
+
+```bash
+cd "D:\code\ShipAny模板\shipany-template-two-dev"
+# 启动开发服务器
+npm run dev
+```
+
+Phase 1 验证已通过：首页可访问、better-auth 注册/登录正常（待实测）、管理后台 `/admin` 可访问（需登录）。
+
+---
+
+## 1. 项目核心目标
+
+**一句话定位**：用户上传身体照片 + 文字描述纹身想法 → AI 生成纹身图案并融合到 4 个身体部位（左臂 / 右臂 / 肩膀 / 小腿）→ Credits 制付费。
+
+**商业假设（30 天内回答）**：世界上是否有人愿意为"AI 纹身预览"付费？
+
+**MVP 严格边界**：3 个页面 + 1 个 AI 流程 + Waffo 支付（2026-08-02 从 Creem 迁移，本地验证中）。不做 AR / 视频 / 3D / 纹身师系统 / 博客 SEO。
+
+**定价**：Credits 制 5/20/50 次，$4.99 / $14.99 / $29.99。**游客免费 1 次 + 注册送 3 次**。
+
+**完整计划文档**：[`docs/mvp-plan.md`](./mvp-plan.md)（744 行，含 schema、AI 代码、API 设计、7 天任务分解）
+
+---
+
+## 2. 进度总览
+
+| Day | 任务 | 状态 |
+|---|---|---|
+| 1 | 项目搭建 + Clerk 认证 + 首页骨架 | ✅ 已完成（commit `7d5203e`）|
+| 2 | Supabase schema + R2 存储 | ✅ 已完成（3 个 commit）|
+| 3 | AI 生成核心流程（KIE 中转 + 两步流程） | ✅ 已完成（commit `bafb944`，已推送）|
+| 4 | 前端生成页（上传 + 4 图结果网格） | ✅ 已完成（Day 4 多个 commit）|
+| 5 | Stripe 支付（Checkout + Webhook + Credits 发放） | ✅ 已完成（Day 5 共 15 个 commit）|
+| 6 | 历史记录页（/history + 缩略图 + 大图 Dialog） | ✅ 已完成（Day 6 共 11 个 commit，已推送）|
+| 迁移 | Stripe → Creem 支付迁移（2026-07-30） | ✅ 已完成 |
+| 7 | 部署 Vercel + 端到端验证 | ✅ 已上线（tattoovis.ink 运行中） |
+| 8 | 异步生成（after() + 前端轮询，破网关超时） | ✅ 已上线（[handoff-async-generation.md](./handoff-async-generation.md)） |
+| 9 | 落地页内容（showcase 横向 carousel + How it works + FAQ + 定价区 + 全屏 Lightbox） | ✅ 已上线 |
+| 10 | 游客免费 1 次 + 注册送 3 次（Cookie guest + 每 IP 3 次/天限流 + 不迁移数据） | ✅ 已上线 |
+| 11 | **Creem → Waffo 支付迁移**（`@waffo/pancake-ts`，Creem 审核不过） | ⏳ **已 push 上线**（代码+本地+外部全完成），待生产端到端验证 + toast fix → [spec](./superpowers/specs/2026-08-02-creem-to-waffo-migration-design.md) + [plan](./superpowers/plans/2026-08-02-creem-to-waffo-migration.md) |
+
+---
+
+## 3. Git 历史
+
+```
+791ac9e  fix: /history 数据获取与渲染分离以通过 react-hooks/error-boundaries  ← Day 6（最新）
+1ceb4dd  feat: 添加 /history 历史记录页                                       ← Day 6
+f16265c  fix: HistoryList 空状态图标加 aria-hidden                            ← Day 6
+c8bd08e  feat: 添加 HistoryList 历史列表容器与空状态                          ← Day 6
+f4cca02  refactor: HistoryCard 去掉冗余的 as BodyPart 断言                    ← Day 6
+00cd39f  feat: 添加 HistoryCard 单条历史卡片组件                              ← Day 6
+77c6048  refactor: HistoryImageDialog 改用显式索引映射替代 findIndex          ← Day 6
+18dbe20  feat: 添加 HistoryImageDialog 组件（缩略图网格 + 大图 Dialog）       ← Day 6
+29d0f37  feat: 添加 listProjects 查询用户历史生成记录                         ← Day 6
+d290d73  docs: 添加 Day 6 历史记录页实施计划                                  ← Day 6
+04109a5  docs: 添加 Day 6 历史记录页设计文档                                  ← Day 6
+20c00a0  docs: 更新交接文档，Day 5 完成，准备 Day 6                           ← Day 5
+4fcfb30  fix: credits "+N" 动效改用 URL 参数驱动（不再依赖 sessionStorage） ← Day 5
+b97c50e  feat: credits 徽章加浮动 "+N" 动效                              ← Day 5
+864215d  fix: credits 徽章动效跨页面跳转失效                             ← Day 5
+697dff4  feat: 增强付费成功反馈（toast 带 +N + credits 徽章动效）        ← Day 5
+d50f4e6  fix: 修复 lint 报错与 .gitignore 编码问题                       ← Day 5
+ad13aa8  feat: credits=0 toast 加 Buy Credits 按钮，处理付款成功反馈     ← Day 5
+10f3b62  fix: PricingCards 的 ?canceled=true 处理改用 useEffect          ← Day 5
+270b18c  feat: 添加 /pricing 定价页与 PricingCards 组件                  ← Day 5
+9ea0afb  fix: webhook 先 RPC 后 UPDATE 防漏发 credits，async_failed 加状态守卫 ← Day 5
+f34e28e  feat: 添加 POST /api/stripe-webhook 发放 credits                ← Day 5
+610eb18  feat: 添加 POST /api/checkout 创建 Stripe Session               ← Day 5
+4ee420f  feat: 添加 Day 5 Stripe 支付所需类型                            ← Day 5
+ab946e9  feat: 添加 Stripe SDK 单例                                      ← Day 5
+77fbcc5  docs: 添加 Day 5 Stripe 支付实施计划                            ← Day 5
+de80391  docs: 添加 Day 5 Stripe 支付设计文档                            ← Day 5
+f711771  feat: 首页嵌入 TattooGenerator 组件                ← Day 4
+cf454df  feat: 添加 TattooGenerator 主组件                  ← Day 4
+e4e968a  feat: 添加 GenerationResults 结果网格组件          ← Day 4
+a81920a  feat: 添加 GenerationProgress 多阶段进度组件       ← Day 4
+793729b  fix: useGeneration 状态竞争/双击并发/JSON 解析等 6 项问题  ← Day 4
+e243a22  feat: 添加 useGeneration hook 含状态机和假进度     ← Day 4
+587eea4  feat: 添加 ImageUploader 拖拽上传组件              ← Day 4
+3761221  feat: 添加 CreditsBadge 组件                       ← Day 4
+54d28bf  feat: 添加 useCredits hook                         ← Day 4
+253a216  feat: 添加 GET /api/credits 接口查询余额           ← Day 4
+6c8ced8  feat: 补充 Day 4 前端所需的 API 响应类型           ← Day 4
+bafb944  feat: 实现 AI 纹身生成核心流程（Day 3）            ← Day 3（已推送 origin/main）
+462a0ec  feat: 用户首次调用 API 时自动创建用户记录          ← Day 2 第 3 commit
+d751367  feat: 通过预签名 URL 实现 R2 直传上传              ← Day 2 第 2 commit
+6f4d747  feat: 初始化 Supabase 数据库 schema                ← Day 2 第 1 commit
+095fd20  chore: ignore local debug artifacts and settings   ← Day 1 清理
+7d5203e  first commit                                       ← Day 1 全部代码
+```
+
+**协作规范**（见 `CLAUDE.md`）：
+- 所有回答用中文
+- 所有 commit message 用中文
+- Co-Authored-By 行保留 `Claude Opus 4.6 <noreply@anthropic.com>`
+
+---
+
+## 4. 技术栈（实际安装版本，非计划文档写的版本）
+
+| 层 | 选型 | 关键注意 |
+|---|---|---|
+| 框架 | **Next.js 16.2.10**（App Router + Turbopack）+ React 19.2.4 | 计划文档写的是 15，实际 `create-next-app@latest` 装的是 16 |
+| 样式 | **Tailwind CSS v4**（CSS-first 配置） | 用 `@theme inline`，**无 `tailwind.config.ts`** |
+| 组件 | **Shadcn UI**（基于 `@base-ui/react`，非 Radix） | 已加：button / card / dialog / input / label / textarea / sonner |
+| 认证 | **Clerk Core 3** | ⚠️ API 大改：`<SignedIn>`/`<SignedOut>` 已删除，用 `<Show when="signed-in/out">`；`UserButton` 不再有 `afterSignOutUrl` 属性 |
+| 数据库 | **Supabase**（PostgreSQL，仅用 service_role key） | **不用** Supabase Auth；所有访问走 API Route，靠 Clerk session + userId 校验鉴权 |
+| 存储 | **Cloudflare R2**（S3 兼容，预签名 URL 直传） | 客户端直传不经 Next.js 服务器，省带宽；AI 输出图也落 R2（fetchUrlAndUpload） |
+| AI | **Kie.ai 中转 OpenAI `gpt-image-2`**（弃用直连 OpenAI） | 两步流程：text-to-image 生成纹身 → image-to-image 融合到 4 部位。异步任务模型 + URL 输入输出，详见 `docs/kie-ai-api.md` |
+| 支付 | **Creem.io**（Merchant of Record，官方 `creem` SDK；2026-07-30 从 Stripe 迁移） | webhook 发放 Credits（`/api/creem-webhook`），需防重复；MoR 自动处理全球税务（抽成侵蚀毛利，部署前确认费率） |
+
+### 4.1 Stripe→Creem 迁移要点（2026-07-30）
+
+完整设计 `docs/superpowers/specs/2026-07-30-stripe-to-creem-migration-design.md` + 实施 `docs/superpowers/plans/2026-07-30-stripe-to-creem-migration.md`。核心：
+
+- **彻底移除 Stripe**：删 `lib/stripe.ts` + `api/stripe-webhook`、卸 `stripe` 包、DB 列 `stripe_session_id`/`stripe_payment_intent` → `creem_checkout_id`/`creem_order_id`（migration `0002_creem.sql`，已在 Supabase 执行）。
+- **Creem 接入**：`lib/creem.ts`（SDK 单例，`server:'test'` 切 test/live endpoint）+ `/api/checkout`（`productId` 从环境变量取，返回 `checkout.checkoutUrl`，`{url}` 契约不变）+ `/api/creem-webhook`（`constructWebhookEventEntity` 验签 + `checkout.completed` + 先 RPC `add_credits` 后 UPDATE paid，防重复）。
+- **成功页方案 A**：Creem 跳回 `/?success=true`（无 `credits=N`），`payment-feedback` 只 toast + 发 `credits:refresh` 信号；`tattoo-generator` 监听后 refresh + 2.5s 兜底（webhook 异步）；放弃精确 `+N` 动画。
+- **踩过的坑**：① Creem 后台 webhook URL **必须带 `/api/creem-webhook` 路径**（只填根域名会送到首页，webhook 不触发——本次验证踩过）；② ngrok 免费版每次重启网址变，dashboard endpoint 要同步；③ Creem 测试卡 = Stripe 的 `4242 4242 4242 4242`（底层用 Stripe）；④ `creem` npm 包附带 MCP server 是特性非 bug；⑤ Creem 不支持 per-checkout cancel URL，需 dashboard 配全局 cancel URL 跳 `/pricing?canceled=true`。
+
+### ⚠️ 关键技术陷阱（已踩过的坑）
+
+1. **Clerk Core 3 破坏性变更**：
+   - 旧 `<SignedIn>`/`<SignedOut>` 已删除 → 用 `<Show when="signed-in">` / `<Show when="signed-out">` 替代
+   - `UserButton` 移除了 `afterSignOutUrl` → 用 `NEXT_PUBLIC_CLERK_AFTER_SIGN_OUT_URL` 环境变量替代
+   - middleware 中 `createRouteMatcher` 也被标记为 deprecated，建议用 resource-based auth（每个路由内部检查），但 MVP 阶段保持现状
+
+2. **Next.js 16 middleware 弃用警告**：
+   - Next.js 16 把 `middleware.ts` 文件名约定改为 `proxy.ts`
+   - 但 Clerk 还没提供 `clerkProxy` 函数，所以**保留 `src/middleware.ts`**，接受 deprecation warning
+   - 等 Clerk 升级后再迁移
+
+3. **Tailwind v4 CSS-first**：
+   - 不要去找 `tailwind.config.ts`，配置在 `src/app/globals.css` 的 `@theme inline` 块里
+   - 添加自定义颜色 / 字体直接改 globals.css
+
+4. **Supabase JS client 在 Node 20 触发 Realtime 初始化失败**：
+   - 任何 `createClient()` 调用都会尝试启动 Realtime（即使不用）
+   - Node 20 没有原生 WebSocket，会抛 `Node.js 20 detected without native WebSocket support`
+   - **解决方案**：`getSupabaseAdmin()` 设置 `auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false }`（已做）
+   - 但 verification 脚本仍然报错，所以用 PostgREST 直接 fetch 绕开（见 `scripts/verify-day2.mjs`）
+
+5. **Supabase client 顶层导出会破坏 build**：
+   - 错误写法：`export const supabaseAdmin = getSupabaseAdmin()`（模块加载时立即执行，build 时 env 未注入会抛错）
+   - 正确写法：每个使用方在函数内部 `const supabaseAdmin = getSupabaseAdmin()`（lazy，build-friendly）
+   - 已在 `src/lib/supabase/server.ts` 注释说明
+
+6. **Cloudflare Turnstile 拦截 Playwright 自动化注册**：
+   - 用 Playwright 自动注册 Clerk 测试账号会被反爬拒
+   - 不影响真实用户登录，只是没法在 CI 用 Playwright 跑 e2e 注册测试
+   - 想自动化测试需要用 Clerk 的测试 API 或预创建测试用户
+
+7. **KIE.AI 接口与 OpenAI 原生 API 完全不同**（Day 3 已踩）：
+   - **不能用 `openai` npm 包**，全部走 fetch
+   - **统一入口** `POST /api/v1/jobs/createTask`，靠 body 里 `model` 字段区分（不是路径区分）
+   - **body 嵌套**：业务字段都在 `input` 对象里，顶层只有 `model` / `callBackUrl` / `input`
+   - **camelCase**：`callBackUrl`（不是 callback_url），`taskId`（不是 task_id），`recordInfo`（不是 record-info）
+   - **响应 code 字段语义不规则**：示例里 `code:505` 但 `msg:"success"`，**只看 `data.state`** 判断成功失败
+   - **resultJson 是字符串化的 JSON**：要二次 `JSON.parse` 才能拿到 `resultUrls`
+   - **异步任务**：createTask 只返回 taskId，要轮询 `GET /api/v1/jobs/recordInfo?taskId=xxx` 拿结果
+   - **图片只保留 14 天**：拿到结果 URL 后必须立即下载到 R2
+   - **国内访问无需代理**：这是用 KIE 的主要原因
+   - 完整 API 文档：`docs/kie-ai-api.md`；真实接口示例：`docs/gpt image2 接口调用.md`
+
+8. **KIE aspect_ratio 只有 6 个值**：`auto / 1:1 / 9:16 / 16:9 / 4:3 / 3:4`
+   - 没有 `2:3`、`3:2`、`21:9` 等
+   - 本项目选择：纹身图案 `1:1`（方图），身体融合 `3:4`（竖图）
+
+9. **KIE 没有同步等待接口**：
+   - 必须 client 主动轮询，或者配置 `callBackUrl` webhook
+   - MVP 用轮询（2s 间隔、Step1 240s / Step2 300s 超时），简单可控
+   - 用 webhook 需要公网可访问 URL，开发环境跑不通
+
+10. **KIE 任务实际耗时远超文档宣传**（Day 3 已踩）：
+    - 文档说"3 秒生成"，实测 **text-to-image ~110 秒、image-to-image ~80 秒**
+    - 一次 /api/generate 总耗时 **3-9 分钟**
+    - 业务层默认超时设置：`generate-tattoo.ts` 240 秒、`apply-to-body.ts` 300 秒
+    - **不能再用 60 秒超时**（首版踩过，导致任务超时但 KIE 已扣 credits）
+
+11. **KIE 每次任务消耗 6 credits**（成本测算关键，已确认定价）：
+    - KIE 平台定价（见 `docs/kie-pricing.jpg`）：
+      - 1K 分辨率：6 credits ≈ **$0.03 / 张**
+      - 2K 分辨率：10 credits ≈ $0.05 / 张
+      - 4K 分辨率：16 credits ≈ $0.08 / 张
+    - 本项目默认用 1K：
+      - Step 1（text-to-image × 1）：6 credits
+      - Step 2（image-to-image × 4 部位）：6 × 4 = 24 credits
+      - **一次 /api/generate 总消耗：30 KIE credits ≈ $0.15**
+    - 业务侧定价毛利率（1 次生成 = 1 tattoo credit）：
+      - Starter $4.99 / 5 次 → 单次 $1.00 → 毛利 **85%**
+      - Popular $14.99 / 20 次 → 单次 $0.75 → 毛利 **80%**
+      - Pro $29.99 / 50 次 → 单次 $0.60 → 毛利 **75%**
+    - **结论**：毛利率健康，定价档位无需调整
+
+12. **R2 bucket 必须配 CORS 才能浏览器直传**（Day 3 已踩）：
+    - Day 2 的 `verify:db` 走 Node.js 服务端，不受 CORS 限制 → 当时没暴露
+    - Day 3 浏览器调 `/api/upload-url` 拿预签名 URL 后 PUT 到 R2 → 触发 CORS 拦截
+    - **解决**：R2 bucket → Settings → CORS Policy，加上：
+      ```json
+      [{
+        "AllowedOrigins": ["http://localhost:3000", "http://127.0.0.1:3000"],
+        "AllowedMethods": ["GET", "PUT", "POST", "HEAD"],
+        "AllowedHeaders": ["*"],
+        "ExposeHeaders": ["ETag"],
+        "MaxAgeSeconds": 3600
+      }]
+      ```
+    - **`AllowedHeaders: ["*"]` 必须**，因为 AWS SDK v3 会自动加 `x-amz-checksum-crc32` 等 header
+    - Day 7 部署 Vercel 后需要把生产域名也加进 AllowedOrigins
+
+13. **`ensureUser` 的 PGRST116 bug**（Day 3 已踩，已修）：
+    - 原代码：`.upsert({...}, { onConflict: 'id', ignoreDuplicates: true }).select().single()`
+    - 当用户**已存在**时，`ignoreDuplicates: true` 会让 upsert 返回 0 行，`.single()` 抛 `PGRST116`
+    - 第一次调用（新用户）正常，**第二次调用必报 500**
+    - **修复**：去掉 `ignoreDuplicates: true`，让 upsert 在已存在时也返回该行（`src/server/db/ensure-user.ts`）
+    - Day 2 当时没暴露是因为 `verify-day2.mjs` 用 PostgREST 直接测，不走 supabase-js 的 `.single()` 语义
+
+14. **Stripe CLI 账号 ≠ STRIPE_SECRET_KEY 账号**（Day 5 已踩）：
+    - 现象：Stripe Dashboard 显示支付成功，dev server 终端看不到 `POST /api/stripe-webhook`，payments 表 status 永远 pending
+    - 排查：`./stripe.exe checkout sessions retrieve <cs_test_xxx>` 报 `resource_missing` → 该 session 在 CLI 账号下不存在
+    - 修复：`./stripe.exe logout` + `./stripe.exe login` 到正确账号（浏览器登录时确认邮箱 = STRIPE_SECRET_KEY 账号所有者）→ 重启 listen 拿新 whsec → 更新 `.env.local` → 重启 dev server
+    - 用 `./stripe.exe trigger checkout.session.completed` 测试转发链路（trigger 创建的是 fixture，metadata 为空，会走 missing metadata 分支返回 200，不影响功能）
+
+15. **stripe listen 每次重启生成新 whsec**：
+    - `whsec_xxx` 是 CLI 本地转发专用的密钥，每次 `stripe listen` 启动都不一样
+    - 生产环境的 webhook secret 在 Stripe Dashboard 配置 endpoint 时生成，与本地不同
+    - 重启 listen 后必须：复制新 whsec → 更新 `.env.local` 的 `STRIPE_WEBHOOK_SECRET` → **重启 dev server**（Next.js 启动时读 env）
+
+16. **Next.js 16 + useSearchParams 必须在 Suspense 边界内**：
+    - 否则 build 失败：`useSearchParams() should be wrapped in a suspense boundary`
+    - 任何用了 `useSearchParams` 的 Client Component 在被 Server Component 引用时都要 `<Suspense fallback={null}>` 包裹
+    - Day 5 在 `pricing/page.tsx` 和 `app/page.tsx` 都加了 Suspense
+
+17. **React 19 react-hooks/immutability 规则**（Day 5 已踩）：
+    - `window.location.href = x` 会被 lint 报错（属性修改，React Compiler 视为副作用）
+    - 改用 `window.location.assign(x)`（方法调用，不触发规则）
+
+18. **React 19 react-hooks/set-state-in-effect 规则**（Day 5 已踩）：
+    - 在 `useEffect` 里直接 `setState()`（即使是条件分支）会被 lint 报错
+    - 用 `useReducer` 的 `dispatch` 替代（dispatch 在 effect 里允许）
+    - 设计动效/动画逻辑时优先用 reducer 模式
+
+19. **Credits 徽章动效跨页面跳转**（Day 5 已踩）：
+    - 用户付款跳回主页会触发整个 React 树重新挂载，组件内部 state 丢失
+    - 用 sessionStorage 持久化 prev 不可靠（跨版本升级时是旧值，delta 计算错误）
+    - **最终方案**：URL 参数驱动 — PaymentFeedback 检测 `?credits=N` 时通过 `window.dispatchEvent(new CustomEvent('credits:added', { detail: { amount: N } }))` 通知 CreditsBadge 播放 "+N" 动画，delta 直接来自 URL，绝对准确
+
+20. **React 19 react-hooks/error-boundaries 规则**（Day 6 已踩）：
+    - lint 报错：`Avoid constructing JSX within try/catch`，禁止在 try/catch 内 return JSX
+    - Server Component 用 try/catch 包数据获取时，**try 只用于取数据**（赋值给 `let` 变量），**JSX 在 try 外构造**（外面判断 null/默认值走错误兜底）
+    - Day 6 的 `src/app/history/page.tsx` 就是这个模式：`let projects = null` → try 里赋值 → try 外判断 `if (projects === null) return <Error />` → 正常 `return <HistoryList projects={projects} />`
+
+---
+
+## 5. 环境变量状态
+
+`.env.local`（不提交到 git）当前已配齐 13/13 个：
+
+| 状态 | 变量 | 用途 |
+|---|---|---|
+| ✅ | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk 公钥（pk_test_） |
+| ✅ | `CLERK_SECRET_KEY` | Clerk 私钥（sk_test_） |
+| ✅ | `NEXT_PUBLIC_CLERK_SIGN_IN_URL` | `/sign-in` |
+| ✅ | `NEXT_PUBLIC_CLERK_SIGN_UP_URL` | `/sign-up` |
+| ✅ | `NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL` 等 | `/` |
+| ✅ | `NEXT_PUBLIC_SUPABASE_URL` | Supabase 项目 URL |
+| ✅ | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon（MVP 实际不用） |
+| ✅ | `SUPABASE_SERVICE_ROLE_KEY` | Supabase admin（绕过 RLS） |
+| ✅ | `R2_ACCOUNT_ID` | Cloudflare 账户 ID |
+| ✅ | `R2_ACCESS_KEY_ID` | R2 API Token access key |
+| ✅ | `R2_SECRET_ACCESS_KEY` | R2 API Token secret |
+| ✅ | `R2_BUCKET_NAME` | `ai-tattoo-generator` |
+| ✅ | `R2_PUBLIC_URL` | `https://pub-xxxxx.r2.dev`（r2.dev 公开域名已开启） |
+| ✅ | `KIE_API_KEY` | Kie.ai API Key（Day 3 已配） |
+| ✅ | `KIE_BASE_URL` | `https://api.kie.ai`（Day 3 已配） |
+| ✅ | `CREEM_API_KEY` | Creem API key（creem_test_，迁移已配；test/live 各一套） |
+| ✅ | `CREEM_WEBHOOK_SECRET` | Creem webhook 验签密钥（whsec_，dashboard 注册 endpoint 时生成；test/live 各一套，不随本地重启变化） |
+| ✅ | `CREEM_PRODUCT_STARTER` | Creem product id（5 credits，prod_782s…） |
+| ✅ | `CREEM_PRODUCT_POPULAR` | Creem product id（20 credits，prod_2rNS…） |
+| ✅ | `CREEM_PRODUCT_PRO` | Creem product id（50 credits，prod_6gXJ…） |
+
+参考 `.env.example` 看完整字段。
+
+---
+
+## 6. 当前已实现的文件结构
+
+```
+src/
+├── app/
+│   ├── layout.tsx                          # ClerkProvider + Navbar 包裹
+│   ├── page.tsx                            # 首页 Hero + PaymentFeedback（监听 ?success=true）
+│   ├── globals.css                         # Tailwind v4 @theme inline + credits-float-up keyframes
+│   ├── sign-in/[[...sign-in]]/page.tsx     # Clerk 登录页
+│   ├── sign-up/[[...sign-up]]/page.tsx     # Clerk 注册页
+│   ├── pricing/page.tsx                    # ⭐ Day 5 定价页（Server Component + Suspense）
+│   ├── history/page.tsx                    # ⭐ Day 6 历史记录页（Server Component）
+│   └── api/
+│       ├── upload-url/route.ts             # POST 返回 R2 预签名上传 URL（Day 2）
+│       ├── generate/route.ts               # POST 串联 AI 生成完整流程（Day 3，核心）
+│       ├── credits/route.ts                # GET 返回余额（Day 4）
+│       ├── checkout/route.ts               # ⭐ Day 5 POST 创建 Stripe Checkout Session
+│       └── stripe-webhook/route.ts         # ⭐ Day 5 POST Stripe webhook 验签 + 发放 credits
+├── components/
+│   ├── navbar.tsx                          # 顶栏（Sign in / History / Buy Credits / UserButton）
+│   ├── tattoo-generator.tsx                # Day 4 主组件（Day 5 加了 Buy Credits toast）
+│   ├── image-uploader.tsx                  # Day 4 上传组件
+│   ├── generation-progress.tsx             # Day 4 进度展示
+│   ├── generation-results.tsx              # Day 4 结果网格
+│   ├── credits-badge.tsx                   # 余额徽章（Day 5 加了 count-up + 浮动 +N 动效）
+│   ├── pricing-cards.tsx                   # ⭐ Day 5 3 档定价卡片
+│   ├── payment-feedback.tsx                # ⭐ Day 5 监听 ?success=true 触发 toast + credits:added 事件
+│   ├── history-list.tsx                    # ⭐ Day 6 历史列表容器 + 空状态（Server Component）
+│   ├── history-card.tsx                    # ⭐ Day 6 单条历史卡片（Server Component）
+│   ├── history-image-dialog.tsx            # ⭐ Day 6 缩略图网格 + 大图 Dialog（Client Component）
+│   └── ui/                                 # Shadcn 原子组件（7 个）
+├── lib/
+│   ├── utils.ts                            # cn()
+│   ├── constants.ts                        # BODY_PARTS / CREDIT_PACKAGES / 上传限制
+│   ├── r2.ts                               # R2 封装：getUploadUrl / getPublicUrl / makeObjectKey / makeOutputKey / fetchUrlAndUpload
+│   ├── stripe.ts                           # ⭐ Day 5 getStripe() 懒加载单例
+│   └── supabase/
+│       ├── server.ts                       # getSupabaseAdmin()（service_role，lazy）
+│       └── client.ts                       # 浏览器占位（MVP 禁用）
+├── hooks/                                # Day 4 新目录
+│   ├── use-credits.ts                     # 挂载时拉取余额 + refresh()
+│   └── use-generation.ts                  # 6 状态状态机 + 假进度 + XHR 上传 + AbortController 超时
+├── server/
+│   ├── ai/                                 # Day 3 AI 模块
+│   │   ├── types.ts                        # KIE + 业务类型
+│   │   ├── kie-client.ts                   # createTask / getRecordInfo / pollTask / pollManyTasks
+│   │   ├── generate-tattoo.ts              # Step 1：prompt → 纹身图案（text-to-image, 1:1）
+│   │   └── apply-to-body.ts                # Step 2：4 部位并发融合（image-to-image, 3:4）
+│   └── db/
+│       ├── ensure-user.ts                  # Clerk id → upsert Supabase user（送 1 credit）
+│       └── queries.ts                      # getCredits / createProject / deductCredits / refundCredits / recordGenerations / updateProjectStatus / listProjects（Day 6）
+├── types/
+│   └── index.ts                            # DB 行 TS 类型 + Day 5 PackageId/CheckoutRequestBody/CheckoutResponse + Day 6 ProjectWithGenerations
+└── middleware.ts                           # Clerk 路由保护（仅 /history）
+
+supabase/migrations/0001_init.sql           # 4 表 + 2 RPC + 触发器（已在 Supabase 执行）
+scripts/
+├── verify-day2.mjs                         # 端到端冒烟测试（DB + R2）
+└── verify-day3.mjs                         # KIE 接口冒烟测试（消耗 ~2 credits）
+docs/
+├── mvp-plan.md                             # 完整计划（开发宪法）
+├── handoff.md                              # 本文档
+├── kie-ai-api.md                           # KIE API 使用文档（Day 3 参考）
+├── kie-pricing.jpg                         # KIE 平台 gpt-image-2 定价截图
+├── gpt image2 接口调用.md                  # 用户提供的真实接口示例（createTask + recordInfo）
+├── superpowers/
+│   ├── specs/2026-07-20-day5-stripe-payment-design.md   # ⭐ Day 5 设计文档
+│   └── plans/2026-07-20-day5-stripe.md                  # ⭐ Day 5 实施计划
+```
+
+---
+
+## 7. 验证命令
+
+```bash
+# 启动开发服务器
+npm run dev                                  # http://localhost:3000
+
+# 编译检查
+npm run build                                # 有 1 个已知 middleware 弃用警告，正常
+npm run lint
+
+# 端到端数据库 + R2 冒烟测试（独立脚本，不依赖 dev server）
+npm run verify:db
+# 预期：Supabase 5/5 ✅ + R2 3/3 ✅
+
+# KIE 接口冒烟测试（消耗 ~2 credits，跑前确认余额）
+npm run verify:day3
+# 预期：text-to-image ✅ + R2 落图 ✅ + image-to-image ✅
+
+# 手动测试 /api/upload-url（需要 Clerk 登录态）
+# 浏览器 DevTools Console:
+fetch('/api/upload-url', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ contentType: 'image/jpeg' })
+}).then(r => r.json()).then(console.log)
+
+# 手动测试 /api/generate（需要 Clerk 登录态 + 已上传照片 + credits ≥ 1）
+# 浏览器 DevTools Console（替换 bodyPhotoKey/Url 为 /api/upload-url 返回值）:
+fetch('/api/generate', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    bodyPhotoKey: 'uploads/userId/xxx.jpg',
+    bodyPhotoUrl: 'https://pub-xxx.r2.dev/uploads/userId/xxx.jpg',
+    prompt: 'dragon japanese style'
+  })
+}).then(r => r.json()).then(console.log)
+```
+
+---
+
+## 8. Day 3 完成回顾 + Day 4 准备清单
+
+### 8.1 Day 3 已完成事项
+
+**Commit**：`bafb944 feat: 实现 AI 纹身生成核心流程（Day 3）`，已推送到 `origin/main`（15 个文件 +1680/-102）
+
+✅ **AI 模块**（4 个新文件）：
+- `src/server/ai/types.ts` — KIE + 业务类型
+- `src/server/ai/kie-client.ts` — createTask / pollTask / pollManyTasks
+- `src/server/ai/generate-tattoo.ts` — Step 1（text-to-image, aspect_ratio=1:1）
+- `src/server/ai/apply-to-body.ts` — Step 2（4 部位并发 image-to-image, aspect_ratio=3:4）
+
+✅ **API Route**：`src/app/api/generate/route.ts`
+- Clerk 鉴权 + ensureUser + getCredits + deductCredits + createProject
+- Step 1 + Step 2 串联
+- recordGenerations + updateProjectStatus
+- 失败兜底：refundCredits + updateProjectStatus('failed')
+
+✅ **底层模块扩展**：
+- `src/lib/r2.ts` 加 `makeOutputKey` + `fetchUrlAndUpload`
+- `src/server/db/queries.ts` 加 createProject / deductCredits / refundCredits / recordGenerations / updateProjectStatus
+
+✅ **测试脚本**：`scripts/verify-day3.mjs`（消耗 ~2 credits）
+
+✅ **文档**：`docs/kie-ai-api.md`（KIE API 完整使用说明）
+
+### 8.2 Day 3 实际流程（API Route 12 步，与原计划略有调整）
+
+```
+1. 验证 Clerk session（401）
+2. ensureUser
+3. 解析 body：bodyPhotoKey / bodyPhotoUrl / prompt
+4. getCredits → 余额检查（402）
+5. RPC deduct_credits（原子扣减；并发竞争时 RPC 抛错 → 402）
+6. INSERT projects status='processing'
+7. Step 1：generateTattooDesign → KIE text-to-image → 轮询 → 下载到 R2
+8. Step 2：applyTattooToBody → 4 部位并发 KIE image-to-image → 并发轮询 → 并发下载到 R2
+9. recordGenerations（4 条）
+10. 判断：0 张成功 → 退款；≥1 张成功 → 标 completed
+11. updateProjectStatus
+12. 返回 projectId + tattooDesignUrl + images[]
+```
+
+**与原计划差异**：
+- 没做并发检查（30 秒内只能 1 次）→ MVP 阶段先不做，Day 6 一起加
+- 退款策略细化：4 张全失败才退款；≥1 张成功就不退
+
+### 8.3 Day 4 要做的事（前端生成页）
+
+| 文件 | 作用 |
+|---|---|
+| `src/app/generate/page.tsx` | 生成页主组件（上传 + prompt 输入 + 提交按钮） |
+| `src/components/upload-box.tsx`（或类似） | 拖拽 / 点击上传组件，调 /api/upload-url |
+| `src/components/result-grid.tsx` | 4 图结果网格展示（左臂/右臂/肩膀/小腿） |
+| `src/components/credits-badge.tsx` | 显示当前 credits 余额 |
+
+Day 4 详细任务见 `docs/mvp-plan.md` 的 Day 4 章节。
+
+### 8.4 Day 4 开始前用户需要确认
+
+- [x] **跑通 `npm run verify:day3`**：✅ KIE 接口 + R2 落图链路已验证通过
+- [x] **手动调 `/api/generate`**：✅ 用真实 Clerk 登录态端到端跑通（纹身设计 + 4 部位融合全部成功）
+- [x] **commit Day 3 代码**：✅ 已提交 `bafb944` 并推送到 `origin/main`
+- [x] **KIE 成本测算**：✅ 单次成本 $0.15，毛利率 75-85%（详见 §4 第 11 项）
+- [ ] 准备 5 张测试身体照片（Day 4 联调用，可临时用 verify-day3 测试图）
+
+### 8.5 Day 4 完成回顾 + Day 5 准备清单
+
+**Commit 范围**：`6c8ced8` ~ `f711771` + 1 个 bug 修复 commit `793729b`，共 11 个 commit（全部在 main，未推送）。
+
+✅ **Day 4 已完成事项**：
+
+**新增 API**：
+- `GET /api/credits` — 返回当前 Clerk 用户余额（复用 ensureUser + getCredits）
+
+**新增 hooks**（`src/hooks/`）：
+- `useCredits` — 挂载时 fetch /api/credits，暴露 refresh()
+- `useGeneration` — 6 状态状态机（idle/uploading/ready/generating/completed/error），假进度算法（0-110s→45%、110-250s→90%、>250s→95% cap），XHR 上传进度，AbortController 15min 超时
+
+**新增组件**：
+- `TattooGenerator`（主组件，串联所有子组件）
+- `ImageUploader`（拖拽 + 点击 + 预览 + 客户端预检 size/type）
+- `GenerationProgress`（多阶段标签 + 进度条 + elapsed）
+- `GenerationResults`（Step 1 设计稿 + 4 部位 2x2 + Dialog 放大 + 失败占位 + refunded 提示）
+- `CreditsBadge`（右上角徽章）
+
+**修改**：
+- `src/types/index.ts` 追加 4 个 API 响应类型
+- `src/app/page.tsx` 改写为 Hero + TattooGenerator（已登录）
+
+**Day 4 实际遇到的坑**（通过 code review 发现并修复）：
+- `useGeneration` 的 6 项 bug 已修（commit `793729b`）：
+  - C1: stateRef 声明位置 → 移到顶部
+  - C2: reset() 与 generate catch 的状态竞争 → 加 idle 检查
+  - C3: 双击并发 → 入口加 abort-if-generating
+  - C4: clearTimers 没清 setTimeout → 加 timeoutRef
+  - I2: 上传预检失败 status 错误 → 改回 idle
+  - I4: JSON 解析静默失败 → 改为 throw
+
+**Day 5 要做的事**（Stripe 支付）：
+
+| 文件 | 作用 |
+|---|---|
+| `src/lib/stripe.ts` | Stripe client + CREDIT_PACKAGES 配置（plan 已有占位） |
+| `src/app/api/checkout/route.ts` | POST 创建 Stripe Checkout Session |
+| `src/app/api/stripe-webhook/route.ts` | Stripe Webhook → 发放 credits |
+| `src/app/pricing/page.tsx` | 定价页面 |
+| `src/components/pricing-cards.tsx` | 3 档定价卡片 |
+
+详见 `docs/mvp-plan.md` Day 5 章节。
+
+### 8.6 Day 5 开始前用户需要确认（已完成 ✅）
+
+- [x] 跑通 `npm run build`：✅
+- [x] 跑通 Day 4 端到端：✅（上传 + 生成流程正常）
+- [x] **Stripe 账户已注册**：✅（test mode）
+- [x] **拿到 `STRIPE_SECRET_KEY` 和 `STRIPE_WEBHOOK_SECRET`**：✅（写入 `.env.local`）
+- [x] **准备测试卡 `4242 4242 4242 4242`**：✅（Day 5 测试已用过）
+
+### 8.7 Day 5 完成回顾 + Day 6 准备清单
+
+**Commit 范围**：`de80391` ~ `20c00a0`，共 16 个 commit（全部已推送到 `origin/main`）。
+
+✅ **Day 5 已完成事项**：
+
+**新增模块**（5 个核心文件）：
+- `src/lib/stripe.ts` — `getStripe()` 懒加载单例（匹配 `getSupabaseAdmin` 模式）
+- `src/app/api/checkout/route.ts` — POST 创建 Stripe Hosted Checkout Session
+- `src/app/api/stripe-webhook/route.ts` — POST Stripe webhook 验签 + 防重复 + RPC add_credits
+- `src/app/pricing/page.tsx` — 定价页 Server Component（含 Suspense 包裹，Next.js 16 要求）
+- `src/components/pricing-cards.tsx` — 3 档定价卡片 Client Component
+
+**新增 UI 反馈**：
+- `src/components/payment-feedback.tsx` — 监听 `?success=true&credits=N`，显示 toast + 通过 `window.dispatchEvent('credits:added')` 通知徽章做动效
+- `src/components/credits-badge.tsx` — 加 count-up 数字滚动 + 高亮（scale/ring/bg）+ 浮动 "+N" 文字动画（1.5s）
+- `src/app/globals.css` — 加 `@keyframes credits-float-up`
+
+**修改**：
+- `src/app/page.tsx` — 嵌入 `<PaymentFeedback>`（Suspense 包裹）
+- `src/components/tattoo-generator.tsx` — credits=0 toast 加 "Buy Credits" 按钮
+- `src/types/index.ts` — 加 `PackageId` / `CheckoutRequestBody` / `CheckoutResponse`
+- `src/app/api/checkout/route.ts` — `success_url` 加 `&credits=N` 参数（让 toast 和动效 delta 准确）
+
+**Day 5 实际遇到的坑**（已全部修复）：
+
+| 坑 | 修复 |
+|---|---|
+| **Stripe CLI 账号 ≠ STRIPE_SECRET_KEY 账号** | 本地开发最常见错误。现象：Stripe Dashboard 显示支付成功，但 dev server 看不到 webhook。修复：`stripe logout` + `stripe login` 到正确账号，重启 listen 拿新 whsec |
+| **Webhook 先 UPDATE 后 RPC 致 credits 漏发**（Task 4 严重 bug） | 修复 `9ea0afb`：交换为先 RPC 后 UPDATE。原理：RPC 失败 → 重试时 status 仍为 pending，重跑完整流程；UPDATE 失败导致重复加 credits 的概率极低（"用户多得" 比 "用户少得" 客诉风险小） |
+| **Next.js 16 + useSearchParams 必须 Suspense 包裹** | 否则 build 失败。PricingCards 和 PaymentFeedback 都用 Suspense 包裹 |
+| **React 19 react-hooks/immutability 报错 `window.location.href = x`** | 改为 `window.location.assign(x)`（方法调用 vs 属性修改） |
+| **React 19 react-hooks/set-state-in-effect 报错**（count-up 动效） | 用 `useReducer` 替代多个 useState + useRef，dispatch 在 effect 里调用（lint 允许） |
+| **Credits 动效跨页面跳转失效** | 第一版用 sessionStorage 持久化 prev，但用户跨版本升级时 storage 是旧值，delta 计算错误。最终方案：完全去掉 storage，改用 URL 参数驱动（PaymentFeedback 通过 `window.dispatchEvent` 通知 CreditsBadge，delta 直接来自 `?credits=N`，绝对准确） |
+| **`.gitignore` UTF-16 编码导致 stripe.exe 未被忽略** | Stripe Windows 安装包写入时编码错乱，重写为 UTF-8 |
+
+**Day 5 端到端验证**（全部 ✅）：
+- 未登录访问 /pricing → 3 卡片 + "Sign in to buy" → 点击弹 Clerk modal
+- 登录访问 /pricing → 3 卡片 + Most Popular 高亮
+- 点 Starter → Stripe Checkout → 取消 → 跳回 `/pricing?canceled=true` + toast
+- 点 Most Popular + 4242 测试卡 → 跳回 `/?success=true&credits=20` + toast + credits 徽章动效（count-up + 高亮 + 浮动 "+20"）
+- 数据库 payments 表新增 status='paid' 记录，users 表 credits +20
+- 防重复测试：resend `checkout.session.completed` 事件，dev server 打印 `payment already paid, skipping`，credits 不重复加
+- 错误场景：无效 packageId → 400；未登录调用 → 401
+
+### 8.8 Day 6 要做的事（历史记录页）— 已完成
+
+**实际范围（与用户确认后收窄）**：只做核心历史记录页。可选项（并发限制 / Hero 打磨 / SEO）推迟到 Day 7 之后看用户反馈。
+
+### 8.9 Day 6 开始前确认事项
+
+- [x] 跑通 `npm run build`：✅（Day 5 验证通过）
+- [x] 端到端跑通购买 + 发放 credits：✅（Day 5 Task 7 全流程验证）
+- [x] Day 6 不需要外部依赖，纯前端 + DB 查询：✅
+
+### 8.10 Day 6 完成回顾 + Day 7 准备清单
+
+**Commit 范围**：`04109a5`（spec）+ `d290d73`（plan）+ 9 个实现/修复 commit = **共 11 个 commit**，全部已推送到 `origin/main`。
+
+✅ **Day 6 已完成事项**：
+
+**设计文档 + 实施计划**：
+- `docs/superpowers/specs/2026-07-21-day6-history-page-design.md` — 设计文档（架构 / 关键决策 / 错误处理 / 测试验证）
+- `docs/superpowers/plans/2026-07-21-day6-history.md` — 7 个 task 的分步实施计划（每 task 含完整代码 + 验证命令 + commit 命令）
+
+**新增模块**：
+- `src/types/index.ts` — 加 `ProjectWithGenerations = ProjectRow & { generations: GenerationRow[] }`
+- `src/server/db/queries.ts` — 加 `listProjects(userId)`（Supabase 嵌套 select `'*, generations(*)'` 自动按 project_id 外键关联）
+- `src/components/history-image-dialog.tsx` — Client Component，缩略图网格 + Dialog 大图 + 左右切换（ChevronLeft/ChevronRight）
+- `src/components/history-card.tsx` — Server Component，单条卡片静态布局，把图片区整个委托给 HistoryImageDialog
+- `src/components/history-list.tsx` — Server Component，标题 + 数量 + 空状态 + 卡片列表
+- `src/app/history/page.tsx` — Server Component，auth + ensureUser + listProjects + 渲染容器 + 错误兜底
+
+**Day 6 设计要点**：
+- Server Component 直查 DB（与 `/pricing` 一致），SEO 友好、首屏快
+- 只查 `status='completed'`，失败记录不显示
+- 全量返回无分页（MVP 用户量小）
+- 时间用 `toLocaleDateString('en-US', { year, month: 'short', day: 'numeric' })` → "Jul 21, 2026"（避免 SSR/CSR 相对时间不一致）
+- `HistoryImageDialog` 同时负责「缩略图网格」+「Dialog 大图」，因为它们共享 `openIndex` state；HistoryCard 保持 Server Component
+- Dialog 支持左右切换，用 `(i ± 1) % images.length` 模运算
+- 缩略图点击时通过 `bodyPartDialogIndex` 数组显式映射到 Dialog 索引（避免 findIndex 在 url 重复时错位，防御性更强）
+
+**Day 6 实际遇到的坑**：
+
+| 坑 | 修复 |
+|---|---|
+| **React 19 react-hooks/error-boundaries 规则禁止 try/catch 内构造 JSX** | lint 报 `Avoid constructing JSX within try/catch`。重构 `/history/page.tsx`：try 只赋值 `let projects = null`，JSX 在 try 外构造（null 走错误兜底，非 null 走正常渲染）。详见 §4 第 20 项 |
+| **HistoryImageDialog 用 findIndex 反查 url 定位 Dialog 索引**（code review 提出） | 改为构建时显式记录 `bodyPartDialogIndex: number[]`，避免 url 重复时 findIndex 返回错位（虽当前数据不触发，防御性更强）。commit `77c6048` |
+| **HistoryCard 用 `as BodyPart` 断言冗余**（code review 提出） | `BODY_PARTS` 已是 `as const` 元组，map 回调参数类型已推断为字面量联合，删除断言。commit `f4cca02` |
+
+**Day 6 端到端验证**（全部 ✅）：
+- 已登录访问 `/history` → 显示所有 completed projects，按 created_at 倒序
+- 每条卡片：prompt + 时间 + N/4 succeeded + 纹身设计稿缩略图 + 4 部位 2x2 缩略图
+- 点任一缩略图 → Dialog 弹大图，左右箭头切换流畅 + "N / M" 索引显示 + Esc 关闭
+- 空状态：新 Clerk 账号访问 → "No tattoos yet" + CTA 跳 `/`
+- 未登录访问 → middleware 重定向 sign-in
+- `npm run lint` + `npm run build` 全部通过
+
+**复用既有资源**（零修改）：
+- `src/middleware.ts` 已保护 `/history`（Day 1 配）
+- `src/components/navbar.tsx` 已有 History 链接（Day 4 加）
+- `src/lib/constants.ts` 的 `BODY_PARTS` / `BODY_PART_LABELS`
+- `src/lib/r2.ts` 的 `getPublicUrl(key)`
+- Shadcn `Dialog` / `Button` 组件（Day 4 已加）
+
+### 8.11 Day 7 要做的事（部署 + 端到端验证）
+
+详见 `docs/mvp-plan.md` Day 7 章节。核心：
+
+- [ ] GitHub 仓库已就绪（`origin/main` 已是最新）
+- [ ] Vercel 关联仓库，部署
+- [ ] **Vercel 环境变量**全部填入生产值（参考 `.env.example` 顺序）
+- [ ] Clerk：配置 Production origins + redirect URLs（生产域名）
+- [ ] Creem（生产）：切 Live mode → 复制 live `CREEM_API_KEY` + 建 3 个 live product 拿 `prod_xxx`（填 Vercel `CREEM_PRODUCT_*`）+ 注册生产 webhook endpoint `https://<domain>/api/creem-webhook` 拿 live `CREEM_WEBHOOK_SECRET` 填 Vercel
+- [ ] Creem dashboard 配置全局 cancel URL → `https://<domain>/pricing?canceled=true`（Creem 不支持 per-checkout cancel URL）
+- [ ] 生产 Supabase 执行 `supabase/migrations/0002_creem.sql`（rename payments 列）
+- [ ] R2：绑定自定义域名（可选，或继续用 `r2.dev`）
+- [ ] 自定义域名绑定 Vercel + DNS（可选）
+
+**Day 7 端到端验证清单**（生产域名）：
+- [ ] Google 登录成功
+- [x] 上传照片 + 生成 4 张图 ✅（异步改造后跑通，不再受 Vercel 网关 ~100s 超时限制）
+- [ ] credits 扣减正确
+- [ ] 购买 credits，支付成功，余额增加
+- [ ] 历史记录可见（Day 6 新功能）
+- [ ] 移动端基本可用
+
+---
+
+## 9. 关键代码位置（开发时高频参考）
+
+| 主题 | 文件 | 行号/位置 |
+|---|---|---|
+| 完整 SQL schema | `supabase/migrations/0001_init.sql` | 全文件 |
+| Credits 扣减 RPC | 同上 | `deduct_credits` 函数 |
+| Credits 增加 RPC（Stripe webhook 用） | 同上 | `add_credits` 函数 |
+| KIE API 完整文档 | `docs/kie-ai-api.md` | 全文件 |
+| KIE 真实接口示例 | `docs/gpt image2 接口调用.md` | 全文件 |
+| KIE createTask / 轮询 | `src/server/ai/kie-client.ts` | `createTask` / `pollTask` |
+| Step 1 生成纹身（含 prompt 模板） | `src/server/ai/generate-tattoo.ts` | `buildPrompt` |
+| Step 2 4 部位融合（含 prompt 模板） | `src/server/ai/apply-to-body.ts` | `buildPrompt` |
+| API Route 完整流程 | `src/app/api/generate/route.ts` | `POST()` |
+| 退款逻辑（失败兜底） | 同上 | `safeRefund()` |
+| 上传限制（content-type/size） | `src/lib/constants.ts` | `ALLOWED_UPLOAD_CONTENT_TYPES` / `MAX_UPLOAD_BYTES` |
+| 部位列表 | `src/lib/constants.ts` | `BODY_PARTS` |
+| 定价档位 | `src/lib/constants.ts` | `CREDIT_PACKAGES` |
+| R2 预签名 URL（客户端上传） | `src/lib/r2.ts` | `getUploadUrl()` |
+| R2 URL→存储（AI 输出落盘） | `src/lib/r2.ts` | `fetchUrlAndUpload()` |
+| Clerk 用户首入库 | `src/server/db/ensure-user.ts` | `ensureUser()` |
+| Credits 扣减 / 退还 | `src/server/db/queries.ts` | `deductCredits` / `refundCredits` |
+| 历史记录查询（Day 6） | `src/server/db/queries.ts` | `listProjects(userId)` |
+| 历史记录页架构 | `src/app/history/page.tsx` | `HistoryPage()` + `HistoryError()` |
+| Dialog 大图 + 左右切换 | `src/components/history-image-dialog.tsx` | `HistoryImageDialog` + `BodyPartCell` |
+| R2 key → 公开 URL | `src/lib/r2.ts` | `getPublicUrl(key)` |
+
+---
+
+## 10. 已知问题 / 待办
+
+| 问题 | 严重性 | 处理建议 |
+|---|---|---|
+| Next.js 16 middleware 弃用警告 | 低 | 等 Clerk 推出 `clerkProxy` 再迁移到 `src/proxy.ts` |
+| Clerk `createRouteMatcher` 弃用警告 | 低 | MVP 保持现状，未来改为每路由内部 `auth()` 检查 |
+| `scripts/verify-day2.mjs` 绕过 supabase-js（因 Node 20 Realtime bug） | 低 | 升级 Node 22 后可改用 supabase-js |
+| AWS SDK 警告 "node >=22 required"（2027 年 1 月后） | 低 | 升级 Node 22 即可消除 |
+| Playwright 自动化注册被 Turnstile 拦 | 低 | 不影响真实用户；如需 e2e 测试用 Clerk 测试用户 API |
+| 没做生成请求的并发限制（同一用户 30 秒内可重复刷） | 中 | Day 6 范围收窄后未做，Day 7+ 看是否被薅羊毛再决定是否补 |
+| KIE 没做 429 重试 | 低 | 首版直接抛错；如生产环境频繁 429 再加指数退避 |
+| KIE recordInfo 接口未在文档页公布精确字段（猜的字段名） | 低 | 已跑通 `verify-day3.mjs` 验证；若生产跑挂了再用 DevTools 抓真实响应 |
+| `.env.local` 没在 git（正常） | 无 | 团队成员需各自配置（参考 `.env.example`） |
+| Stripe webhook metadata 校验依赖客户端写入 | 低 | metadata 是服务端在 `/api/checkout` 创建 session 时写入，客户端无法篡改；webhook 端的 `user_id` 与 DB 比对防御性检查已加 |
+| 用户支付时关闭浏览器，payments 永远 pending | 低 | Stripe 不发 webhook；Day 7+ 后续可加 cron 清理 >7 天 pending 记录 |
+| 历史记录页只显示 `status='completed'`，失败记录用户看不到 | 低 | Day 5 已有退款兜底；若客诉增多再补「显示失败记录 + 错误原因」 |
+| 历史记录页全量加载无分页 | 低 | MVP 用户 ≤ 50 次生成记录；重度用户出现后再加分页 |
+| `react-hooks/set-state-in-effect` 规则在动画逻辑里绕过 | 低 | 用 useReducer dispatch 模式，符合规则；如果未来要加更多动画，沿用此模式 |
+| Stripe webhook secret 在本地 stripe listen 重启时会变 | 低 | 开发体验问题，不是 bug；每次重启 listen 后更新 `.env.local` + 重启 dev server |
+
+---
+
+## 11. 常用操作速查
+
+```bash
+# 启动开发
+npm run dev
+
+# 修改 schema 后重新跑数据库测试
+npm run verify:db
+
+# 跑 Day 3 KIE 接口冒烟测试（消耗 ~2 credits）
+npm run verify:day3
+
+# 添加新的 Shadcn 组件
+npx shadcn add <component-name>
+
+# 调用本地 Stripe webhook（Day 5）
+stripe listen --forward-to localhost:3000/api/stripe-webhook
+
+# 重启 dev server 让 .env.local 生效
+npx kill-port 3000 && npm run dev
+```
+
+---
+
+## 12. 当前待办（Waffo 支付迁移上线）
+
+代码已完成（WF1-6，commit `b1dcc9f`..`f0fc9bf`），**本地端到端已跑通**（checkout → 测试卡 `4576 7500 0000 0110` → webhook → credits +5 → DB paid）。
+
+**✅ 外部配置（步骤 0-5）已于 2026-08-02 全部完成**：① PRIVATE_KEY 已轮换（原 test key 曾粘对话，已废弃）；② 生产 Supabase 跑了 `0004_waffo.sql`（payments 列 rename）；③ Vercel 环境变量配好（`WAFFO_MERCHANT_ID` / `WAFFO_PRIVATE_KEY` / 3 个 `WAFFO_PRODUCT_*`，已删 `CREEM_*`）；④ 生产 webhook 配好（`https://tattoovis.ink/api/waffo-webhook`，prod，`order.completed`）；⑤ 域名验证通过（DNS TXT 在 Vercel）。
+
+**剩 2 件**：① **生产 tattoovis.ink 端到端验证**（live 测试卡或真卡小额，看 `/pricing`→Starter→Waffo checkout→跳回+credits+5，Vercel logs 出现 `[waffo-webhook] credits added`，Supabase payments paid）；② PaymentFeedback toast 未弹的小 bug 待修（见下）。
+
+**✅ `git push origin main` 已完成**（2026-08-02，`3303fcc..5caaad6`，12 commit；Vercel 已部署带新 env）。
+
+### 上线步骤（按序）
+1. **Waffo Dashboard 域名验证**：DNS 加 TXT `_waffo-challenge.www` = `waffo-verify=06a82b9bd444e7ff5c6e1f067f6c6447`（DNS 在 **Vercel** 管：项目 Settings → Domains → DNS Records；已确认 `tattoovis.ink` 的 NS = `ns1/ns2.vercel-dns.com`）。**进行中**。
+2. **Supabase 生产跑 `0004_waffo.sql`**：rename payments 列 creem→waffo（本地已跑）。
+3. **Vercel 环境变量**：加 `WAFFO_MERCHANT_ID` + `WAFFO_PRIVATE_KEY`（⚠️ 原 key 曾粘到对话，**必须去 Dashboard 轮换新 key**）+ `WAFFO_PRODUCT_STARTER/POPULAR/PRO`（已建：`PROD_5GdIMzJzJlUpdrBCyuaX2x` / `PROD_10hOkpFlMDiWFiqLxcWXHi` / `PROD_1COeqPCRSNk89LbIyHY5nC`）；删 `CREEM_*`。
+4. **Waffo Dashboard 配生产 webhook**：URL=`https://tattoovis.ink/api/waffo-webhook`，事件 `order.completed`。
+5. ~~cancel URL~~：**Waffo 不支持自定义 cancel URL**（SDK `createSession` 只有 `successUrl`、无 `cancelUrl`；store 设置也没有该字段）。与 Creem 不同。用户在 checkout 页取消时由 Waffo 默认处理（通常跳回来源页）。**此步跳过**。
+6. **PaymentFeedback toast 未弹**（已知小 bug）：支付成功跳回 `/?success=true` 后没成功 toast（credits 已正常加）。待排查——URL 是否真带回 `?success=true` / sonner toast 位置。spec/plan 未含此 fix。
+7. `git push origin main`（Waffo 代码 9 commit：spec/plan + WF1-6）→ Vercel 部署 → 生产端到端。
+
+### 关键文件（Waffo）
+- `src/lib/waffo.ts`（`getWaffo` 单例，merchantId + privateKey）
+- `src/app/api/checkout/route.ts`（`waffo.checkout.createSession`）
+- `src/app/api/waffo-webhook/route.ts`（`verifyWebhook` + `event.data.orderMetadata` 发 credits，**不需 WEBHOOK_SECRET**）
+- `supabase/migrations/0004_waffo.sql`（payments 列 rename）
+- 已删：`src/lib/creem.ts` / `src/app/api/creem-webhook/` / 卸 `creem` 包 / 删 `CREEM_*` env
+
+### 实施中的两个发现（避坑）
+- SDK 0.16.1 的 `checkout.createSession` **不需 `productType`**（文档过时，SDK 用 productId 自动查产品类型）。
+- checkout 的 metadata 透传到 webhook 的字段是 **`event.data.orderMetadata`**（不是 `metadata`，SDK `.d.ts` 的 `WebhookEventData.orderMetadata` 确认）——不必兜底。
+
+---
+
+## 13. 给新会话的开场建议
+
+如果你是新接手的 Claude 实例，第一次对话应该：
+
+1. 读这份文档（`docs/handoff.md`）
+2. 读 `CLAUDE.md`（协作规范：中文回答 + 中文 commit）
+3. 读 `docs/mvp-plan.md` 的 Day N 章节（N = 当前要做的天）
+4. 如果是 Day 5 之后：读 `docs/superpowers/specs/` 和 `docs/superpowers/plans/` 看历天的设计与计划文档
+5. 跑 `npm run verify:db` 确认数据库和 R2 还能正常工作
+6. 跑 `npm run verify:day3` 确认 KIE 链路通（仅在 Day 3 之后需要）
+7. 跑 `npm run build` 确认编译干净
+8. **如果是 Day 7+**：用户可能要在新窗口继续，按 `superpowers:brainstorming` 流程开始 Day N 的设计 → 计划 → 实施
+
+**Day 7 具体准备**：
+- 读 `docs/mvp-plan.md` 的 Day 7 章节（部署 + 端到端验证）
+- Day 7 需要准备：Vercel 账号 + GitHub 仓库访问权 + 生产域名（可选）
+- Clerk / Stripe / R2 各平台都需要配置生产环境的 redirect URLs / webhook endpoints / CORS
+- 注意 Vercel Hobby 函数超时 10 秒，单次生成 8-13 秒可能超时，可能需要升级 Vercel Pro（60 秒）
+
+**永远不要**：
+- 在没读 `docs/mvp-plan.md` 的情况下臆测范围
+- 把 supabase-js 顶部 `export const supabaseAdmin = getSupabaseAdmin()` 加回来
+- 用英文写 commit message
+- 把 service_role key、R2 Secret 或 KIE_API_KEY 暴露到客户端代码
+- 用 `openai` npm 包调 KIE（接口不兼容，要用 fetch）
+- 直接信任 KIE 响应的 `code` 字段（看 `data.state`，code 语义不规则）
+- 把 KIE 返回的图片 URL 直接给用户用（只保留 14 天，必须 fetchUrlAndUpload 落到 R2）
+
+### Phase 3 后补（异步路由）
+| `src/app/api/ai/generate-tattoo/route.ts` | 重写 — after() 异步触发（返回 projectId 立即响应，后台跑 AI） |
+| `src/app/api/ai/generate-tattoo/status/route.ts` | 新建 — GET 轮询生成进度 |
+| `src/server/ai/run-generation.ts` | 新建 — after() 回调执行 Step1+Step2+入库+退款 |
+| `src/server/db/tattoo-queries.ts` | 修改 — 加 getProjectWithGenerations / listUserTattooProjects |
+
+### Phase 4（纹身 UI 组件）
+| 文件 | 操作 |
+|------|------|
+| `src/hooks/use-generation.ts` | 新建 — 适配异步 API（/api/ai/generate-tattoo + status 轮询） |
+| `src/hooks/use-credits.ts` | 新建 — 余额查询（/api/credits） |
+| `src/shared/blocks/tattoo/credits-badge.tsx` | 新建 — credits 余额徽章（count-up + 浮动 +N 动效） |
+| `src/shared/blocks/tattoo/image-uploader.tsx` | 新建 — 拖拽上传组件 |
+| `src/shared/blocks/tattoo/generation-progress.tsx` | 新建 — 生成进度展示（假进度 + 步骤状态） |
+| `src/shared/blocks/tattoo/generation-results.tsx` | 新建 — 4 部位结果网格 + Lightbox 大图 |
+| `src/shared/blocks/tattoo/lightbox.tsx` | 新建 — 全屏图片浏览（Radix Dialog 实现） |
+| `src/shared/blocks/tattoo/tattoo-generator.tsx` | 新建 — 主组件（串联上传→输入→生成→结果） |
+| `src/config/style/global.css` | 修改 — 加 credits-float-up 动画 |
+| Shadcn UI 组件（7 个） | 新加 — button/card/dialog/textarea/sonner/label/input（`src/shared/components/ui/`） |
+| `@/components/ui/xxx` → `@/shared/components/ui/xxx` | 适配 — ShipAny Two 的 Shadcn 路径不同 |
+
+### TS 编译状态（Phase 1-4 累计）
+- `npx tsc --noEmit` → **0 错误** ✅
+
+---
+
+## 14. ShipAny Two 迁移新增文件清单（2026-08-06 会话）
+
+### Phase 2（Waffo 支付）
+| 文件 | 操作 |
+|------|------|
+| `src/extensions/payment/waffo.ts` | 新建 — WaffoProvider 实现 PaymentProvider |
+| `src/extensions/payment/index.ts` | 修改 — 导出 WaffoProvider |
+| `src/shared/services/payment.ts` | 修改 — 加 waffo 分支 + import WaffoProvider |
+| DB config 表 | INSERT 4 行（waffo_enabled/merchant_id/private_key/default_payment_provider） |
+| `package.json` | 已安装 `@waffo/pancake-ts` |
+
+### Phase 3（AI 核心）
+| 文件 | 操作 |
+|------|------|
+| `src/lib/r2.ts` | 新建 — R2 存储封装（从 Demo 迁入，S3 兼容） |
+| `src/lib/constants.ts` | 新建 — BODY_PARTS / 定价档位 / 上传限制 |
+| `src/server/ai/types.ts` | 新建 — KIE API + 业务类型定义 |
+| `src/server/ai/kie-client.ts` | 新建 — createTask / pollTask / pollManyTasks |
+| `src/server/ai/generate-tattoo.ts` | 新建 — Step 1 text-to-image |
+| `src/server/ai/apply-to-body.ts` | 新建 — Step 2 4 部位 image-to-image |
+| `src/server/db/tattoo-queries.ts` | 新建 — Drizzle ORM 纹身业务查询 |
+| `src/config/db/schema.ts` | 修改 — 新增 tattoo_project + tattoo_generation 表定义 |
+| `src/config/db/migrations/0001_tense_bullseye.sql` | 自动生成 — tattoo 表迁移 |
+| `src/app/api/ai/generate-tattoo/route.ts` | 新建 — POST 纹身生成主接口（better-auth 鉴权 + FIFO 积分 + Step1/2） |
+| `src/app/api/upload-url/route.ts` | 新建 — POST R2 预签名上传 URL（better-auth 鉴权） |
+| `src/app/api/credits/route.ts` | 新建 — GET 查询剩余积分 |
+| `package.json` | 已安装 `@aws-sdk/client-s3` + `@aws-sdk/s3-request-presigner` |
+
+### TS 编译状态
+- `npx tsc --noEmit` → **0 错误** ✅
+- `npm run build` → **Compiled successfully + 23/23 static pages** ✅（EPERM symlink 仅 Windows，Vercel Linux OK）
+- API 路由测试：`/api/credits` → 401 ✅，`/api/upload-url` → 401 ✅（均需登录态）
+
+---
+
+---
+
+## 15. Phase 6：Vercel 部署（已完成 2026-08-07）
+
+### 15.1 部署配置
+- **仓库**：`github.com/wangpeiwen5499/AI-Tattoo-Generator`，分支 `shipany-two`
+- **Vercel 项目**：新建项目，绑定 `shipany-two` 分支
+- **环境变量**：21 个变量已在 Vercel Dashboard 配齐（与 .env.local 值一致）
+- **域名**：`tattoovis.ink`（暂未切换，当前用 Vercel 临时域名）
+
+### 15.2 构建问题及修复
+| 问题 | 修复 |
+|------|------|
+| Vercel 默认用 pnpm → `pnpm-lock.yaml` 过期 | 删除 `pnpm-lock.yaml`，`vercel.json` 中 `installCommand` 改为 `npm install --legacy-peer-deps`，`buildCommand` 改为 `npm run build` |
+| `fumadocs-mdx` 版本不兼容 → 多个页面构建失败 | 删除 `content/` `.source/` `src/app/[locale]/(docs)/` `src/app/[locale]/(landing)/blog/` `src/app/[locale]/(landing)/updates/` `src/app/[locale]/(admin)/admin/posts/` 及所有 MDX 相关引用和依赖包 |
+| `next-mdx-remote` 安全漏洞警告 | 删除 `next-mdx-remote` `markdown-it` `@types/markdown-it` 依赖 |
+| `markdown-content.tsx` 残留引用 `markdown-it` | 删除文件 + 清理 index 导出 |
+| npm peer dependency 冲突（better-auth 需要 drizzle-orm ^0.45.2） | `vercel.json` 加 `--legacy-peer-deps` |
+| `pnpm-lock.yaml` + `package-lock.json` 同时存在引起歧义 | 只保留 `package-lock.json` |
+
+### 15.3 品牌定制（2026-08-07）
+| 文件 | 改动 |
+|------|------|
+| `en/zh common.json` | metadata title → "AI Tattoo Generator / AI 纹身生成器" |
+| `en/zh landing.json` | 导航栏简化（Features/Pricing/Generate）+ 页脚去 ShipAny 链接 |
+| `en/zh pages/index.json` | 首页落地页 → 纹身内容（Hero/How it works/Features/FAQ/CTA） |
+| `en/zh pages/pricing.json` | 定价页 → 3 档 Tattoo Credits（Starter/Popular/Pro） |
+
+### 15.4 Webhook 路径（待切域名后执行）
+- **旧**：`https://tattoovis.ink/api/waffo-webhook`（Demo main 分支）
+- **新**：`https://tattoovis.ink/api/payment/notify/waffo`（ShipAny Two 通用路由）
+- ⚠️ 等 `tattoovis.ink` 切到新项目后再改
+
+### 15.5 待办
+- [ ] R2 CORS 加 Vercel 临时域名（`*.vercel.app`），否则临时域名看不到生成图
+- [ ] 验证购买流程（Waffo checkout → webhook → credits 到账）
+- [ ] 切 `tattoovis.ink` 域名到新项目
+- [ ] Waffo Dashboard 改 webhook URL
+- [ ] 创建 `/generate` 页面（嵌入 TattooGenerator 组件）
