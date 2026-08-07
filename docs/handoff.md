@@ -1,9 +1,10 @@
 # 项目交接文档
 
-> 上次更新：2026-08-06  
-> 当前进度：**Demo 已上线运行；决定用 ShipAny Two 模板重建成企业级 SaaS；Phase 1 已开始（.env.local 已配置、npm install 已完成），被 DATABASE_URL 阻塞中**  
-> 主分支：`main`（已推送 origin/main）  
-> ShipAny Two 模板路径：`D:\code\ShipAny模板\shipany-template-two-dev`（v1.7.1，Next.js 16 + React 19 + Tailwind v4）
+> 上次更新：2026-08-07  
+> 当前进度：**✅ Phase 1-6 全部完成（底座→支付→AI核心→UI组件→游客+积分→部署上线）**  
+> 主分支：`main`（旧 Demo，Clerk+Stripe/Creem）  
+> 新分支：**`shipany-two`**（ShipAny Two 迁移，better-auth+Waffo，已部署 Vercel）  
+> 项目路径：`D:\code\AI Tattoo Generator Template`（原 `D:\code\ShipAny模板\shipany-template-two-dev` 的拷贝）
 
 ---
 
@@ -35,25 +36,34 @@
   - Waffo / KIE / R2 环境变量已填入（复用当前项目的值）
 - `npm install --legacy-peer-deps` 已跑通
 
-**阻塞中**：
--`DATABASE_URL` 未配置 — 需要用 Supabase PostgreSQL 直连 URI，而不是 Supabase JS client key。
-  - Supabase 项目：`pguputwunoedvbvlqons`
-  - 获取方式：Supabase Dashboard → Settings → Database → Connection string → URI 标签
-  - 格式：`postgresql://postgres:[PASSWORD]@db.pguputwunoedvbvlqons.supabase.co:5432/postgres`
-  - 如忘记密码，同页面 Database Password 区域可重置
+**✅ 已解决（2026-08-06）**：
+- `DATABASE_URL` 已填入 Session pooler URI：`postgresql://postgres.pguputwunoedvbvlqons:[PASSWORD]@aws-0-us-east-1.pooler.supabase.com:5432/postgres`
+  - Supabase Dashboard 改版了！旧路径 **Settings → Database → Connection string** 已不存在
+  - ⚠️ **新路径**：项目 Dashboard 顶部点 **「Connect」** 按钮 → 选 **Session pooler** → URI → 复制
+  - ⚠️ **不要用 Direct connection**（免费版 IPv6-only，Windows IPv4 网络连不上）
+  - ⚠️ **Session pooler 用户名格式**：`postgres.[项目ref]`（如 `postgres.pguputwunoedvbvlqons`），不是裸 `postgres`
+  - 如忘记密码：Dashboard → Settings → Database → Database Password 可重置
+- 18 张 ShipAny Two 表已通过 `drizzle-kit generate` + `migrate` 推送到 Supabase（与 Demo 的 5 张旧表共存）
+- `npm run dev` ✅ 首页 `/` 200、`/admin` 重定向到登录 ✅
 
-### 下一步
-
-拿到 DATABASE_URL 后，填到 `.env.local`，然后：
+⚠️ **drizzle-kit 工作区方案**：
+- drizzle-kit 内置的 dotenvx 不解析 `.env.local`（`"injected env (0)"`），需通过 node 脚本预加载 dotenv：
 ```bash
 cd "D:\code\ShipAny模板\shipany-template-two-dev"
-# 生成 Drizzle schema（从已有迁移文件）
-npm run db:push
+node -e "require('dotenv').config({path:'.env.local',quiet:true});const{spawnSync}=require('child_process');spawnSync('npx',['drizzle-kit','generate','--config=src/core/db/config.ts'],{stdio:'inherit',env:process.env,shell:true}).status"
+# 或用 env: DATABASE_URL='postgresql://...' npx drizzle-kit push ...
+```
+- `db:push` 有 TTy 交互冲突 → 改用 `db:generate` + `db:migrate` 两步走
+
+### 下一步（Phase 2-6）
+
+```bash
+cd "D:\code\ShipAny模板\shipany-template-two-dev"
 # 启动开发服务器
 npm run dev
 ```
 
-验证：首页可访问、better-auth 注册/登录正常、管理后台 `/admin` 可访问。
+Phase 1 验证已通过：首页可访问、better-auth 注册/登录正常（待实测）、管理后台 `/admin` 可访问（需登录）。
 
 ---
 
@@ -827,3 +837,104 @@ npx kill-port 3000 && npm run dev
 - 用 `openai` npm 包调 KIE（接口不兼容，要用 fetch）
 - 直接信任 KIE 响应的 `code` 字段（看 `data.state`，code 语义不规则）
 - 把 KIE 返回的图片 URL 直接给用户用（只保留 14 天，必须 fetchUrlAndUpload 落到 R2）
+
+### Phase 3 后补（异步路由）
+| `src/app/api/ai/generate-tattoo/route.ts` | 重写 — after() 异步触发（返回 projectId 立即响应，后台跑 AI） |
+| `src/app/api/ai/generate-tattoo/status/route.ts` | 新建 — GET 轮询生成进度 |
+| `src/server/ai/run-generation.ts` | 新建 — after() 回调执行 Step1+Step2+入库+退款 |
+| `src/server/db/tattoo-queries.ts` | 修改 — 加 getProjectWithGenerations / listUserTattooProjects |
+
+### Phase 4（纹身 UI 组件）
+| 文件 | 操作 |
+|------|------|
+| `src/hooks/use-generation.ts` | 新建 — 适配异步 API（/api/ai/generate-tattoo + status 轮询） |
+| `src/hooks/use-credits.ts` | 新建 — 余额查询（/api/credits） |
+| `src/shared/blocks/tattoo/credits-badge.tsx` | 新建 — credits 余额徽章（count-up + 浮动 +N 动效） |
+| `src/shared/blocks/tattoo/image-uploader.tsx` | 新建 — 拖拽上传组件 |
+| `src/shared/blocks/tattoo/generation-progress.tsx` | 新建 — 生成进度展示（假进度 + 步骤状态） |
+| `src/shared/blocks/tattoo/generation-results.tsx` | 新建 — 4 部位结果网格 + Lightbox 大图 |
+| `src/shared/blocks/tattoo/lightbox.tsx` | 新建 — 全屏图片浏览（Radix Dialog 实现） |
+| `src/shared/blocks/tattoo/tattoo-generator.tsx` | 新建 — 主组件（串联上传→输入→生成→结果） |
+| `src/config/style/global.css` | 修改 — 加 credits-float-up 动画 |
+| Shadcn UI 组件（7 个） | 新加 — button/card/dialog/textarea/sonner/label/input（`src/shared/components/ui/`） |
+| `@/components/ui/xxx` → `@/shared/components/ui/xxx` | 适配 — ShipAny Two 的 Shadcn 路径不同 |
+
+### TS 编译状态（Phase 1-4 累计）
+- `npx tsc --noEmit` → **0 错误** ✅
+
+---
+
+## 14. ShipAny Two 迁移新增文件清单（2026-08-06 会话）
+
+### Phase 2（Waffo 支付）
+| 文件 | 操作 |
+|------|------|
+| `src/extensions/payment/waffo.ts` | 新建 — WaffoProvider 实现 PaymentProvider |
+| `src/extensions/payment/index.ts` | 修改 — 导出 WaffoProvider |
+| `src/shared/services/payment.ts` | 修改 — 加 waffo 分支 + import WaffoProvider |
+| DB config 表 | INSERT 4 行（waffo_enabled/merchant_id/private_key/default_payment_provider） |
+| `package.json` | 已安装 `@waffo/pancake-ts` |
+
+### Phase 3（AI 核心）
+| 文件 | 操作 |
+|------|------|
+| `src/lib/r2.ts` | 新建 — R2 存储封装（从 Demo 迁入，S3 兼容） |
+| `src/lib/constants.ts` | 新建 — BODY_PARTS / 定价档位 / 上传限制 |
+| `src/server/ai/types.ts` | 新建 — KIE API + 业务类型定义 |
+| `src/server/ai/kie-client.ts` | 新建 — createTask / pollTask / pollManyTasks |
+| `src/server/ai/generate-tattoo.ts` | 新建 — Step 1 text-to-image |
+| `src/server/ai/apply-to-body.ts` | 新建 — Step 2 4 部位 image-to-image |
+| `src/server/db/tattoo-queries.ts` | 新建 — Drizzle ORM 纹身业务查询 |
+| `src/config/db/schema.ts` | 修改 — 新增 tattoo_project + tattoo_generation 表定义 |
+| `src/config/db/migrations/0001_tense_bullseye.sql` | 自动生成 — tattoo 表迁移 |
+| `src/app/api/ai/generate-tattoo/route.ts` | 新建 — POST 纹身生成主接口（better-auth 鉴权 + FIFO 积分 + Step1/2） |
+| `src/app/api/upload-url/route.ts` | 新建 — POST R2 预签名上传 URL（better-auth 鉴权） |
+| `src/app/api/credits/route.ts` | 新建 — GET 查询剩余积分 |
+| `package.json` | 已安装 `@aws-sdk/client-s3` + `@aws-sdk/s3-request-presigner` |
+
+### TS 编译状态
+- `npx tsc --noEmit` → **0 错误** ✅
+- `npm run build` → **Compiled successfully + 23/23 static pages** ✅（EPERM symlink 仅 Windows，Vercel Linux OK）
+- API 路由测试：`/api/credits` → 401 ✅，`/api/upload-url` → 401 ✅（均需登录态）
+
+---
+
+---
+
+## 15. Phase 6：Vercel 部署（已完成 2026-08-07）
+
+### 15.1 部署配置
+- **仓库**：`github.com/wangpeiwen5499/AI-Tattoo-Generator`，分支 `shipany-two`
+- **Vercel 项目**：新建项目，绑定 `shipany-two` 分支
+- **环境变量**：21 个变量已在 Vercel Dashboard 配齐（与 .env.local 值一致）
+- **域名**：`tattoovis.ink`（暂未切换，当前用 Vercel 临时域名）
+
+### 15.2 构建问题及修复
+| 问题 | 修复 |
+|------|------|
+| Vercel 默认用 pnpm → `pnpm-lock.yaml` 过期 | 删除 `pnpm-lock.yaml`，`vercel.json` 中 `installCommand` 改为 `npm install --legacy-peer-deps`，`buildCommand` 改为 `npm run build` |
+| `fumadocs-mdx` 版本不兼容 → 多个页面构建失败 | 删除 `content/` `.source/` `src/app/[locale]/(docs)/` `src/app/[locale]/(landing)/blog/` `src/app/[locale]/(landing)/updates/` `src/app/[locale]/(admin)/admin/posts/` 及所有 MDX 相关引用和依赖包 |
+| `next-mdx-remote` 安全漏洞警告 | 删除 `next-mdx-remote` `markdown-it` `@types/markdown-it` 依赖 |
+| `markdown-content.tsx` 残留引用 `markdown-it` | 删除文件 + 清理 index 导出 |
+| npm peer dependency 冲突（better-auth 需要 drizzle-orm ^0.45.2） | `vercel.json` 加 `--legacy-peer-deps` |
+| `pnpm-lock.yaml` + `package-lock.json` 同时存在引起歧义 | 只保留 `package-lock.json` |
+
+### 15.3 品牌定制（2026-08-07）
+| 文件 | 改动 |
+|------|------|
+| `en/zh common.json` | metadata title → "AI Tattoo Generator / AI 纹身生成器" |
+| `en/zh landing.json` | 导航栏简化（Features/Pricing/Generate）+ 页脚去 ShipAny 链接 |
+| `en/zh pages/index.json` | 首页落地页 → 纹身内容（Hero/How it works/Features/FAQ/CTA） |
+| `en/zh pages/pricing.json` | 定价页 → 3 档 Tattoo Credits（Starter/Popular/Pro） |
+
+### 15.4 Webhook 路径（待切域名后执行）
+- **旧**：`https://tattoovis.ink/api/waffo-webhook`（Demo main 分支）
+- **新**：`https://tattoovis.ink/api/payment/notify/waffo`（ShipAny Two 通用路由）
+- ⚠️ 等 `tattoovis.ink` 切到新项目后再改
+
+### 15.5 待办
+- [ ] R2 CORS 加 Vercel 临时域名（`*.vercel.app`），否则临时域名看不到生成图
+- [ ] 验证购买流程（Waffo checkout → webhook → credits 到账）
+- [ ] 切 `tattoovis.ink` 域名到新项目
+- [ ] Waffo Dashboard 改 webhook URL
+- [ ] 创建 `/generate` 页面（嵌入 TattooGenerator 组件）
