@@ -8,7 +8,6 @@
  * 请求体：{ bodyPhotoKey, bodyPhotoUrl, prompt }
  * 响应：{ projectId }
  */
-import { after } from 'next/server';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 
@@ -131,15 +130,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Failed to create project' }, { status: 500 });
   }
 
-  // 6. 异步执行 AI 生成
-  after(() =>
-    runGeneration({
-      projectId,
-      userId,
-      bodyPhotoUrl,
-      prompt: prompt.trim(),
-    })
-  );
+  // 6. 后台异步执行 AI 生成（fire-and-forget，不阻塞响应）
+  void runGeneration({
+    projectId,
+    userId,
+    bodyPhotoUrl,
+    prompt: prompt.trim(),
+  }).catch((err) => {
+    console.error('[generate-tattoo] background generation crashed:', err);
+  });
 
   return NextResponse.json({ projectId });
 }
