@@ -1,37 +1,108 @@
 {
   "metadata": {
-    "title": "定价",
-    "description": "购买纹身预览积分"
+    "title": "价格方案",
+    "description": "购买纹身预览积分 — 每个积分可生成 4 张逼真的 AI 纹身预览图"
+  },
+  "messages": {
+    "current_plan": "当前方案",
+    "processing": "处理中..."
   },
   "page": {
     "title": "纹身预览积分",
     "sections": {
       "pricing": {
         "id": "pricing",
-        "title": "购买积分",
-        "description": "每个积分可生成 4 张预览图（左臂、右臂、肩膀、小腿）。积分永不过期。",
+        "title": "选择积分方案",
+        "description": "每个积分可生成 4 张不同身体部位的 AI 纹身预览图。积分永不过期。",
         "groups": [
           {
             "name": "one-time",
             "title": "一次性购买"
           }
         ],
-        "products": {
-          "one-time": [
-            { "name": "starter", "title": "入门", "credits": 5, "amount": 4.99, "currency": "USD", "description": "5 次纹身预览", "payment_providers": ["waffo"], "payment_product_id": "PROD_5GdIMzJzJlUpdrBCyuaX2x" },
-            { "name": "popular", "title": "热门", "credits": 20, "amount": 14.99, "currency": "USD", "description": "20 次纹身预览 · 性价比最高", "payment_providers": ["waffo"], "payment_product_id": "PROD_10hOkpFlMDiWFiqLxcWXHi", "highlighted": true },
-            { "name": "pro", "title": "专业", "credits": 50, "amount": 29.99, "currency": "USD", "description": "50 次纹身预览 · 发烧友之选", "payment_providers": ["waffo"], "payment_product_id": "PROD_1COeqPCRSNk89LbIyHYnC" }
-          ]
-        }
+        "items": [
+          {
+            "product_id": "PROD_5GdIMzJzJlUpdrBCyuaX2x",
+            "interval": "one-time",
+            "group": "one-time",
+            "title": "入门版",
+            "price": "$4.99",
+            "currency": "USD",
+            "amount": 4.99,
+            "credits": 5,
+            "description": "5 次纹身预览 — 适合尝试单个设计方案",
+            "features_title": "包含",
+            "features": [
+              "5 套完整预览（20 张图片）",
+              "每套 4 个身体部位",
+              "积分永不过期",
+              "AI 驱动的逼真渲染"
+            ],
+            "button": {
+              "title": "购买入门版"
+            },
+            "payment_providers": ["waffo"],
+            "payment_product_id": "PROD_5GdIMzJzJlUpdrBCyuaX2x"
+          },
+          {
+            "product_id": "PROD_10hOkpFlMDiWFiqLxcWXHi",
+            "interval": "one-time",
+            "group": "one-time",
+            "title": "热门版",
+            "price": "$14.99",
+            "currency": "USD",
+            "amount": 14.99,
+            "credits": 20,
+            "description": "20 次纹身预览 — 规划多个设计的最佳选择",
+            "label": "最受欢迎",
+            "features_title": "包含",
+            "features": [
+              "20 套完整预览（80 张图片）",
+              "每套 4 个身体部位",
+              "积分永不过期",
+              "AI 驱动的逼真渲染",
+              "单次预览最优惠"
+            ],
+            "button": {
+              "title": "购买热门版"
+            },
+            "payment_providers": ["waffo"],
+            "payment_product_id": "PROD_10hOkpFlMDiWFiqLxcWXHi"
+          },
+          {
+            "product_id": "PROD_1COeqPCRSNk89LbIyHYnC",
+            "interval": "one-time",
+            "group": "one-time",
+            "title": "专业版",
+            "price": "$29.99",
+            "currency": "USD",
+            "amount": 29.99,
+            "credits": 50,
+            "description": "50 次纹身预览 — 为资深纹身爱好者和收藏家打造",
+            "features_title": "包含",
+            "features": [
+              "50 套完整预览（200 张图片）",
+              "每套 4 个身体部位",
+              "积分永不过期",
+              "AI 驱动的逼真渲染",
+              "最大力度优惠"
+            ],
+            "button": {
+              "title": "购买专业版"
+            },
+            "payment_providers": ["waffo"],
+            "payment_product_id": "PROD_1COeqPCRSNk89LbIyHYnC"
+          }
+        ]
       },
       "faq": {
         "id": "faq",
-        "title": "定价常见问题",
+        "title": "价格常见问题",
         "items": [
-          { "question": "什么是积分？", "answer": "一个积分可生成一整套 4 张纹身预览——每个身体部位（左臂、右臂、肩膀、小腿）一张。" },
-          { "question": "积分会过期吗？", "answer": "不会。积分永不过期，随时可用。" },
+          { "question": "什么是积分？", "answer": "一个积分可生成一整套 4 张纹身预览图——每个身体部位（左臂、右臂、肩膀、小腿）各一张。" },
+          { "question": "积分会过期吗？", "answer": "不会。积分永不过期。随时购买，随时使用。" },
           { "question": "支持哪些支付方式？", "answer": "我们通过安全支付合作伙伴 Waffo 接受主流信用卡和借记卡。" },
-          { "question": "可以退款吗？", "answer": "如果 AI 生成未能产出可用结果，积分会自动退还。支付问题请联系 support@tattoovis.ink。" }
+          { "question": "可以退款吗？", "answer": "如果 AI 生成未产生任何可用结果，积分会自动退还。关于支付问题，请联系 support@tattoovis.ink。" }
         ]
       }
     }

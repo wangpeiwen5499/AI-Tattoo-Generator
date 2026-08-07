@@ -113,17 +113,20 @@
           {
             "name": "Alex M.",
             "role": "First-time tattoo",
-            "quote": "I was nervous about getting my first tattoo. Being able to see exactly how it would look on my arm gave me the confidence to go for it!"
+            "quote": "I was nervous about getting my first tattoo. Being able to see exactly how it would look on my arm gave me the confidence to go for it!",
+            "image": { "src": "/imgs/avatars/1.png", "alt": "Alex M." }
           },
           {
             "name": "Sarah K.",
             "role": "Tattoo collector",
-            "quote": "I use this before every new piece. It helps me communicate exactly what I want to my artist. Game changer for sleeve planning."
+            "quote": "I use this before every new piece. It helps me communicate exactly what I want to my artist. Game changer for sleeve planning.",
+            "image": { "src": "/imgs/avatars/2.png", "alt": "Sarah K." }
           },
           {
             "name": "Mike R.",
             "role": "Tattoo artist",
-            "quote": "I recommend this to all my clients. When they come in with a preview, we save hours of back-and-forth on design revisions."
+            "quote": "I recommend this to all my clients. When they come in with a preview, we save hours of back-and-forth on design revisions.",
+            "image": { "src": "/imgs/avatars/3.png", "alt": "Mike R." }
           }
         ]
       },

@@ -1,28 +1,99 @@
 {
   "metadata": {
     "title": "Pricing",
-    "description": "Buy tattoo preview credits"
+    "description": "Buy tattoo preview credits — each credit generates 4 realistic AI tattoo previews on your body"
+  },
+  "messages": {
+    "current_plan": "Current Plan",
+    "processing": "Processing..."
   },
   "page": {
     "title": "Tattoo Preview Credits",
     "sections": {
       "pricing": {
         "id": "pricing",
-        "title": "Buy Credits",
-        "description": "Each credit gives you 4 previews (left arm, right arm, shoulder, calf). Credits never expire.",
+        "title": "Choose Your Credits",
+        "description": "Each credit gives you 4 AI-generated tattoo previews on different body parts. Credits never expire.",
         "groups": [
           {
             "name": "one-time",
             "title": "One-time Purchase"
           }
         ],
-        "products": {
-          "one-time": [
-            { "name": "starter", "title": "Starter", "credits": 5, "amount": 4.99, "currency": "USD", "description": "5 tattoo previews", "payment_providers": ["waffo"], "payment_product_id": "PROD_5GdIMzJzJlUpdrBCyuaX2x" },
-            { "name": "popular", "title": "Most Popular", "credits": 20, "amount": 14.99, "currency": "USD", "description": "20 tattoo previews · Best value", "payment_providers": ["waffo"], "payment_product_id": "PROD_10hOkpFlMDiWFiqLxcWXHi", "highlighted": true },
-            { "name": "pro", "title": "Pro", "credits": 50, "amount": 29.99, "currency": "USD", "description": "50 tattoo previews · For enthusiasts", "payment_providers": ["waffo"], "payment_product_id": "PROD_1COeqPCRSNk89LbIyHYnC" }
-          ]
-        }
+        "items": [
+          {
+            "product_id": "PROD_5GdIMzJzJlUpdrBCyuaX2x",
+            "interval": "one-time",
+            "group": "one-time",
+            "title": "Starter",
+            "price": "$4.99",
+            "currency": "USD",
+            "amount": 4.99,
+            "credits": 5,
+            "description": "5 tattoo previews — great for trying out a single design idea",
+            "features_title": "Includes",
+            "features": [
+              "5 full preview sets (20 images)",
+              "4 body parts per set",
+              "Credits never expire",
+              "AI-powered realistic rendering"
+            ],
+            "button": {
+              "title": "Get Starter"
+            },
+            "payment_providers": ["waffo"],
+            "payment_product_id": "PROD_5GdIMzJzJlUpdrBCyuaX2x"
+          },
+          {
+            "product_id": "PROD_10hOkpFlMDiWFiqLxcWXHi",
+            "interval": "one-time",
+            "group": "one-time",
+            "title": "Most Popular",
+            "price": "$14.99",
+            "currency": "USD",
+            "amount": 14.99,
+            "credits": 20,
+            "description": "20 tattoo previews — best value for planning multiple designs",
+            "label": "Most Popular",
+            "features_title": "Includes",
+            "features": [
+              "20 full preview sets (80 images)",
+              "4 body parts per set",
+              "Credits never expire",
+              "AI-powered realistic rendering",
+              "Best value per preview"
+            ],
+            "button": {
+              "title": "Get Most Popular"
+            },
+            "payment_providers": ["waffo"],
+            "payment_product_id": "PROD_10hOkpFlMDiWFiqLxcWXHi"
+          },
+          {
+            "product_id": "PROD_1COeqPCRSNk89LbIyHYnC",
+            "interval": "one-time",
+            "group": "one-time",
+            "title": "Pro",
+            "price": "$29.99",
+            "currency": "USD",
+            "amount": 29.99,
+            "credits": 50,
+            "description": "50 tattoo previews — for serious tattoo enthusiasts and collectors",
+            "features_title": "Includes",
+            "features": [
+              "50 full preview sets (200 images)",
+              "4 body parts per set",
+              "Credits never expire",
+              "AI-powered realistic rendering",
+              "Maximum savings per preview"
+            ],
+            "button": {
+              "title": "Get Pro"
+            },
+            "payment_providers": ["waffo"],
+            "payment_product_id": "PROD_1COeqPCRSNk89LbIyHYnC"
+          }
+        ]
       },
       "faq": {
         "id": "faq",

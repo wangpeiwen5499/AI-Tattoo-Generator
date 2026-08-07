@@ -4,10 +4,10 @@ import { useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from '@/core/auth/client'
 import { toast } from 'sonner'
-import { Sparkles } from 'lucide-react'
+import { Sparkles, Upload, Zap, ArrowRight } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { Textarea } from '@/shared/components/ui/textarea'
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { Card, CardContent } from '@/shared/components/ui/card'
 import { CreditsBadge } from '@/shared/blocks/tattoo/credits-badge'
 import { ImageUploader } from '@/shared/blocks/tattoo/image-uploader'
 import { GenerationProgress } from '@/shared/blocks/tattoo/generation-progress'
@@ -121,65 +121,128 @@ export function TattooGenerator() {
 
   // idle / uploading / ready → render form
   const ready = gen.status === 'ready' || (gen.status === 'uploading' && gen.photoUrl !== null)
+  const hasPhoto = gen.photoUrl !== null
+
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
       <Header credits={credits.credits} creditsLoading={credits.loading} />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Sparkles className="h-5 w-5 text-primary" />
-            Generate your tattoo preview
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-5">
-          <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)]">
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium">1. Upload your photo</label>
-              <ImageUploader
-                photoUrl={gen.photoUrl}
-                uploading={gen.status === 'uploading'}
-                uploadProgress={gen.uploadProgress}
-                onFileSelected={handleFile}
-                onClear={gen.clearPhoto}
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium">2. Describe your tattoo idea</label>
-              <Textarea
-                value={gen.prompt}
-                onChange={(e) => gen.setPrompt(e.target.value)}
-                placeholder="e.g. A dragon in Japanese irezumi style, bold black lines with red accents"
-                rows={6}
-                maxLength={500}
-                className="resize-none"
-              />
-              <p className="text-xs text-muted-foreground">{gen.prompt.length}/500 characters</p>
+      {/* --- Step 1: Upload Photo --- */}
+      <Card className="overflow-hidden border-border/40 shadow-sm">
+        <CardContent className="p-0">
+          <div className="flex items-center gap-3 border-b border-border/40 px-6 py-4">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+              1
+            </span>
+            <div>
+              <h3 className="text-base font-semibold">Upload your photo</h3>
+              <p className="text-xs text-muted-foreground">
+                Take a clear photo of the body part you want tattooed — good lighting works best
+              </p>
             </div>
           </div>
-
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs text-muted-foreground">
-              Cost: <span className="font-medium text-foreground">{CREDITS_PER_GENERATION} credit</span> · 4 previews (left arm, right arm, shoulder, calf)
-            </p>
-            <Button
-              size="lg"
-              onClick={isGuestOutOfCredits ? () => router.push('/sign-in') : handleGenerate}
-              disabled={!isGuestOutOfCredits && (!ready || !gen.prompt.trim() || gen.status === 'uploading')}
-              className="sm:min-w-[180px]"
-            >
-              {isGuestOutOfCredits ? 'Sign up for 3 more' : gen.status === 'uploading' ? 'Uploading...' : 'Generate'}
-            </Button>
+          <div className="p-6">
+            <ImageUploader
+              photoUrl={gen.photoUrl}
+              uploading={gen.status === 'uploading'}
+              uploadProgress={gen.uploadProgress}
+              onFileSelected={handleFile}
+              onClear={gen.clearPhoto}
+            />
           </div>
         </CardContent>
       </Card>
+
+      {/* --- Step 2: Describe your idea --- */}
+      <Card className="overflow-hidden border-border/40 shadow-sm transition-all">
+        <CardContent className="p-0">
+          <div className="flex items-center gap-3 border-b border-border/40 px-6 py-4">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+              2
+            </span>
+            <div>
+              <h3 className="text-base font-semibold">Describe your tattoo idea</h3>
+              <p className="text-xs text-muted-foreground">
+                Be specific — mention style, colors, size, and any reference elements
+              </p>
+            </div>
+          </div>
+          <div className="p-6">
+            <Textarea
+              value={gen.prompt}
+              onChange={(e) => gen.setPrompt(e.target.value)}
+              placeholder="e.g. A dragon wrapped around my forearm in Japanese irezumi style, bold black lines with crimson red accents, detailed scales, half-sleeve size"
+              rows={4}
+              maxLength={500}
+              className="resize-none text-base leading-relaxed"
+            />
+            <div className="mt-2 flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                {gen.prompt.length}/500 characters
+              </p>
+              {gen.prompt.trim() && (
+                <span className="text-xs text-primary/70">✓ Great, you've described your idea</span>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* --- Action bar --- */}
+      <div className="flex flex-col gap-4 rounded-xl border border-border/40 bg-card/60 p-5 shadow-sm backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-500/10">
+            <Zap className="h-5 w-5 text-amber-500" />
+          </div>
+          <div>
+            <p className="text-sm font-medium">
+              {CREDITS_PER_GENERATION} credit · {isSignedIn ? (
+                <span className="text-muted-foreground">
+                  {credits.credits !== null ? `${credits.credits} available` : 'Loading...'}
+                </span>
+              ) : (
+                <span className="text-emerald-600 dark:text-emerald-400">Free preview</span>
+              )}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Generates 4 previews — left arm, right arm, shoulder & calf
+            </p>
+          </div>
+        </div>
+
+        <Button
+          size="lg"
+          onClick={isGuestOutOfCredits ? () => router.push('/sign-in') : handleGenerate}
+          disabled={!isGuestOutOfCredits && (!ready || !gen.prompt.trim() || gen.status === 'uploading')}
+          className="group h-12 gap-2 px-6 text-base font-semibold shadow-md transition-all hover:shadow-lg"
+        >
+          {isGuestOutOfCredits ? (
+            'Sign up for 3 more'
+          ) : gen.status === 'uploading' ? (
+            <>
+              <Upload className="h-4 w-4 animate-pulse" />
+              Uploading...
+            </>
+          ) : (
+            <>
+              <Sparkles className="h-4 w-4 transition-transform group-hover:scale-110" />
+              Generate My Tattoo Preview
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </>
+          )}
+        </Button>
+      </div>
     </div>
   )
 }
 
 function Header({ credits, creditsLoading }: { credits: number | null; creditsLoading: boolean }) {
   return (
-    <div className="flex justify-end">
+    <div className="flex items-center justify-between">
+      <div>
+        <h2 className="text-xl font-bold tracking-tight">Generate your tattoo preview</h2>
+        <p className="text-sm text-muted-foreground">Upload a photo, describe your idea, AI does the rest</p>
+      </div>
       <CreditsBadge credits={credits} loading={creditsLoading} />
     </div>
   )
