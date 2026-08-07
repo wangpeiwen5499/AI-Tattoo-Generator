@@ -65,3 +65,4 @@ src/config/db/migrations*
 .chats.playwright-mcp/\n*.png
 .playwright-mcp/
 *.png
+示例图/
