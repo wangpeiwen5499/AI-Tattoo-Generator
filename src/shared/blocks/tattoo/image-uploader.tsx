@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { Upload, X, ImageUp, CheckCircle2 } from 'lucide-react'
+import { X, ImageUp, CheckCircle2 } from 'lucide-react'
 import { ALLOWED_UPLOAD_CONTENT_TYPES, MAX_UPLOAD_BYTES } from '@/lib/constants'
 
 type Props = {
@@ -41,11 +41,11 @@ export function ImageUploader({ photoUrl, uploading, uploadProgress, onFileSelec
     if (file) validateAndSubmit(file)
   }
 
-  // Photo uploaded — show preview
+  // --- Preview ---
   if (photoUrl) {
     return (
-      <div className="group relative overflow-hidden rounded-xl border border-border/40 bg-muted/30 shadow-sm">
-        <div className="aspect-[4/3] sm:aspect-[16/9]">
+      <div className="group relative overflow-hidden rounded-xl border border-border/30 bg-muted/30 shadow-sm">
+        <div className="aspect-[3/2]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={photoUrl}
@@ -53,16 +53,15 @@ export function ImageUploader({ photoUrl, uploading, uploadProgress, onFileSelec
             className="h-full w-full object-contain p-2"
           />
         </div>
-        {/* Success badge */}
         <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-emerald-500/90 px-3 py-1 text-xs font-medium text-white shadow-sm backdrop-blur-sm">
           <CheckCircle2 className="h-3.5 w-3.5" />
-          Photo uploaded
+          Photo ready
         </div>
         {!disabled && (
           <button
             type="button"
             onClick={onClear}
-            className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-background/90 px-3 py-1.5 text-xs font-medium text-foreground shadow-sm backdrop-blur-sm transition-all hover:bg-background hover:shadow-md"
+            className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-background/90 px-3 py-1.5 text-xs font-medium shadow-sm backdrop-blur-sm transition-all hover:bg-background"
             aria-label="Remove photo"
           >
             <X className="h-3.5 w-3.5" />
@@ -73,25 +72,25 @@ export function ImageUploader({ photoUrl, uploading, uploadProgress, onFileSelec
     )
   }
 
-  // Uploading state
+  // --- Uploading ---
   if (uploading) {
     return (
-      <div className="flex flex-col items-center justify-center gap-4 rounded-xl border-2 border-primary/30 bg-primary/[0.03] px-6 py-16 text-center">
+      <div className="flex flex-col items-center justify-center gap-4 rounded-xl border-2 border-primary/20 bg-primary/[0.02] px-6 py-14 text-center">
         <div className="relative h-16 w-16">
           <svg className="h-16 w-16 -rotate-90" viewBox="0 0 64 64">
-            <circle cx="32" cy="32" r="28" fill="none" stroke="currentColor" strokeWidth="3" className="text-muted-foreground/20" />
+            <circle cx="32" cy="32" r="28" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-muted-foreground/15" />
             <circle
               cx="32" cy="32" r="28"
               fill="none"
               stroke="currentColor"
-              strokeWidth="3"
+              strokeWidth="2.5"
               strokeLinecap="round"
               className="text-primary transition-all duration-300"
               strokeDasharray={`${2 * Math.PI * 28}`}
               strokeDashoffset={`${2 * Math.PI * 28 * (1 - uploadProgress / 100)}`}
             />
           </svg>
-          <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-primary">
+          <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-primary tabular-nums">
             {Math.round(uploadProgress)}%
           </span>
         </div>
@@ -100,7 +99,7 @@ export function ImageUploader({ photoUrl, uploading, uploadProgress, onFileSelec
     )
   }
 
-  // Empty state — drag & drop
+  // --- Empty ---
   return (
     <div
       onDragOver={(e) => {
@@ -111,10 +110,10 @@ export function ImageUploader({ photoUrl, uploading, uploadProgress, onFileSelec
       onDrop={handleDrop}
       onClick={() => !disabled && inputRef.current?.click()}
       className={[
-        'group flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-6 py-14 text-center transition-all duration-200',
+        'group flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-6 py-12 text-center transition-all duration-200',
         dragOver
-          ? 'scale-[1.01] border-primary bg-primary/[0.06] shadow-lg'
-          : 'border-border/50 bg-muted/[0.15] hover:border-primary/40 hover:bg-muted/[0.25] hover:shadow-md',
+          ? 'scale-[1.01] border-sky-400 bg-sky-50/60 shadow-lg dark:bg-sky-950/20'
+          : 'border-muted-foreground/20 bg-muted/10 hover:border-muted-foreground/30 hover:bg-muted/20',
       ].join(' ')}
       role="button"
       tabIndex={0}
@@ -123,16 +122,16 @@ export function ImageUploader({ photoUrl, uploading, uploadProgress, onFileSelec
       }}
     >
       <div className={[
-        'flex h-16 w-16 items-center justify-center rounded-2xl transition-all duration-200',
-        dragOver ? 'bg-primary/15 scale-110' : 'bg-muted group-hover:bg-primary/[0.08]',
+        'flex h-14 w-14 items-center justify-center rounded-2xl transition-all duration-200',
+        dragOver ? 'scale-110 bg-sky-500/15' : 'bg-muted',
       ].join(' ')}>
         <ImageUp className={[
-          'h-8 w-8 transition-colors duration-200',
-          dragOver ? 'text-primary' : 'text-muted-foreground/70 group-hover:text-primary/70',
+          'h-7 w-7 transition-colors duration-200',
+          dragOver ? 'text-sky-500' : 'text-muted-foreground/50 group-hover:text-muted-foreground/70',
         ].join(' ')} />
       </div>
       <div>
-        <p className="text-sm font-semibold">
+        <p className="text-sm font-medium">
           <span className="text-primary">Click to upload</span>
           {' '}or drag and drop
         </p>
@@ -141,7 +140,7 @@ export function ImageUploader({ photoUrl, uploading, uploadProgress, onFileSelec
         </p>
       </div>
       {localError && (
-        <p className="rounded-lg bg-destructive/10 px-3 py-1.5 text-xs font-medium text-destructive">
+        <p className="rounded-lg bg-destructive/10 px-3 py-1 text-xs font-medium text-destructive">
           {localError}
         </p>
       )}
