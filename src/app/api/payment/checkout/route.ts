@@ -252,7 +252,7 @@ export async function POST(req: Request) {
       userId: user.id,
       userEmail: user.email,
       status: OrderStatus.PENDING,
-      amount: checkoutAmount, // use the amount for selected currency
+      amount: Math.round(checkoutAmount * 100), // convert to cents (integer)
       currency: checkoutCurrency,
       productId: pricingItem.product_id,
       paymentType: paymentType,
