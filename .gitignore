@@ -62,4 +62,4 @@ src/config/db/migrations*
 *.sql
 .source
 
-.chats
+.chats.playwright-mcp/\n*.png
