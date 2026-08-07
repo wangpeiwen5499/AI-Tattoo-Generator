@@ -1,8 +1,8 @@
 {
   "metadata": {
-    "title": "ShipAny Template Two",
-    "description": "ShipAny is a NextJS boilerplate for building AI SaaS startups. Ship Fast with a variety of templates and components.",
-    "keywords": "shipany, shipany-boilerplate, shipany-template-two-demo"
+    "title": "AI Tattoo Generator",
+    "description": "See your tattoo before you ink. Upload a photo, describe your idea, and AI generates realistic tattoo previews on your body.",
+    "keywords": "ai tattoo generator, tattoo preview, tattoo design, ai tattoo, tattoo before ink"
   },
   "sign": {
     "sign_in_title": "Sign In",

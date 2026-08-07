@@ -1,8 +1,8 @@
 {
   "metadata": {
-    "title": "ShipAny 模板二",
-    "description": "ShipAny 是用于构建 AI SaaS 创业项目的 NextJS 脚手架。提供丰富模板和组件，助您快速上线产品。",
-    "keywords": "shipany, shipany-boilerplate, shipany-template-two-demo"
+    "title": "AI 纹身生成器",
+    "description": "在纹身之前先看效果。上传照片，描述想法，AI 生成逼真的纹身预览。",
+    "keywords": "AI纹身生成器, 纹身预览, 纹身设计, AI纹身, 纹身效果图"
   },
   "sign": {
     "sign_in_title": "登录",
