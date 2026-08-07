@@ -25,17 +25,32 @@ function maybeRateLimitGetSession(request: Request): Response | null {
 
 /**
  * Returns CORS headers based on trusted origins.
- * Uses the same trustedOrigins from auth config, plus app_url.
+ * Matches the request origin against allowed origins (with and without www).
  */
 function corsHeaders(request: Request): Record<string, string> {
   const origin = request.headers.get('origin');
-  const trustedOrigins = envConfigs.app_url
-    ? [envConfigs.app_url]
-    : [];
+  const baseUrl = envConfigs.app_url;
 
-  // If origin matches a trusted origin, reflect it back (not wildcard)
+  // Build trusted origins: base URL + www variant
+  const trustedOrigins: string[] = [];
+  if (baseUrl) {
+    trustedOrigins.push(baseUrl);
+    // Also add www variant (e.g. https://tattoovis.ink → https://www.tattoovis.ink)
+    try {
+      const url = new URL(baseUrl);
+      const wwwVariant = `${url.protocol}//www.${url.host}${url.port ? ':' + url.port : ''}`;
+      trustedOrigins.push(wwwVariant);
+    } catch {
+      // ignore invalid URLs
+    }
+  }
+
+  // Allow localhost in development
+  trustedOrigins.push('http://localhost:3000');
+
+  // If origin matches a trusted origin, reflect it back (not wildcard — required for credentials)
   const allowedOrigin =
-    origin && trustedOrigins.some((t) => origin.startsWith(t))
+    origin && trustedOrigins.some((t) => origin === t || origin.startsWith(t + ':'))
       ? origin
       : trustedOrigins[0] || '';
 
