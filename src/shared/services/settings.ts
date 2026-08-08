@@ -161,6 +161,13 @@ export async function getSettingGroups() {
       tab: 'payment',
     },
     {
+      name: 'waffo',
+      title: 'Waffo',
+      description:
+        'custom your <a href="https://waffo.ai" class="text-primary" target="_blank">Waffo</a> settings',
+      tab: 'payment',
+    },
+    {
       name: 'google_analytics',
       title: t('groups.google_analytics'),
       description:
@@ -459,6 +466,10 @@ export async function getSettings() {
           title: 'Paypal',
           value: 'paypal',
         },
+        {
+          title: 'Waffo',
+          value: 'waffo',
+        },
       ],
       tip: 'Choose the default payment provider to use',
       group: 'basic_payment',
@@ -624,6 +635,30 @@ export async function getSettings() {
       type: 'password',
       placeholder: 'paypal_xxx',
       group: 'paypal',
+      tab: 'payment',
+    },
+    {
+      name: 'waffo_enabled',
+      title: 'Waffo Enabled',
+      type: 'switch',
+      value: 'false',
+      group: 'waffo',
+      tab: 'payment',
+    },
+    {
+      name: 'waffo_merchant_id',
+      title: 'Waffo Merchant ID',
+      type: 'text',
+      placeholder: 'waffo_xxx',
+      group: 'waffo',
+      tab: 'payment',
+    },
+    {
+      name: 'waffo_private_key',
+      title: 'Waffo Private Key',
+      type: 'password',
+      placeholder: 'waffo_xxx',
+      group: 'waffo',
       tab: 'payment',
     },
     {
