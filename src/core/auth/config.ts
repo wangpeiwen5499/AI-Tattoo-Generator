@@ -1,5 +1,5 @@
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { oneTap } from 'better-auth/plugins';
+import { oneTap, emailOTP } from 'better-auth/plugins';
 import { getLocale } from 'next-intl/server';
 
 import { db } from '@/core/db';
@@ -140,10 +140,7 @@ export async function getAuthOptions(configs: Record<string, string>) {
       enabled: configs.email_auth_enabled !== 'false',
     },
     socialProviders: await getSocialProviders(configs),
-    plugins:
-      configs.google_client_id && configs.google_one_tap_enabled === 'true'
-        ? [oneTap()]
-        : [],
+    plugins: await getAuthPlugins(configs),
   };
 }
 
@@ -186,4 +183,64 @@ export function getDatabaseProvider(
         `Unsupported database provider for auth: ${envConfigs.database_provider}`
       );
   }
+}
+
+// get auth plugins based on configs
+async function getAuthPlugins(configs: Record<string, string>) {
+  const plugins: any[] = [];
+
+  // Google One Tap
+  if (configs.google_client_id && configs.google_one_tap_enabled === 'true') {
+    plugins.push(oneTap());
+  }
+
+  // Email Verification — only if email service is configured
+  const resendApiKey = configs.resend_api_key;
+  const senderEmail = configs.resend_sender_email;
+
+  if (resendApiKey && senderEmail) {
+    plugins.push(
+      emailOTP({
+        async sendVerificationOTP({ email, otp, type }) {
+          // Only send verification email for sign-up; skip for sign-in
+          if (type !== 'email-verification') {
+            return;
+          }
+
+          // Dynamically import email service to avoid build-time issues
+          const { getEmailService } = await import(
+            '@/shared/services/email'
+          );
+          const { VerificationCode } = await import(
+            '@/shared/blocks/email/verification-code'
+          );
+
+          const emailService = await getEmailService(configs);
+
+          try {
+            emailService.getProvider('resend');
+          } catch {
+            console.error(
+              '[auth] emailOTP: no email provider configured'
+            );
+            return;
+          }
+
+          await emailService.sendEmail({
+            to: email,
+            subject: 'Verify your email — AI Tattoo Generator',
+            react: VerificationCode({
+              code: otp,
+              title: 'Verify Your Email',
+              description:
+                'Use the verification code below to activate your AI Tattoo Generator account.',
+              ctaText: otp,
+            }),
+          });
+        },
+      })
+    );
+  }
+
+  return plugins;
 }

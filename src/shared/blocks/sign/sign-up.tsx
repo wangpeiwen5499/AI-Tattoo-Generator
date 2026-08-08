@@ -103,6 +103,9 @@ export function SignUp({
         onSuccess: (ctx) => {
           // report affiliate
           reportAffiliate({ userEmail: email });
+          toast.success('Account created successfully!', {
+            description: 'Welcome to AI Tattoo Generator.',
+          });
           router.push(callbackUrl);
         },
         onError: (e: any) => {

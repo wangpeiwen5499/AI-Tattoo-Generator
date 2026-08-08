@@ -9,7 +9,8 @@
       "items": [
         { "title": "功能", "url": "/#features", "icon": "Sparkles" },
         { "title": "定价", "url": "/pricing", "icon": "DollarSign" },
-        { "title": "生成", "url": "/generate", "icon": "Wand" }
+        { "title": "生成", "url": "/generate", "icon": "Wand" },
+        { "title": "历史", "url": "/history", "icon": "History" }
       ]
     },
     "buttons": [],

@@ -69,13 +69,15 @@ export async function updateTattooProjectDesign(
     .where(eq(tattooProject.id, projectId));
 }
 
-/** 查询项目及其所有 generation（用于状态轮询） */
+/** 查询项目及其所有 generation（用于状态轮询和详情页） */
 export async function getProjectWithGenerations(projectId: string): Promise<{
   id: string;
   userId: string;
+  prompt: string;
   status: string;
   tattooDesignKey: string | null;
   tattooDesignUrl: string | null;
+  createdAt: Date;
   generations: Array<{
     bodyPart: string;
     status: string;
@@ -99,9 +101,11 @@ export async function getProjectWithGenerations(projectId: string): Promise<{
   return {
     id: project[0].id,
     userId: project[0].userId,
+    prompt: project[0].prompt,
     status: project[0].status,
     tattooDesignKey: project[0].tattooDesignKey,
     tattooDesignUrl: project[0].tattooDesignUrl,
+    createdAt: project[0].createdAt,
     generations: gens.map((g) => ({
       bodyPart: g.bodyPart,
       status: g.status,

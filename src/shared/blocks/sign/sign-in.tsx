@@ -76,7 +76,11 @@ export function SignIn({
         onResponse: (ctx) => {
           setLoading(false);
         },
-        onSuccess: (ctx) => {},
+        onSuccess: (ctx) => {
+          toast.success('Welcome back!', {
+            description: 'You have signed in successfully.',
+          });
+        },
         onError: (e: any) => {
           toast.error(e?.error?.message || 'sign in failed');
           setLoading(false);

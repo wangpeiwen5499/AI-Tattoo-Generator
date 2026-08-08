@@ -21,6 +21,11 @@
           "title": "Generate",
           "url": "/generate",
           "icon": "Wand"
+        },
+        {
+          "title": "History",
+          "url": "/history",
+          "icon": "History"
         }
       ]
     },
