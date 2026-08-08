@@ -21,7 +21,7 @@ import {
   CreditTransactionScene,
 } from '@/shared/models/credit';
 import { createTattooProject } from '@/server/db/tattoo-queries';
-import { claimGuestFree } from '@/server/db/guest-queries';
+import { claimGuestFree, ensureGuestUser } from '@/server/db/guest-queries';
 import { runGeneration } from '@/server/ai/run-generation';
 import { getUuid, getSnowId } from '@/shared/lib/hash';
 import { CREDITS_PER_GENERATION } from '@/lib/constants';
@@ -76,6 +76,8 @@ export async function POST(req: Request) {
           { status: 429 }
         );
       }
+      // 确保游客在 user 表存在（满足 tattoo_project.user_id 外键约束）
+      await ensureGuestUser(userId);
     } catch (e) {
       console.error('[generate-tattoo] claimGuestFree failed:', e);
       return NextResponse.json({ error: 'Failed to check guest limit' }, { status: 500 });

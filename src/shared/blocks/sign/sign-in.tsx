@@ -63,30 +63,52 @@ export function SignIn({
       return;
     }
 
-    await signIn.email(
-      {
-        email,
-        password,
-        callbackURL: callbackUrl,
-      },
-      {
-        onRequest: (ctx) => {
-          setLoading(true);
+    try {
+      setLoading(true);
+      await signIn.email(
+        {
+          email,
+          password,
+          callbackURL: callbackUrl,
         },
-        onResponse: (ctx) => {
-          setLoading(false);
-        },
-        onSuccess: (ctx) => {
-          toast.success('Welcome back!', {
-            description: 'You have signed in successfully.',
-          });
-        },
-        onError: (e: any) => {
-          toast.error(e?.error?.message || 'sign in failed');
-          setLoading(false);
-        },
-      }
-    );
+        {
+          onRequest: () => {
+            setLoading(true);
+          },
+          onResponse: (ctx: any) => {
+            setLoading(false);
+            if (!ctx?.response?.ok) {
+              ctx?.response
+                ?.clone()
+                .json()
+                .then((body: any) => {
+                  toast.error(body?.message || body?.error?.message || 'sign in failed', {
+                    id: 'sign-in-error',
+                  });
+                })
+                .catch(() =>
+                  toast.error('sign in failed', { id: 'sign-in-error' })
+                );
+            }
+          },
+          onSuccess: () => {
+            toast.success('Welcome back!', {
+              description: 'You have signed in successfully.',
+            });
+          },
+          onError: (ctx: any) => {
+            toast.error(ctx?.error?.message || 'sign in failed', {
+              id: 'sign-in-error',
+            });
+            setLoading(false);
+          },
+        }
+      );
+    } catch (e: any) {
+      toast.error(e.message || 'sign in failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

@@ -1,7 +1,7 @@
 # 项目交接文档
 
-> 上次更新：**2026-08-08**
-> 当前进度：**✅ 生产上线 — 支付/AI/认证/历史全链路打通**
+> 上次更新：**2026-08-08**（新增 4 bug 修复，**未 commit**）
+> 当前进度：**✅ 生产上线 + 本地修复游客生成/登录反馈链路（待 commit/部署）**
 > 分支：**`shipany-two`**（唯一活跃分支，原 `main` 旧 Demo 已废弃）
 > 线上：**https://tattoovis.ink**（Vercel 部署）
 > 项目路径：`D:\code\AI Tattoo Generator Template`
@@ -45,6 +45,21 @@ efbe88a  修复 AI 生成流程：maxDuration 60→300s
 c03fd80  重设计 Generate 页面：统一卡片 + 免费试用文案
 da39ae8  修复三个线上 bug：注册反馈 + 历史记录 + 邮箱验证
 ```
+
+### 🔴 本地未 commit 修复（2026-08-08 功能巡检发现，build 已过，待 commit）
+
+修复游客生成链路 3 个串联 P0 bug + 登录失败反馈，共改 6 个文件：
+
+| Bug | 文件 | 修复 |
+|-----|------|------|
+| 游客 credits=null 卡「Loading credits」 | `src/app/api/credits/route.ts` | route 用 IP 计算游客剩余免费次数（不再 401） |
+| 游客生成 FK 约束失败 | `src/server/db/guest-queries.ts` + `api/ai/generate-tattoo/route.ts` | 新增 `ensureGuestUser()` 幂等 upsert guest user（utmSource='guest'），route 游客分支调用 |
+| status 轮询 401 | `api/ai/generate-tattoo/status/route.ts` | `getSignUser` → `getActor`（认游客 guest_id cookie） |
+| 登录失败无 toast | `shared/blocks/sign/sign-in-form.tsx` + `sign-in.tsx` | better-auth `onError` 在 401 不触发；改 `onResponse` 检查 `!response.ok` 兜底 + sonner `id` 去重 |
+
+**验证**：游客生成端到端跑通（4 部位 AI 出图 completed）；登录失败显示 `Invalid email or password`；`npm run build` exit 0。
+
+**⚠️ 副作用**：测试写了生产 Supabase 库——1 条 guest user（`guest_8b1fdf31-...`，utmSource='guest'）、1 个 tattoo_project、5 张 R2 图。admin 用户列表会看到 Guest 记录，按 `utm_source='guest'` 过滤/清理。
 
 ---
 
@@ -204,7 +219,7 @@ src/
 ```
 POST /api/ai/generate-tattoo
   → getActor() 鉴权（登录用户/游客）
-  → 游客：IP 限流检查（3次/天）
+  → 游客：IP 限流检查（3次/天）→ ensureGuestUser(guest_id) 幂等建 guest user（满足外键）
   → 登录用户：余额检查 + 扣积分
   → createTattooProject(status='processing')
   → void runGeneration({...})  ← fire-and-forget，在后台执行
@@ -296,10 +311,15 @@ Resend 域名验证 DNS TXT 记录在 **NameSilo**（不是 Vercel）添加，�
 
 | 问题 | 严重性 | 说明 |
 |------|--------|------|
-| PaymentFeedback toast 偶发不弹 | 低 | 支付成功后 credits 正常加，但 toast 有时不在前端显示 |
+| 登录成功路径未实测 | 中 | 2026-08-08 修了登录失败 toast，但无测试账号验证成功路径（注册涉及 Resend 真实发邮件），建议有账号时跑一次 |
+| PaymentFeedback toast 偶发不弹 | 低 | 支付成功后 credits 正常加但 toast 偶发不显示。可能根因同登录 toast（better-auth onError 不触发），支付流程未深查 |
 | 生成页无并发限制 | 中 | 同一用户可同时触发多次生成请求 |
 | KIE 无 429 重试 | 低 | 生产环境目前未遇到限流 |
 | 历史记录无分页 | 低 | 全量返回，重度用户多了需要加分页 |
+| 游客 history 不可见 | 低 | 游客生成结果只实时显示，刷新即失（history 页只认登录用户）。设计如此，非 bug |
+| /chat 页脚链接 | 低 | 模板残留，指向未启用的 /chat 页面，可清理 |
+| dev 端口冲突 CORS | 低 | dev 跑非 3000 端口时 auth CORS 报错（client baseURL 硬绑 env）。生产单域名无影响 |
+| 首页 LCP 图片 | 低 | `/imgs/cases/1.png` 建议加 `loading="eager"` |
 | 移动端适配 | 低 | 基础可用，部分细节可优化 |
 
 ---
@@ -342,7 +362,8 @@ npm run db:migrate
 ## 11. 给新会话的开场建议
 
 1. 读这份文档（`docs/handoff.md`）
-2. 跑 `npm run build` 确认编译干净
-3. 跑 `npm run dev` 启动开发服务器
-4. 关键代码位置：AI 生成 `src/server/ai/`，支付 `src/app/api/payment/`，认证 `src/core/auth/config.ts`
-5. 所有 commit message 用中文，Co-Authored-By: Claude
+2. **当前有未 commit 改动**（见上方「本地未 commit 修复」）：6 个文件，build 已过。先 `git status` / `git diff` 确认，再决定 commit
+3. 跑 `npm run build` 确认编译干净（已验证 exit 0）
+4. 跑 `npm run dev` 启动开发服务器（注意：3000 端口若被旧实例占用会 CORS，必要时停旧进程 + 清 `.next/dev/lock`）
+5. 关键代码位置：AI 生成 `src/server/ai/`，支付 `src/app/api/payment/`，认证 `src/core/auth/config.ts`，游客配额 `src/server/db/guest-queries.ts`
+6. 所有 commit message 用中文，Co-Authored-By: Claude

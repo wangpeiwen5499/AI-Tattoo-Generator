@@ -11,7 +11,7 @@
  */
 import { NextResponse } from 'next/server';
 
-import { getSignUser } from '@/shared/models/user';
+import { getActor } from '@/server/auth/actor';
 import { getProjectWithGenerations } from '@/server/db/tattoo-queries';
 import { getPublicUrl } from '@/lib/r2';
 import { BODY_PARTS, type BodyPart } from '@/lib/constants';
@@ -19,8 +19,8 @@ import { BODY_PARTS, type BodyPart } from '@/lib/constants';
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request): Promise<Response> {
-  const user = await getSignUser();
-  if (!user?.id) {
+  const actor = await getActor();
+  if (!actor) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -30,7 +30,7 @@ export async function GET(req: Request): Promise<Response> {
   }
 
   const project = await getProjectWithGenerations(id);
-  if (!project || project.userId !== user.id) {
+  if (!project || project.userId !== actor.id) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
