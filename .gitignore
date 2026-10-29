@@ -45,6 +45,7 @@ yarn-error.log*
 next-env.d.ts
 
 data*
+!tests/database.ts
 *debug*
 
 *.db
