@@ -27,6 +27,7 @@ export interface Section {
   icon?: string | ReactNode;
   image?: Image;
   image_invert?: Image;
+  tattoo_demo?: boolean;
   items?: SectionItem[];
   image_position?: 'left' | 'right' | 'top' | 'bottom' | 'center';
   text_align?: 'left' | 'center' | 'right';
