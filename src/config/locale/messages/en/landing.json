@@ -56,7 +56,13 @@
     "brand": {
       "title": "AI Tattoo Generator",
       "description": "See your tattoo before you ink. Upload a photo, describe your idea, and AI generates realistic tattoo previews.",
-      "url": "/"
+      "url": "/",
+      "logo": {
+        "src": "/imgs/cases/geometric-wolf/design.webp",
+        "alt": "Geometric wolf tattoo",
+        "width": 64,
+        "height": 64
+      }
     },
     "nav": {
       "items": [
@@ -95,12 +101,6 @@
     "social": {
       "items": [
         {
-          "title": "Github",
-          "icon": "Github",
-          "url": "https://github.com/wangpeiwen5499/AI-Tattoo-Generator",
-          "target": "_blank"
-        },
-        {
           "title": "Email",
           "icon": "Mail",
           "url": "mailto:support@tattoovis.ink",
@@ -121,6 +121,7 @@
       ]
     },
     "show_theme": true,
-    "show_locale": true
+    "show_locale": true,
+    "show_built_with": false
   }
 }

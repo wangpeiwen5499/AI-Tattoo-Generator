@@ -1,9 +1,41 @@
 'use client';
 
+import { useState } from 'react';
+import { Pause, Play, Quote } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+
 import { LazyImage } from '@/shared/blocks/common';
-import { ScrollAnimation } from '@/shared/components/ui/scroll-animation';
+import { cn } from '@/shared/lib/utils';
 import { Section, SectionItem } from '@/shared/types/blocks/landing';
 
+function ReviewCard({ item }: { item: SectionItem }) {
+  return (
+    <figure className="tattoo-review-card">
+      <Quote
+        size={30}
+        strokeWidth={1}
+        className="text-primary/65 mb-6"
+        aria-hidden="true"
+      />
+      <blockquote className="text-lg leading-8 tracking-[-0.01em]">
+        {item.quote || item.description}
+      </blockquote>
+      <figcaption className="mt-8 flex items-center gap-3 border-t pt-5">
+        <LazyImage
+          src={item.image?.src || item.avatar?.src || ''}
+          alt=""
+          className="size-11 shrink-0 rounded-full object-cover grayscale"
+        />
+        <div>
+          <p className="text-sm font-semibold">{item.name}</p>
+          <p className="text-muted-foreground mt-1 text-xs">
+            {item.role || item.title}
+          </p>
+        </div>
+      </figcaption>
+    </figure>
+  );
+}
 export function Testimonials({
   section,
   className,
@@ -11,59 +43,60 @@ export function Testimonials({
   section: Section;
   className?: string;
 }) {
-  const TestimonialCard = ({ item }: { item: SectionItem }) => {
-    return (
-      <div className="bg-card/25 ring-foreground/[0.07] flex flex-col justify-end gap-6 rounded-(--radius) border border-transparent p-8 ring-1">
-        <p className='text-foreground self-end text-balance before:mr-1 before:content-["\201C"] after:ml-1 after:content-["\201D"]'>
-          {item.quote || item.description}
-        </p>
-        <div className="flex items-center gap-3">
-          <div className="ring-foreground/10 aspect-square size-9 overflow-hidden rounded-lg border border-transparent shadow-md ring-1 shadow-black/15">
-            <LazyImage
-              src={item.image?.src || item.avatar?.src || ''}
-              alt={item.image?.alt || item.avatar?.alt || item.name || ''}
-              className="h-full w-full object-cover"
-            />
-          </div>
-          <h3 className="sr-only">
-            {item.name}, {item.role || item.title}
-          </h3>
-          <div className="space-y-px">
-            <p className="text-sm font-medium">{item.name} </p>
-            <p className="text-muted-foreground text-xs">
-              {item.role || item.title}
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
+  const [paused, setPaused] = useState(false);
+  const t = useTranslations('common.reviews');
+  if (!section.items?.length) return null;
   return (
     <section
       id={section.id}
-      className={`py-16 md:py-24 ${section.className} ${className}`}
+      className={cn(
+        'tattoo-reviews py-20 md:py-28',
+        section.className,
+        className
+      )}
+      data-paused={paused}
+      aria-labelledby={section.id ? section.id + '-title' : undefined}
     >
-      <div className="container">
-        <ScrollAnimation>
-          <div className="mx-auto max-w-2xl text-center text-balance">
-            <h2 className="text-foreground mb-4 text-3xl font-semibold tracking-tight md:text-4xl">
-              {section.title}
-            </h2>
-            <p className="text-muted-foreground mb-6 md:mb-12 lg:mb-16">
-              {section.description}
-            </p>
-          </div>
-        </ScrollAnimation>
-        <ScrollAnimation delay={0.2}>
-          <div className="border-border/50 relative rounded-(--radius)">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-px lg:*:nth-1:rounded-t-none lg:*:nth-2:rounded-tl-none lg:*:nth-2:rounded-br-none lg:*:nth-3:rounded-l-none lg:*:nth-4:rounded-r-none lg:*:nth-5:rounded-tl-none lg:*:nth-5:rounded-br-none lg:*:nth-6:rounded-b-none">
+      <div className="container mb-10 flex flex-wrap items-end justify-between gap-6 md:mb-14">
+        <div className="max-w-2xl">
+          <h2
+            id={section.id ? section.id + '-title' : undefined}
+            className="text-3xl font-normal tracking-tight sm:text-4xl lg:text-5xl"
+          >
+            {section.title}
+          </h2>
+          <p className="text-muted-foreground mt-5 text-base leading-relaxed">
+            {section.description}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setPaused(!paused)}
+          aria-pressed={paused}
+          className="tattoo-review-control border-border bg-card hover:bg-muted focus-visible:outline-primary inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-4"
+        >
+          {paused ? (
+            <Play size={15} aria-hidden="true" />
+          ) : (
+            <Pause size={15} aria-hidden="true" />
+          )}
+          {paused ? t('play') : t('pause')}
+        </button>
+      </div>
+      <div className="tattoo-reviews-window mx-auto max-w-7xl overflow-hidden">
+        <div className="tattoo-reviews-track">
+          {[0, 1].map((copy) => (
+            <div
+              key={copy}
+              className="tattoo-reviews-group"
+              aria-hidden={copy === 1 ? true : undefined}
+            >
               {section.items?.map((item, index) => (
-                <TestimonialCard key={index} item={item} />
+                <ReviewCard item={item} key={index} />
               ))}
             </div>
-          </div>
-        </ScrollAnimation>
+          ))}
+        </div>
       </div>
     </section>
   );

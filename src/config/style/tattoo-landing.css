@@ -1,0 +1,227 @@
+.tattoo-features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+.tattoo-feature {
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+  padding: 32px;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: var(--card);
+  box-shadow: 0 6px 20px -18px rgb(0 0 0 / 25%);
+}
+.tattoo-feature-copy {
+  position: relative;
+  z-index: 1;
+}
+.tattoo-feature-icon {
+  display: flex;
+  width: 48px;
+  height: 48px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--primary);
+}
+.tattoo-feature-showcase {
+  grid-column: span 2;
+  display: flex;
+  align-items: center;
+  min-height: 310px;
+}
+.tattoo-feature-showcase .tattoo-feature-copy {
+  width: 56%;
+}
+.tattoo-feature-showcase h3 {
+  font-size: clamp(28px, 3vw, 40px);
+}
+.tattoo-feature-art {
+  overflow: hidden;
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  bottom: 20px;
+  width: 36%;
+  background: white;
+  border-radius: 160px 160px 20px 20px;
+}
+.tattoo-feature-ink {
+  background: #29243c;
+  color: #f3effb;
+  border-color: #453e5b;
+}
+.tattoo-feature-ink .tattoo-feature-icon {
+  color: #d0c0f4;
+  border-color: #756c89;
+}
+.tattoo-ink-lines {
+  display: flex;
+  gap: 8px;
+  margin-top: 26px;
+  opacity: 0.55;
+}
+.tattoo-ink-lines span {
+  height: 4px;
+  flex: 1;
+  background: #c7b6ee;
+  border-radius: 8px;
+}
+.tattoo-ink-lines span:nth-child(2) {
+  opacity: 0.55;
+  flex: 0.65;
+}
+.tattoo-ink-lines span:nth-child(3) {
+  opacity: 0.3;
+  flex: 0.3;
+}
+.tattoo-feature-note {
+  grid-column: 1 / -1;
+  background: var(--muted);
+  padding-top: 24px;
+  padding-bottom: 24px;
+  box-shadow: none;
+}
+.tattoo-feature-note .tattoo-feature-copy {
+  display: grid;
+  grid-template-columns: auto minmax(150px, 0.65fr) 1.6fr;
+  align-items: center;
+  gap: 24px;
+}
+.tattoo-feature-note h3,
+.tattoo-feature-note p {
+  margin: 0;
+}
+.tattoo-feature-note p {
+  max-width: none;
+}
+.tattoo-reviews {
+  background: var(--muted);
+}
+.tattoo-reviews-window {
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 4%,
+    black 96%,
+    transparent
+  );
+}
+.tattoo-reviews-track {
+  display: flex;
+  width: max-content;
+  animation: tattoo-reviews-drift 48s linear infinite;
+}
+.tattoo-reviews-group {
+  display: flex;
+  gap: 20px;
+  padding-right: 20px;
+}
+.tattoo-review-card {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  width: clamp(18rem, 32vw, 25rem);
+  padding: 32px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--card);
+}
+.tattoo-review-card figcaption {
+  margin-top: auto;
+  padding-top: 20px;
+}
+.tattoo-review-card blockquote {
+  margin-bottom: 32px;
+}
+.tattoo-reviews[data-paused='true'] .tattoo-reviews-track,
+.tattoo-reviews-window:focus-within .tattoo-reviews-track {
+  animation-play-state: paused;
+}
+@media (hover: hover) {
+  .tattoo-reviews-window:hover .tattoo-reviews-track {
+    animation-play-state: paused;
+  }
+}
+@keyframes tattoo-reviews-drift {
+  to {
+    transform: translateX(-50%);
+  }
+}
+@media (max-width: 767px) {
+  .tattoo-features-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .tattoo-feature {
+    padding: 24px;
+  }
+  .tattoo-feature-ink {
+    grid-column: span 2;
+  }
+  .tattoo-feature-note .tattoo-feature-copy {
+    grid-template-columns: auto 1fr;
+    gap: 16px;
+  }
+  .tattoo-feature-note p {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 479px) {
+  .tattoo-features-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .tattoo-feature-showcase,
+  .tattoo-feature-ink {
+    grid-column: auto;
+  }
+  .tattoo-feature-showcase {
+    min-height: 330px;
+  }
+  .tattoo-feature-art {
+    right: 12px;
+    top: 40px;
+    bottom: 40px;
+    width: 38%;
+  }
+  .tattoo-feature-showcase .tattoo-feature-copy {
+    width: 58%;
+  }
+  .tattoo-review-card {
+    width: 82vw;
+    padding: 26px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tattoo-review-control {
+    display: none;
+  }
+  .tattoo-reviews-window {
+    mask-image: none;
+    padding: 0 16px;
+  }
+  .tattoo-reviews-track {
+    width: 100%;
+    animation: none;
+  }
+  .tattoo-reviews-group {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    padding: 0;
+    width: 100%;
+  }
+  .tattoo-reviews-group[aria-hidden='true'] {
+    display: none;
+  }
+  .tattoo-review-card {
+    width: auto;
+  }
+}
+@media (prefers-reduced-motion: reduce) and (max-width: 767px) {
+  .tattoo-reviews-group {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

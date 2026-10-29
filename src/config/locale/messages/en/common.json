@@ -72,5 +72,9 @@
     "signupSuccess": "Account created. Verify your email to use your 3 credits.",
     "saveDesign": "Save tattoo design",
     "savePreview": "Save preview"
+  },
+  "reviews": {
+    "pause": "Pause reviews",
+    "play": "Play reviews"
   }
 }

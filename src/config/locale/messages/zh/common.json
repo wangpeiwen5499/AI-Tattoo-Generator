@@ -72,5 +72,9 @@
     "signupSuccess": "账户创建成功，验证邮箱后即可使用 3 个积分。",
     "saveDesign": "保存纹身设计",
     "savePreview": "保存效果图"
+  },
+  "reviews": {
+    "pause": "暂停滚动",
+    "play": "继续播放"
   }
 }

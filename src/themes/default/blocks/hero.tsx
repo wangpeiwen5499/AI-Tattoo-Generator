@@ -60,7 +60,7 @@ export function Hero({
 
       <div className="relative mx-auto max-w-full px-4 text-center md:max-w-5xl">
         {texts && texts.length > 0 ? (
-          <h1 className="text-foreground text-4xl font-semibold text-balance sm:mt-12 sm:text-6xl">
+          <h1 className="text-foreground text-4xl font-normal text-balance sm:mt-12 sm:text-6xl">
             {texts[0]}
             <Highlighter action="underline" color="#FF9800">
               {highlightText}

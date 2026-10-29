@@ -56,7 +56,13 @@
     "brand": {
       "title": "AI 纹身生成器",
       "description": "在纹身之前先看效果。上传照片、描述想法，AI 即可生成逼真的纹身预览。",
-      "url": "/"
+      "url": "/",
+      "logo": {
+        "src": "/imgs/cases/geometric-wolf/design.webp",
+        "alt": "几何狼头纹身",
+        "width": 64,
+        "height": 64
+      }
     },
     "nav": {
       "items": [
@@ -95,12 +101,6 @@
     "social": {
       "items": [
         {
-          "title": "Github",
-          "icon": "Github",
-          "url": "https://github.com/wangpeiwen5499/AI-Tattoo-Generator",
-          "target": "_blank"
-        },
-        {
           "title": "邮箱",
           "icon": "Mail",
           "url": "mailto:support@tattoovis.ink",
@@ -121,6 +121,7 @@
       ]
     },
     "show_theme": true,
-    "show_locale": true
+    "show_locale": true,
+    "show_built_with": false
   }
 }
