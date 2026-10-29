@@ -1,3 +1,4 @@
+import { requireGenerationUser } from '@/server/auth/generation-access';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import {
   convertToModelMessages,
@@ -20,9 +21,10 @@ import {
   NewChatMessage,
 } from '@/shared/models/chat_message';
 import { getAllConfigs } from '@/shared/models/config';
-import { getUserInfo } from '@/shared/models/user';
 
 export async function POST(req: Request) {
+  const access = await requireGenerationUser();
+  if (access.response) return access.response;
   try {
     const {
       chatId,
@@ -47,7 +49,7 @@ export async function POST(req: Request) {
     }
 
     // check user sign
-    const user = await getUserInfo();
+    const user = access.user;
     if (!user) {
       throw new Error('no auth, please sign in');
     }

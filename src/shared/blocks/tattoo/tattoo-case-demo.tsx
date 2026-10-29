@@ -5,7 +5,6 @@ import Image from 'next/image';
 import { Check, Expand, MousePointer2, RotateCcw } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
-import { Link } from '@/core/i18n/navigation';
 import { Button } from '@/shared/components/ui/button';
 import { cn } from '@/shared/lib/utils';
 
@@ -16,6 +15,7 @@ import {
   type CasePlacement,
 } from './case-study-data';
 import { Lightbox } from './lightbox';
+import { TrialCta } from './trial-cta';
 
 export function TattooCaseDemo() {
   const t = useTranslations('pages.index.page.sections.hero.demo');
@@ -62,8 +62,9 @@ export function TattooCaseDemo() {
 
   return (
     <section
+      id="tattoo-case"
       aria-labelledby={`${id}-title`}
-      className="bg-card text-card-foreground mx-auto max-w-6xl overflow-hidden rounded-2xl border shadow-lg shadow-black/5"
+      className="bg-card text-card-foreground mx-auto max-w-6xl scroll-mt-24 overflow-hidden rounded-2xl border shadow-lg shadow-black/5"
     >
       <header className="flex flex-wrap items-center justify-between gap-4 border-b px-5 py-5 sm:px-8">
         <div>
@@ -201,12 +202,7 @@ export function TattooCaseDemo() {
             <p className="text-muted-foreground text-xs leading-relaxed">
               {t('exampleNote')}
             </p>
-            <Link
-              href="/generate"
-              className="text-primary mt-3 inline-flex rounded-sm text-sm font-medium underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber-500"
-            >
-              {t('createOwn')}
-            </Link>
+            <TrialCta className="text-primary mt-3 inline-flex rounded-sm text-sm font-medium underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber-500" />
           </div>
         </div>
 

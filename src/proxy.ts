@@ -60,6 +60,7 @@ export async function proxy(request: NextRequest) {
     !pathWithoutLocale.startsWith('/generate') &&
     !pathWithoutLocale.startsWith('/chat') &&
     !pathWithoutLocale.startsWith('/sign-') &&
+    !pathWithoutLocale.startsWith('/verify-email') &&
     !pathWithoutLocale.startsWith('/auth')
   ) {
     intlResponse.headers.delete('Set-Cookie');

@@ -1,9 +1,10 @@
 import { toNextJsHandler } from 'better-auth/next-js';
 
-import { envConfigs } from '@/config';
 import { getAuth } from '@/core/auth';
+import { envConfigs } from '@/config';
 import { isCloudflareWorker } from '@/shared/lib/env';
 import { enforceMinIntervalRateLimit } from '@/shared/lib/rate-limit';
+import { getAllConfigs } from '@/shared/models/config';
 
 function maybeRateLimitGetSession(request: Request): Response | null {
   const url = new URL(request.url);
@@ -50,7 +51,8 @@ function corsHeaders(request: Request): Record<string, string> {
 
   // If origin matches a trusted origin, reflect it back (not wildcard — required for credentials)
   const allowedOrigin =
-    origin && trustedOrigins.some((t) => origin === t || origin.startsWith(t + ':'))
+    origin &&
+    trustedOrigins.some((t) => origin === t || origin.startsWith(t + ':'))
       ? origin
       : trustedOrigins[0] || '';
 
@@ -72,6 +74,18 @@ export async function OPTIONS(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (new URL(request.url).pathname.endsWith('/sign-up/email')) {
+    const configs = await getAllConfigs();
+    if (!configs.resend_api_key || !configs.resend_sender_email)
+      return Response.json(
+        {
+          code: 'EMAIL_SERVICE_UNAVAILABLE',
+          message:
+            'Email verification is temporarily unavailable. Please try again later.',
+        },
+        { status: 503, headers: corsHeaders(request) }
+      );
+  }
   const limited = maybeRateLimitGetSession(request);
   if (limited) {
     return limited;

@@ -6,7 +6,7 @@ import {
   GenerationRequestError,
   startTattooGeneration,
 } from '@/server/ai/tattoo-jobs';
-import { getActor } from '@/server/auth/actor';
+import { requireGenerationUser } from '@/server/auth/generation-access';
 import { z } from 'zod';
 
 import { enforceMinIntervalRateLimit } from '@/shared/lib/rate-limit';
@@ -20,12 +20,9 @@ const requestSchema = z.object({
 });
 
 export async function POST(req: Request): Promise<Response> {
-  const actor = await getActor();
-  if (!actor)
-    return Response.json(
-      { error: 'Please upload your photo again to start a secure session.' },
-      { status: 401 }
-    );
+  const access = await requireGenerationUser();
+  if (access.response) return access.response;
+  const actor = { type: 'user' as const, id: access.user.id };
   const limited = enforceMinIntervalRateLimit(req, {
     intervalMs: 1500,
     keyPrefix: 'tattoo-start',

@@ -7,7 +7,6 @@ import {
 } from '@/lib/constants';
 import { fetchUrlAndUpload, getPublicUrl } from '@/lib/r2';
 import type { Actor } from '@/server/auth/actor';
-import { claimGuestFree, ensureGuestUser } from '@/server/db/guest-queries';
 import { isOwnedUploadKey } from '@/server/storage/upload-policy';
 import { and, eq, inArray, lte } from 'drizzle-orm';
 
@@ -52,7 +51,12 @@ export async function startTattooGeneration(input: {
   requestId: string;
   ip: string;
 }): Promise<string> {
-  const { actor, bodyPhotoKey, prompt, requestId, ip } = input;
+  const { actor, bodyPhotoKey, prompt, requestId } = input;
+  if (actor.type !== 'user')
+    throw new GenerationRequestError(
+      'Sign in to generate your own tattoo.',
+      401
+    );
   if (!isOwnedUploadKey(bodyPhotoKey, actor.id))
     throw new GenerationRequestError('Invalid photo ownership');
   if (
@@ -62,13 +66,17 @@ export async function startTattooGeneration(input: {
   )
     throw new GenerationRequestError('Invalid generation request');
   return db().transaction(async (tx) => {
-    if (actor.type === 'guest') await ensureGuestUser(actor.id, tx);
     const [owner] = await tx
-      .select({ id: user.id })
+      .select({ id: user.id, emailVerified: user.emailVerified })
       .from(user)
       .where(eq(user.id, actor.id))
       .for('no key update');
     if (!owner) throw new GenerationRequestError('User not found', 401);
+    if (!owner.emailVerified)
+      throw new GenerationRequestError(
+        'Verify your email before using credits.',
+        403
+      );
     const [existing] = await tx
       .select()
       .from(tattooJob)
@@ -101,41 +109,31 @@ export async function startTattooGeneration(input: {
         'A generation is already in progress. Resume it before starting another.',
         409
       );
-    let creditId: string | null = null;
-    if (actor.type === 'guest') {
-      if ((await claimGuestFree(ip, tx)) < 0)
-        throw new GenerationRequestError(
-          'Daily guest limit reached. Sign up for more previews.',
-          429
-        );
-    } else {
-      try {
-        creditId = (
-          await consumeCredits({
-            userId: actor.id,
-            credits: CREDITS_PER_GENERATION,
-            scene: 'tattoo',
-            description: 'Tattoo preview',
-            tx,
-          })
-        ).id;
-      } catch (error) {
-        if (error instanceof Error && error.message.includes('Insufficient'))
-          throw new GenerationRequestError('Insufficient credits', 402);
-        throw error;
-      }
+    let creditId: string;
+    try {
+      creditId = (
+        await consumeCredits({
+          userId: actor.id,
+          credits: CREDITS_PER_GENERATION,
+          scene: 'tattoo',
+          description: 'Tattoo preview',
+          tx,
+        })
+      ).id;
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('Insufficient'))
+        throw new GenerationRequestError('Insufficient credits', 402);
+      throw error;
     }
     const projectId = randomUUID();
-    await tx
-      .insert(tattooProject)
-      .values({
-        id: projectId,
-        userId: actor.id,
-        bodyPhotoKey,
-        bodyPhotoUrl: getPublicUrl(bodyPhotoKey),
-        prompt: prompt.trim(),
-        status: 'processing',
-      });
+    await tx.insert(tattooProject).values({
+      id: projectId,
+      userId: actor.id,
+      bodyPhotoKey,
+      bodyPhotoUrl: getPublicUrl(bodyPhotoKey),
+      prompt: prompt.trim(),
+      status: 'processing',
+    });
     await tx.insert(tattooJob).values({
       projectId,
       userId: actor.id,

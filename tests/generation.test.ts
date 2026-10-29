@@ -73,20 +73,21 @@ describe('durable tattoo jobs', () => {
     vi.setSystemTime(now);
     await mocks.database.delete(schema.user);
     await mocks.database.delete(schema.guestFreeUsage);
-    await mocks.database
-      .insert(schema.user)
-      .values({ id: userId, name: 'Test', email: 'generation@example.com' });
-    await mocks.database
-      .insert(schema.credit)
-      .values({
-        id: randomUUID(),
-        userId,
-        transactionNo: randomUUID(),
-        transactionType: 'grant',
-        credits: 3,
-        remainingCredits: 3,
-        status: 'active',
-      });
+    await mocks.database.insert(schema.user).values({
+      id: userId,
+      name: 'Test',
+      email: 'generation@example.com',
+      emailVerified: true,
+    });
+    await mocks.database.insert(schema.credit).values({
+      id: randomUUID(),
+      userId,
+      transactionNo: randomUUID(),
+      transactionType: 'grant',
+      credits: 3,
+      remainingCredits: 3,
+      status: 'active',
+    });
     mocks.create
       .mockReset()
       .mockImplementation(async (body) =>
@@ -94,21 +95,17 @@ describe('durable tattoo jobs', () => {
           ? 'design-task'
           : `fusion-${mocks.create.mock.calls.length}`
       );
-    mocks.record
-      .mockReset()
-      .mockImplementation(async (id) => ({
-        taskId: id,
-        state: 'success',
-        resultJson: JSON.stringify({
-          resultUrls: [`https://ai.example/${id}.png`],
-        }),
-      }));
-    mocks.upload
-      .mockReset()
-      .mockImplementation(async (_source, key) => ({
-        key,
-        publicUrl: `https://storage.example/${key}`,
-      }));
+    mocks.record.mockReset().mockImplementation(async (id) => ({
+      taskId: id,
+      state: 'success',
+      resultJson: JSON.stringify({
+        resultUrls: [`https://ai.example/${id}.png`],
+      }),
+    }));
+    mocks.upload.mockReset().mockImplementation(async (_source, key) => ({
+      key,
+      publicUrl: `https://storage.example/${key}`,
+    }));
   });
 
   it('creates and debits once for a retried start request', async () => {
@@ -212,8 +209,7 @@ describe('durable tattoo jobs', () => {
     expect(await getRemainingCredits(userId)).toBe(3);
   });
 
-  it('does not refund free guest generations and atomically limits daily guest usage', async () => {
-    mocks.create.mockRejectedValue(new Error('Provider unavailable'));
+  it('rejects guests at the transactional service boundary before creating anything', async () => {
     const actor = { type: 'guest' as const, id: `guest_${randomUUID()}` };
     const params = () => ({
       actor,
@@ -222,14 +218,13 @@ describe('durable tattoo jobs', () => {
       requestId: randomUUID(),
       ip: '127.0.0.1',
     });
-    for (let i = 0; i < 3; i++) {
-      const id = await service.startTattooGeneration(params());
-      await finish(id);
-      expect((await service.getTattooJob(id))?.refunded).toBe(false);
-    }
     await expect(service.startTattooGeneration(params())).rejects.toThrow(
-      /limit/
+      /Sign in/
     );
+    expect(
+      await mocks.database.select().from(schema.tattooProject)
+    ).toHaveLength(0);
+    expect(mocks.create).not.toHaveBeenCalled();
     expect(await getRemainingCredits(actor.id)).toBe(0);
     expect(
       await mocks.database
@@ -237,5 +232,14 @@ describe('durable tattoo jobs', () => {
         .from(schema.credit)
         .where(eq(schema.credit.userId, actor.id))
     ).toHaveLength(0);
+  });
+
+  it('blocks unverified database users even if a caller claims a user actor', async () => {
+    await mocks.database
+      .update(schema.user)
+      .set({ emailVerified: false })
+      .where(eq(schema.user.id, userId));
+    await expect(start()).rejects.toThrow(/Verify/);
+    expect(await getRemainingCredits(userId)).toBe(3);
   });
 });

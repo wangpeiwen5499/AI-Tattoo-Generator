@@ -17,6 +17,8 @@ export default function robots(): MetadataRoute.Robots {
         '/activity/*',
         '/admin/*',
         '/api/*',
+        '/verify-email',
+        '/zh/verify-email',
         '/history',
         '/history/*',
         '/zh/history',

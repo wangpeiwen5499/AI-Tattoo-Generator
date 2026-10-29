@@ -1,3 +1,4 @@
+import { requireGenerationUser } from '@/server/auth/generation-access';
 import { claimUpload } from '@/server/db/guest-queries';
 import { readBoundedBody } from '@/server/storage/file-proxy';
 import {
@@ -28,8 +29,9 @@ const extFromMime = (mimeType: string) => {
 };
 
 export async function POST(req: Request) {
-  const user = await getSignUser();
-  if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  const access = await requireGenerationUser();
+  if (access.response) return access.response;
+  const user = access.user;
   const limited = enforceMinIntervalRateLimit(req, {
     intervalMs: 2000,
     keyPrefix: 'upload-image',

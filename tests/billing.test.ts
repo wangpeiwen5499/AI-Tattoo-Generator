@@ -1,5 +1,8 @@
 import { randomUUID } from 'node:crypto';
-import { claimUpload } from '@/server/db/guest-queries';
+import {
+  claimRegistrationAttempt,
+  claimUpload,
+} from '@/server/db/guest-queries';
 import { eq } from 'drizzle-orm';
 import {
   afterAll,
@@ -15,6 +18,7 @@ import { credit, order, user } from '@/config/db/schema';
 import {
   consumeCredits,
   getRemainingCredits,
+  grantCreditsForNewUser,
   refundConsumedCredits,
 } from '@/shared/models/credit';
 import { updateOrderInTransaction } from '@/shared/models/order';
@@ -44,6 +48,47 @@ async function grant(amount: number) {
 }
 
 describe('billing transactions (isolated PostgreSQL)', () => {
+  it('grants exactly three signup credits once, including retries after use', async () => {
+    const [newUser] = await state.database
+      .select()
+      .from(user)
+      .where(eq(user.id, userId));
+    await Promise.all([
+      grantCreditsForNewUser(newUser),
+      grantCreditsForNewUser(newUser),
+    ]);
+    expect(await getRemainingCredits(userId)).toBe(3);
+    await consumeCredits({ userId, credits: 1 });
+    await grantCreditsForNewUser(newUser);
+    expect(await getRemainingCredits(userId)).toBe(2);
+  });
+
+  it('does not issue another signup gift to an existing rewarded account', async () => {
+    const [existingUser] = await state.database
+      .select()
+      .from(user)
+      .where(eq(user.id, userId));
+    await state.database.insert(credit).values({
+      id: randomUUID(),
+      userId,
+      transactionNo: 'legacy-signup-gift',
+      transactionType: 'grant',
+      transactionScene: 'gift',
+      credits: 3,
+      remainingCredits: 0,
+      status: 'active',
+    });
+    await grantCreditsForNewUser(existingUser);
+    expect(await getRemainingCredits(userId)).toBe(0);
+  });
+
+  it('enforces the persistent daily account creation budget independently of uploads', async () => {
+    const ip = randomUUID();
+    for (let i = 1; i <= 10; i++)
+      expect(await claimRegistrationAttempt(ip)).toBe(i);
+    expect(await claimRegistrationAttempt(ip)).toBe(-1);
+    expect(await claimUpload(ip, 100)).toBe(1);
+  });
   beforeAll(async () => {
     const test = await createTestDatabase();
     state.database = test.database;
@@ -136,20 +181,18 @@ describe('billing transactions (isolated PostgreSQL)', () => {
   });
 
   it('grants once for repeated payment completion', async () => {
-    await state.database
-      .insert(order)
-      .values({
-        id: randomUUID(),
-        orderNo: 'paid-order',
-        userId,
-        userEmail: 'test@example.com',
-        status: 'created',
-        amount: 499,
-        currency: 'USD',
-        paymentType: 'one-time',
-        paymentProvider: 'waffo',
-        checkoutInfo: '{}',
-      });
+    await state.database.insert(order).values({
+      id: randomUUID(),
+      orderNo: 'paid-order',
+      userId,
+      userEmail: 'test@example.com',
+      status: 'created',
+      amount: 499,
+      currency: 'USD',
+      paymentType: 'one-time',
+      paymentProvider: 'waffo',
+      checkoutInfo: '{}',
+    });
     const complete = () =>
       updateOrderInTransaction({
         orderNo: 'paid-order',

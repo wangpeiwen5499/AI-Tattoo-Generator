@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { BODY_PART_LABELS, type BodyPart } from '@/lib/constants';
 import { AlertTriangle, RotateCcw, Sparkles } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 import { Lightbox, type LightboxImage } from '@/shared/blocks/tattoo/lightbox';
 import { Button } from '@/shared/components/ui/button';
@@ -15,6 +16,7 @@ type Props = {
   refunded?: boolean;
   onRegenerate: () => void;
   onReset: () => void;
+  regenerateLabel?: string;
 };
 
 export function GenerationResults({
@@ -23,7 +25,9 @@ export function GenerationResults({
   refunded,
   onRegenerate,
   onReset,
+  regenerateLabel,
 }: Props) {
+  const t = useTranslations('common.funnel');
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const successCount = images.filter((i) => i.status === 'completed').length;
@@ -82,6 +86,13 @@ export function GenerationResults({
               className="aspect-square w-full object-contain transition-transform group-hover:scale-[1.01]"
             />
           </button>
+          <a
+            href={`/api/proxy/file?url=${encodeURIComponent(tattooDesignUrl)}`}
+            download="tattoo-design"
+            className="mt-2 inline-block text-sm underline underline-offset-4"
+          >
+            {t('saveDesign')}
+          </a>
         </section>
       )}
 
@@ -97,6 +108,7 @@ export function GenerationResults({
             <ResultCell
               key={img.bodyPart}
               image={img}
+              saveLabel={t('savePreview')}
               onZoom={() => {
                 const idx = partLightboxIndex[i];
                 if (idx >= 0) setLightboxIndex(idx);
@@ -109,7 +121,7 @@ export function GenerationResults({
       <div className="flex flex-col gap-2 sm:flex-row">
         <Button onClick={onRegenerate} variant="default" className="sm:flex-1">
           <RotateCcw className="mr-2 h-4 w-4" />
-          Try another idea
+          {regenerateLabel || 'Try another idea'}
         </Button>
         <Button onClick={onReset} variant="outline" className="sm:flex-1">
           Start over
@@ -129,7 +141,9 @@ export function GenerationResults({
 function ResultCell({
   image,
   onZoom,
+  saveLabel,
 }: {
+  saveLabel: string;
   image: GenerateImage;
   onZoom: () => void;
 }) {
@@ -146,20 +160,29 @@ function ResultCell({
   }
 
   return (
-    <button
-      type="button"
-      onClick={onZoom}
-      className="group border-border/50 bg-muted relative block aspect-[3/4] w-full overflow-hidden rounded-lg border"
-    >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={image.url}
-        alt={`Tattoo on ${label}`}
-        className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]"
-      />
-      <span className="bg-background/80 absolute bottom-2 left-2 rounded px-2 py-0.5 text-xs font-medium backdrop-blur">
-        {label}
-      </span>
-    </button>
+    <div>
+      <button
+        type="button"
+        onClick={onZoom}
+        className="group border-border/50 bg-muted relative block aspect-[3/4] w-full overflow-hidden rounded-lg border"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={image.url}
+          alt={`Tattoo on ${label}`}
+          className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]"
+        />
+        <span className="bg-background/80 absolute bottom-2 left-2 rounded px-2 py-0.5 text-xs font-medium backdrop-blur">
+          {label}
+        </span>
+      </button>
+      <a
+        href={`/api/proxy/file?url=${encodeURIComponent(image.url)}`}
+        download={`tattoo-${image.bodyPart}`}
+        className="mt-2 inline-block text-xs underline underline-offset-4"
+      >
+        {saveLabel} · {label}
+      </a>
+    </div>
   );
 }

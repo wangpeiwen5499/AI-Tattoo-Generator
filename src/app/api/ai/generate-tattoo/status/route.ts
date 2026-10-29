@@ -61,7 +61,8 @@ export async function GET(req: Request): Promise<Response> {
   }));
 
   const job = await getTattooJob(id);
-  if (job && project.status === 'processing') after(() => advanceTattooJob(id));
+  if (actor.type === 'user' && job && project.status === 'processing')
+    after(() => advanceTattooJob(id));
 
   return NextResponse.json(
     {

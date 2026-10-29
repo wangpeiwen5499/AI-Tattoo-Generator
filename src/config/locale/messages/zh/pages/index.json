@@ -14,19 +14,20 @@
         "title": "在纹身之前，先看效果",
         "highlight_text": "先看效果",
         "description": "上传你的照片，描述你的想法，AI 会生成逼真的纹身预览图。<br/>免费试用，无需预约纹身师。",
-        "tip": "🎁 每个网络每天免费预览 3 次 · 注册再送 3 次",
+        "tip": "🎁 注册并验证邮箱，即可获赠 3 个积分 · 每个账户仅赠送一次",
         "buttons": [
           {
             "title": "免费试用",
             "icon": "Sparkles",
             "url": "/generate",
             "target": "_self",
-            "variant": "default"
+            "variant": "default",
+            "trial_cta": true
           },
           {
-            "title": "了解更多",
+            "title": "体验真实案例",
             "icon": "BookOpenText",
-            "url": "#usage",
+            "url": "#tattoo-case",
             "target": "_self",
             "variant": "outline"
           }
@@ -53,7 +54,7 @@
           "designDescription": "黑灰色墨水，清晰线条与点刺阴影。",
           "chooseHint": "现在，选择你想纹的部位。",
           "designPlaceholder": "狼头图案将在这里展示。先选择原照，再查看设计。",
-          "exampleNote": "这是可免费体验的已生成案例，无需上传，也不消耗积分。",
+          "exampleNote": "纹身效果来自网站的真实生成结果。这是可互动的已生成案例，不消耗积分。",
           "createOwn": "用自己的照片试试看",
           "placementTitle": "你想把它纹在哪里？",
           "leftArm": "左臂",
@@ -180,7 +181,7 @@
           },
           {
             "question": "可以免费预览几次？",
-            "answer": "游客每个网络（IP 地址）每天可免费预览 3 次，按 UTC 日期重置。注册后赠送 3 个账户积分，每次尝试生成 4 个部位的效果。"
+            "answer": "游客可免费体验完整的真实案例。注册并验证邮箱后，每个新账户一次性获赠 3 个积分；每次生成消耗 1 个积分，尝试生成 4 个部位的效果。积分用完后可前往价格页面购买。"
           },
           {
             "question": "预览效果有多逼真？",
@@ -203,7 +204,7 @@
       "cta": {
         "id": "cta",
         "title": "准备好预览你的下一个纹身了吗？",
-        "description": "免费试用，无需注册。",
+        "description": "先体验真实案例，再注册领取 3 个积分，创作自己的纹身。",
         "buttons": [
           {
             "title": "开始生成",

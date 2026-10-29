@@ -1,15 +1,14 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useCredits } from '@/hooks/use-credits';
 import { useGeneration } from '@/hooks/use-generation';
 import { CREDITS_PER_GENERATION } from '@/lib/constants';
 import { ArrowRight, Sparkles } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
-import { useSession } from '@/core/auth/client';
+import { Link, useRouter } from '@/core/i18n/navigation';
 import { CreditsBadge } from '@/shared/blocks/tattoo/credits-badge';
 import { GenerationProgress } from '@/shared/blocks/tattoo/generation-progress';
 import { GenerationResults } from '@/shared/blocks/tattoo/generation-results';
@@ -17,12 +16,17 @@ import { ImageUploader } from '@/shared/blocks/tattoo/image-uploader';
 import { Button } from '@/shared/components/ui/button';
 import { Textarea } from '@/shared/components/ui/textarea';
 
+import { CreditsPurchaseNotice } from './credits-purchase-notice';
+
 export function TattooGenerator() {
   const router = useRouter();
+  const t = useTranslations('common.funnel');
   const credits = useCredits();
   const gen = useGeneration();
-  const { data: session, isPending: sessionLoading } = useSession();
-  const isSignedIn = !!session?.user && !sessionLoading;
+  const outOfCredits =
+    credits.credits !== null &&
+    credits.credits < CREDITS_PER_GENERATION &&
+    !credits.loading;
 
   const lastErrorRef = useRef<string | null>(null);
   useEffect(() => {
@@ -69,20 +73,13 @@ export function TattooGenerator() {
       return;
     }
     if (credits.credits < CREDITS_PER_GENERATION) {
-      if (isSignedIn) {
-        toast.error("You're out of credits", {
-          description: 'Buy credits to keep generating',
-          action: {
-            label: 'Buy Credits',
-            onClick: () => router.push('/pricing'),
-          },
-        });
-      } else {
-        toast.error("You've used your free preview", {
-          description: 'Sign up to get 3 more previews',
-          action: { label: 'Sign up', onClick: () => router.push('/sign-in') },
-        });
-      }
+      toast.error(t('noCreditsTitle'), {
+        description: t('noCreditsDescription'),
+        action: {
+          label: t('buyCredits'),
+          onClick: () => router.push('/pricing'),
+        },
+      });
       return;
     }
     try {
@@ -91,11 +88,6 @@ export function TattooGenerator() {
       // error shown via gen.error → toast
     }
   }
-
-  const isGuestOutOfCredits =
-    !isSignedIn &&
-    credits.credits !== null &&
-    credits.credits < CREDITS_PER_GENERATION;
 
   // --- generating ---
   if (gen.status === 'generating') {
@@ -132,11 +124,15 @@ export function TattooGenerator() {
                 loading={credits.loading}
               />
             </div>
+            {outOfCredits && <CreditsPurchaseNotice />}
             <GenerationResults
               tattooDesignUrl={gen.result.tattooDesignUrl}
               images={gen.result.images}
               refunded={gen.refunded}
-              onRegenerate={gen.resetPrompt}
+              onRegenerate={
+                outOfCredits ? () => router.push('/pricing') : gen.resetPrompt
+              }
+              regenerateLabel={outOfCredits ? t('buyCredits') : undefined}
               onReset={gen.reset}
             />
           </div>
@@ -158,11 +154,11 @@ export function TattooGenerator() {
               AI Tattoo Generator
             </h2>
             <div className="mx-auto mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 shadow-sm dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-300">
-              <span className="text-base">🎁</span>3 free previews per day per
-              network · Sign up to get 3 more
+              {t('trialBalance')}
             </div>
           </div>
 
+          {outOfCredits && <CreditsPurchaseNotice />}
           {gen.error && (
             <p role="alert" className="text-destructive mb-4 text-sm">
               {gen.error}
@@ -196,6 +192,7 @@ export function TattooGenerator() {
                 uploadProgress={gen.uploadProgress}
                 onFileSelected={handleFile}
                 onClear={gen.clearPhoto}
+                disabled={outOfCredits}
               />
               <p className="text-muted-foreground mt-3 text-xs">
                 Photos are sent to our AI and storage providers. Anyone with an
@@ -263,17 +260,11 @@ export function TattooGenerator() {
                       {CREDITS_PER_GENERATION} credit
                     </span>
                     <span className="text-muted-foreground"> · </span>
-                    {isSignedIn ? (
-                      <span className="text-muted-foreground">
-                        {credits.credits !== null
-                          ? `${credits.credits} left`
-                          : '...'}
-                      </span>
-                    ) : (
-                      <span className="font-medium text-emerald-600 dark:text-emerald-400">
-                        Free preview
-                      </span>
-                    )}
+                    <span className="text-muted-foreground">
+                      {credits.credits !== null
+                        ? credits.credits + ' left'
+                        : '...'}
+                    </span>
                     <span className="text-muted-foreground hidden sm:inline">
                       {' '}
                       · 4 previews
@@ -283,18 +274,18 @@ export function TattooGenerator() {
                 <Button
                   size="lg"
                   onClick={
-                    isGuestOutOfCredits
-                      ? () => router.push('/sign-in')
+                    outOfCredits
+                      ? () => router.push('/pricing')
                       : handleGenerate
                   }
                   disabled={
-                    !isGuestOutOfCredits &&
+                    !outOfCredits &&
                     (!ready || !gen.prompt.trim() || gen.status === 'uploading')
                   }
                   className="group h-12 gap-2 px-7 text-base font-semibold shadow-md transition-all hover:shadow-lg"
                 >
-                  {isGuestOutOfCredits ? (
-                    'Sign up for 3 more'
+                  {outOfCredits ? (
+                    t('buyCredits')
                   ) : gen.status === 'uploading' ? (
                     'Uploading...'
                   ) : (

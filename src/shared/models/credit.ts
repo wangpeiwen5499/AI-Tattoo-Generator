@@ -15,7 +15,6 @@ import { db } from '@/core/db';
 import { credit, user as userTable } from '@/config/db/schema';
 import { getSnowId, getUuid } from '@/shared/lib/hash';
 
-import { getAllConfigs } from './config';
 import { appendUserToResult, User } from './user';
 
 export type Credit = typeof credit.$inferSelect & {
@@ -403,34 +402,47 @@ export async function getRemainingCredits(userId: string): Promise<number> {
 }
 
 // grant credits for new user
-export async function grantCreditsForNewUser(user: User) {
-  // get configs from db
-  const configs = await getAllConfigs();
-
-  // if initial credits enabled
-  if (configs.initial_credits_enabled !== 'true') {
+export async function grantCreditsForNewUser(newUser: User, transaction?: any) {
+  if (newUser.id.startsWith('guest_') || newUser.email.endsWith('@guest.local'))
     return;
-  }
-
-  // get initial credits amount and valid days
-  const credits = parseInt(configs.initial_credits_amount as string) || 0;
-  if (credits <= 0) {
-    return;
-  }
-
-  const creditsValidDays =
-    parseInt(configs.initial_credits_valid_days as string) || 0;
-
-  const description = configs.initial_credits_description || 'initial credits';
-
-  const newCredit = await grantCreditsForUser({
-    user: user,
-    credits: credits,
-    validDays: creditsValidDays,
-    description: description,
-  });
-
-  return newCredit;
+  const execute = async (tx: any) => {
+    const [owner] = await tx
+      .select()
+      .from(userTable)
+      .where(eq(userTable.id, newUser.id))
+      .for('no key update');
+    if (!owner) throw new Error('User not found');
+    const [existing] = await tx
+      .select()
+      .from(credit)
+      .where(
+        and(
+          eq(credit.userId, newUser.id),
+          eq(credit.transactionScene, CreditTransactionScene.GIFT)
+        )
+      )
+      .limit(1);
+    if (existing) return existing;
+    const [granted] = await tx
+      .insert(credit)
+      .values({
+        id: getUuid(),
+        userId: owner.id,
+        userEmail: owner.email,
+        transactionNo: 'signup:' + owner.id,
+        transactionType: CreditTransactionType.GRANT,
+        transactionScene: CreditTransactionScene.GIFT,
+        credits: 3,
+        remainingCredits: 3,
+        description: 'One-time signup bonus (email verification required)',
+        expiresAt: null,
+        status: CreditStatus.ACTIVE,
+      })
+      .onConflictDoNothing({ target: credit.transactionNo })
+      .returning();
+    return granted;
+  };
+  return transaction ? execute(transaction) : db().transaction(execute);
 }
 
 // grant credits for user

@@ -6,9 +6,9 @@ import { toast } from 'sonner';
 
 import { signIn } from '@/core/auth/client';
 import { useRouter } from '@/core/i18n/navigation';
-import { defaultLocale } from '@/config/locale';
 import { Button } from '@/shared/components/ui/button';
 import { useAppContext } from '@/shared/contexts/app';
+import { safeAuthCallback } from '@/shared/lib/auth-callback';
 import { cn } from '@/shared/lib/utils';
 import { Button as ButtonType } from '@/shared/types/blocks/common';
 
@@ -28,22 +28,14 @@ export function SocialProviders({
 
   const { setIsShowSignModal } = useAppContext();
 
-  if (callbackUrl) {
-    const locale = useLocale();
-    if (
-      locale !== defaultLocale &&
-      callbackUrl.startsWith('/') &&
-      !callbackUrl.startsWith(`/${locale}`)
-    ) {
-      callbackUrl = `/${locale}${callbackUrl}`;
-    }
-  }
+  const locale = useLocale();
+  const destination = safeAuthCallback(callbackUrl, locale);
 
   const handleSignIn = async ({ provider }: { provider: string }) => {
     await signIn.social(
       {
         provider: provider,
-        callbackURL: callbackUrl,
+        callbackURL: destination,
       },
       {
         onRequest: (ctx) => {

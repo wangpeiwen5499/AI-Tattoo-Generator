@@ -72,6 +72,7 @@ export interface Search {
 
 // button props for button component
 export interface Button extends NavItem {
+  trial_cta?: boolean;
   size?: 'default' | 'sm' | 'lg' | 'icon';
   variant?: 'default' | 'outline' | 'ghost' | 'link' | 'destructive';
   onClick?: () => void;

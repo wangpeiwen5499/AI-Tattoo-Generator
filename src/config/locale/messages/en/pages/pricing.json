@@ -100,6 +100,10 @@
         "title": "Pricing FAQ",
         "items": [
           {
+            "question": "Can I try it for free?",
+            "answer": "Guests can explore the complete real interactive example. New accounts receive 3 one-time credits after email verification. Buy more when needed; your generated images remain available to view and save."
+          },
+          {
             "question": "What is a credit?",
             "answer": "One credit generates a full set of 4 tattoo previews — one for each body part (left arm, right arm, shoulder, calf)."
           },
@@ -113,7 +117,7 @@
           },
           {
             "question": "Can I get a refund?",
-            "answer": "If any of the 4 body previews fails, your generation credit is returned once processing finishes. Available previews remain viewable. Guest daily attempts are not refunded. For payment issues, contact support@tattoovis.ink."
+            "answer": "If any of the 4 body previews fails, your generation credit is returned once processing finishes. Available previews remain viewable. For payment issues, contact support@tattoovis.ink."
           }
         ]
       }

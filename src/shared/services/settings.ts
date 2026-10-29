@@ -346,7 +346,7 @@ export async function getSettings() {
       value: 'false',
       group: 'credit',
       tab: 'general',
-      tip: 'whether grant initial credits for new user',
+      tip: 'Legacy template setting. Tattoo signup always grants 3 credits once.',
     },
     {
       name: 'initial_credits_amount',
@@ -355,7 +355,7 @@ export async function getSettings() {
       placeholder: '0',
       group: 'credit',
       tab: 'general',
-      tip: 'initial credits amount for new user',
+      tip: 'Legacy template setting. Tattoo signup amount is fixed at 3.',
     },
     {
       name: 'initial_credits_valid_days',
@@ -364,7 +364,7 @@ export async function getSettings() {
       placeholder: '30',
       group: 'credit',
       tab: 'general',
-      tip: 'initial credits will expire after this days',
+      tip: 'Legacy template setting. Tattoo signup credits never expire.',
     },
     {
       name: 'initial_credits_description',
@@ -373,7 +373,7 @@ export async function getSettings() {
       placeholder: 'initial credits for free trial',
       group: 'credit',
       tab: 'general',
-      tip: 'description for initial credits',
+      tip: 'Legacy template setting. The tattoo welcome gift uses a fixed description.',
     },
     {
       name: 'email_auth_enabled',

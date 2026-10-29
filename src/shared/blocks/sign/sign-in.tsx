@@ -1,13 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
 import { signIn } from '@/core/auth/client';
-import { Link, useRouter } from '@/core/i18n/navigation';
-import { defaultLocale } from '@/config/locale';
+import { Link } from '@/core/i18n/navigation';
 import { Button } from '@/shared/components/ui/button';
 import {
   Card,
@@ -19,6 +19,10 @@ import {
 } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
+import {
+  emailVerificationUrl,
+  safeAuthCallback,
+} from '@/shared/lib/auth-callback';
 
 import { SocialProviders } from './social-providers';
 
@@ -42,16 +46,8 @@ export function SignIn({
     configs.email_auth_enabled !== 'false' ||
     (!isGoogleAuthEnabled && !isGithubAuthEnabled); // no social providers enabled, auto enable email auth
 
-  if (callbackUrl) {
-    const locale = useLocale();
-    if (
-      locale !== defaultLocale &&
-      callbackUrl.startsWith('/') &&
-      !callbackUrl.startsWith(`/${locale}`)
-    ) {
-      callbackUrl = `/${locale}${callbackUrl}`;
-    }
-  }
+  const locale = useLocale();
+  const destination = safeAuthCallback(callbackUrl, locale);
 
   const handleSignIn = async () => {
     if (loading) {
@@ -69,7 +65,6 @@ export function SignIn({
         {
           email,
           password,
-          callbackURL: callbackUrl,
         },
         {
           onRequest: () => {
@@ -82,16 +77,28 @@ export function SignIn({
                 ?.clone()
                 .json()
                 .then((body: any) => {
-                  toast.error(body?.message || body?.error?.message || 'sign in failed', {
-                    id: 'sign-in-error',
-                  });
+                  toast.error(
+                    body?.message || body?.error?.message || 'sign in failed',
+                    {
+                      id: 'sign-in-error',
+                    }
+                  );
                 })
                 .catch(() =>
                   toast.error('sign in failed', { id: 'sign-in-error' })
                 );
             }
           },
-          onSuccess: () => {
+          onSuccess: (ctx: any) => {
+            router.push(
+              ctx.data?.user?.emailVerified
+                ? destination
+                : safeAuthCallback(
+                    emailVerificationUrl(email, destination),
+                    locale
+                  )
+            );
+            router.refresh();
             toast.success('Welcome back!', {
               description: 'You have signed in successfully.',
             });
@@ -187,7 +194,7 @@ export function SignIn({
 
           <SocialProviders
             configs={configs}
-            callbackUrl={callbackUrl || '/'}
+            callbackUrl={destination}
             loading={loading}
             setLoading={setLoading}
           />
@@ -198,7 +205,10 @@ export function SignIn({
           <div className="flex w-full justify-center border-t py-4">
             <p className="text-center text-xs text-neutral-500">
               {t('no_account')}
-              <Link href="/sign-up" className="underline">
+              <Link
+                href={`/sign-up?callbackUrl=${encodeURIComponent(destination)}`}
+                className="underline"
+              >
                 <span className="cursor-pointer dark:text-white/70">
                   {t('sign_up_title')}
                 </span>

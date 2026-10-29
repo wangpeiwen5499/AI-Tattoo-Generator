@@ -1,5 +1,7 @@
 # Production Hardening Implementation Plan
 
+> 游客试用部分已由 2026-10-29-registration-trial-funnel.md 的注册体验流程取代；本文保留原修复记录。
+
 > **For agentic workers:** Use superpowers:executing-plans to implement task-by-task. Steps use checkbox syntax.
 
 **Goal:** 修复已授权审查中发现的生产风险，保持现有纹身业务可用。

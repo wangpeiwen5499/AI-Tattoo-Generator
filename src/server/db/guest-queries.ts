@@ -73,3 +73,18 @@ export async function claimUpload(ip: string, limit: number): Promise<number> {
     .returning({ count: guestFreeUsage.uploadCount });
   return claimed?.count ?? -1;
 }
+
+/** Account creation budget, shared across instances; separate from upload counters. */
+export async function claimRegistrationAttempt(ip: string): Promise<number> {
+  const today = new Date().toISOString().split('T')[0];
+  const [claimed] = await db()
+    .insert(guestFreeUsage)
+    .values({ ip: `signup:${ip}`, usedDate: today, count: 1 })
+    .onConflictDoUpdate({
+      target: [guestFreeUsage.ip, guestFreeUsage.usedDate],
+      set: { count: sql`${guestFreeUsage.count} + 1` },
+      setWhere: sql`${guestFreeUsage.count} < 10`,
+    })
+    .returning({ count: guestFreeUsage.count });
+  return claimed?.count ?? -1;
+}

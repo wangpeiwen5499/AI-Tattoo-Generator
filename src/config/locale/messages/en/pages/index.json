@@ -14,19 +14,20 @@
         "title": "See Your Tattoo Before You Ink",
         "highlight_text": "Before You Ink",
         "description": "Upload your photo, describe your idea, and AI generates realistic tattoo previews on your body.<br/>Try it free — no artist appointment needed.",
-        "tip": "🎁 3 free previews per day per network · Sign up to get 3 more",
+        "tip": "🎁 Sign up and verify your email for 3 free credits · One-time welcome gift",
         "buttons": [
           {
             "title": "Try It Free",
             "icon": "Sparkles",
             "url": "/generate",
             "target": "_self",
-            "variant": "default"
+            "variant": "default",
+            "trial_cta": true
           },
           {
-            "title": "How It Works",
+            "title": "Explore real example",
             "icon": "BookOpenText",
-            "url": "#usage",
+            "url": "#tattoo-case",
             "target": "_self",
             "variant": "outline"
           }
@@ -53,7 +54,7 @@
           "designDescription": "Black and grey ink. Clean lines and dotwork.",
           "chooseHint": "Now choose a body part.",
           "designPlaceholder": "Your wolf design will appear here. Select the photo, then reveal the design.",
-          "exampleNote": "Explore this saved example for free. No upload or credits required.",
+          "exampleNote": "These tattoo results were generated with this website. Explore this saved example without using credits.",
           "createOwn": "Try it with your own photo",
           "placementTitle": "Where would you wear it?",
           "leftArm": "Left arm",
@@ -180,7 +181,7 @@
           },
           {
             "question": "How many free previews can I try?",
-            "answer": "Guests can try 3 previews per network (IP address) per UTC day. Sign up to receive 3 account credits. Each preview attempts all 4 body positions."
+            "answer": "Explore the real interactive example for free. Each new account receives 3 one-time credits after email verification. One credit attempts previews in all four placements. Buy more credits on the pricing page when needed."
           },
           {
             "question": "How realistic are the previews?",
@@ -203,7 +204,7 @@
       "cta": {
         "id": "cta",
         "title": "Ready to See Your Next Tattoo?",
-        "description": "Try it free. No registration required.",
+        "description": "Explore the real example, then sign up for 3 credits to create your own tattoo.",
         "buttons": [
           {
             "title": "Start Generating",

@@ -4,6 +4,7 @@ import { ArrowRight } from 'lucide-react';
 import { Link } from '@/core/i18n/navigation';
 import { SmartIcon } from '@/shared/blocks/common';
 import { TattooCaseDemo } from '@/shared/blocks/tattoo/tattoo-case-demo';
+import { TrialCta } from '@/shared/blocks/tattoo/trial-cta';
 import { Button } from '@/shared/components/ui/button';
 import { Highlighter } from '@/shared/components/ui/highlighter';
 import { cn } from '@/shared/lib/utils';
@@ -79,20 +80,27 @@ export function Hero({
 
         {section.buttons && (
           <div className="flex items-center justify-center gap-4">
-            {section.buttons.map((button, idx) => (
-              <Button
-                asChild
-                size={button.size || 'default'}
-                variant={button.variant || 'default'}
-                className="px-4 text-sm"
-                key={idx}
-              >
-                <Link href={button.url ?? ''} target={button.target ?? '_self'}>
-                  {button.icon && <SmartIcon name={button.icon as string} />}
-                  <span>{button.title}</span>
-                </Link>
-              </Button>
-            ))}
+            {section.buttons.map((button, idx) =>
+              button.trial_cta ? (
+                <TrialCta key={idx} asButton className="px-4 text-sm" />
+              ) : (
+                <Button
+                  asChild
+                  size={button.size || 'default'}
+                  variant={button.variant || 'default'}
+                  className="px-4 text-sm"
+                  key={idx}
+                >
+                  <Link
+                    href={button.url ?? ''}
+                    target={button.target ?? '_self'}
+                  >
+                    {button.icon && <SmartIcon name={button.icon as string} />}
+                    <span>{button.title}</span>
+                  </Link>
+                </Button>
+              )
+            )}
           </div>
         )}
 

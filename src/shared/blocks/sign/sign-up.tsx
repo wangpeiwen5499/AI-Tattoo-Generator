@@ -8,7 +8,6 @@ import { toast } from 'sonner';
 
 import { signUp } from '@/core/auth/client';
 import { Link } from '@/core/i18n/navigation';
-import { defaultLocale } from '@/config/locale';
 import { Button } from '@/shared/components/ui/button';
 import {
   Card,
@@ -20,6 +19,10 @@ import {
 } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
+import {
+  emailVerificationUrl,
+  safeAuthCallback,
+} from '@/shared/lib/auth-callback';
 
 import { SocialProviders } from './social-providers';
 
@@ -44,16 +47,9 @@ export function SignUp({
     configs.email_auth_enabled !== 'false' ||
     (!isGoogleAuthEnabled && !isGithubAuthEnabled); // no social providers enabled, auto enable email auth
 
-  if (callbackUrl) {
-    const locale = useLocale();
-    if (
-      locale !== defaultLocale &&
-      callbackUrl.startsWith('/') &&
-      !callbackUrl.startsWith(`/${locale}`)
-    ) {
-      callbackUrl = `/${locale}${callbackUrl}`;
-    }
-  }
+  const locale = useLocale();
+  const destination = safeAuthCallback(callbackUrl, locale);
+  const funnel = useTranslations('common.funnel');
 
   const reportAffiliate = ({
     userEmail,
@@ -103,10 +99,13 @@ export function SignUp({
         onSuccess: (ctx) => {
           // report affiliate
           reportAffiliate({ userEmail: email });
-          toast.success('Account created successfully!', {
-            description: 'Welcome to AI Tattoo Generator.',
-          });
-          router.push(callbackUrl);
+          toast.success(funnel('signupSuccess'));
+          router.push(
+            safeAuthCallback(
+              emailVerificationUrl(email, destination, true),
+              locale
+            )
+          );
         },
         onError: (e: any) => {
           toast.error(e?.error?.message || 'sign up failed');
@@ -187,7 +186,7 @@ export function SignUp({
 
           <SocialProviders
             configs={configs}
-            callbackUrl={callbackUrl || '/'}
+            callbackUrl={destination}
             loading={loading}
             setLoading={setLoading}
           />
@@ -198,7 +197,10 @@ export function SignUp({
           <div className="flex w-full justify-center border-t py-4">
             <p className="text-center text-xs text-neutral-500">
               {t('already_have_account')}
-              <Link href="/sign-in" className="underline">
+              <Link
+                href={`/sign-in?callbackUrl=${encodeURIComponent(destination)}`}
+                className="underline"
+              >
                 <span className="cursor-pointer dark:text-white/70">
                   {t('sign_in_title')}
                 </span>

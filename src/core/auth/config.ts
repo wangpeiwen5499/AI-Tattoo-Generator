@@ -1,10 +1,10 @@
-import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { oneTap, emailOTP } from 'better-auth/plugins';
+import { claimRegistrationAttempt } from '@/server/db/guest-queries';
+import { APIError } from 'better-auth/api';
+import { emailOTP, oneTap } from 'better-auth/plugins';
 import { getLocale } from 'next-intl/server';
 
 import { db } from '@/core/db';
 import { envConfigs } from '@/config';
-import * as schema from '@/config/db/schema';
 import {
   getCookieFromCtx,
   getHeaderValue,
@@ -12,8 +12,9 @@ import {
 } from '@/shared/lib/cookie';
 import { getUuid } from '@/shared/lib/hash';
 import { getClientIp } from '@/shared/lib/ip';
-import { grantCreditsForNewUser } from '@/shared/models/credit';
 import { grantRoleForNewUser } from '@/shared/services/rbac';
+
+import { createAuthDatabase } from './trial-adapter';
 
 // Static auth options - NO database connection
 // This ensures zero database calls during build time
@@ -27,20 +28,20 @@ const authOptions = {
     // Without this, better-auth may ignore extra properties during create/update.
     additionalFields: {
       utmSource: {
-        type: 'string',
+        type: 'string' as const,
         // Not user-editable input; we set it internally.
         input: false,
         required: false,
         defaultValue: '',
       },
       ip: {
-        type: 'string',
+        type: 'string' as const,
         input: false,
         required: false,
         defaultValue: '',
       },
       locale: {
-        type: 'string',
+        type: 'string' as const,
         input: false,
         required: false,
         defaultValue: '',
@@ -68,15 +69,28 @@ export async function getAuthOptions(configs: Record<string, string>) {
     ...authOptions,
     // Add database connection only when actually needed (runtime)
     database: envConfigs.database_url
-      ? drizzleAdapter(db(), {
-          provider: getDatabaseProvider(envConfigs.database_provider),
-          schema: schema,
-        })
+      ? createAuthDatabase(
+          db(),
+          getDatabaseProvider(envConfigs.database_provider)
+        )
       : null,
     databaseHooks: {
       user: {
         create: {
           before: async (user: any, ctx: any) => {
+            const forwardedIp =
+              getHeaderValue(ctx, 'cf-connecting-ip') ||
+              getHeaderValue(ctx, 'x-real-ip') ||
+              getHeaderValue(ctx, 'x-forwarded-for')?.split(',')[0]?.trim();
+            const signupIp =
+              forwardedIp ||
+              (await getClientIp().catch(() => 'unknown')) ||
+              'unknown';
+            if ((await claimRegistrationAttempt(signupIp)) < 0)
+              throw new APIError('TOO_MANY_REQUESTS', {
+                message:
+                  'Daily account creation limit reached. Please try again tomorrow.',
+              });
             try {
               const ip = await getClientIp();
               if (ip) {
@@ -99,10 +113,10 @@ export async function getAuthOptions(configs: Record<string, string>) {
               }
 
               // Only set on first creation; never overwrite later.
-              if (user?.utmSource) return user;
+              if (user?.utmSource) return { data: user };
 
               const raw = getCookieFromCtx(ctx, 'utm_source');
-              if (!raw || typeof raw !== 'string') return user;
+              if (!raw || typeof raw !== 'string') return { data: user };
 
               // Keep it small & safe.
               const decoded = decodeURIComponent(raw).trim();
@@ -116,7 +130,7 @@ export async function getAuthOptions(configs: Record<string, string>) {
             } catch {
               // best-effort only
             }
-            return user;
+            return { data: user };
           },
           after: async (user: any) => {
             try {
@@ -124,13 +138,10 @@ export async function getAuthOptions(configs: Record<string, string>) {
                 throw new Error('user id is required');
               }
 
-              // grant credits for new user
-              await grantCreditsForNewUser(user);
-
               // grant role for new user
               await grantRoleForNewUser(user);
             } catch (e) {
-              console.log('grant credits or role for new user failed', e);
+              console.log('grant role for new user failed', e);
             }
           },
         },
@@ -138,6 +149,13 @@ export async function getAuthOptions(configs: Record<string, string>) {
     },
     emailAndPassword: {
       enabled: configs.email_auth_enabled !== 'false',
+    },
+    emailVerification: { autoSignInAfterVerification: true },
+    rateLimit: {
+      enabled: true,
+      window: 60,
+      max: 30,
+      customRules: { '/sign-up/email': { window: 60, max: 5 } },
     },
     socialProviders: await getSocialProviders(configs),
     plugins: await getAuthPlugins(configs),
@@ -187,7 +205,9 @@ export function getDatabaseProvider(
 
 // get auth plugins based on configs
 async function getAuthPlugins(configs: Record<string, string>) {
-  const plugins: any[] = [];
+  const plugins: Array<
+    ReturnType<typeof oneTap> | ReturnType<typeof emailOTP>
+  > = [];
 
   // Google One Tap
   if (configs.google_client_id && configs.google_one_tap_enabled === 'true') {
@@ -198,35 +218,40 @@ async function getAuthPlugins(configs: Record<string, string>) {
   const resendApiKey = configs.resend_api_key;
   const senderEmail = configs.resend_sender_email;
 
-  if (resendApiKey && senderEmail) {
+  {
     plugins.push(
       emailOTP({
+        sendVerificationOnSignUp: true,
+        disableSignUp: true,
+        storeOTP: 'hashed',
+        allowedAttempts: 5,
+        rateLimit: { window: 60, max: 3 },
         async sendVerificationOTP({ email, otp, type }) {
           // Only send verification email for sign-up; skip for sign-in
           if (type !== 'email-verification') {
-            return;
+            throw new APIError('BAD_REQUEST', {
+              message: 'Use email and password to sign in.',
+            });
           }
+          if (!resendApiKey || !senderEmail)
+            throw new APIError('SERVICE_UNAVAILABLE', {
+              message:
+                'Email verification is temporarily unavailable. Please try again later.',
+            });
 
           // Dynamically import email service to avoid build-time issues
-          const { getEmailService } = await import(
-            '@/shared/services/email'
-          );
-          const { VerificationCode } = await import(
-            '@/shared/blocks/email/verification-code'
-          );
+          const { getEmailService } = await import('@/shared/services/email');
+          const { VerificationCode } =
+            await import('@/shared/blocks/email/verification-code');
 
           const emailService = await getEmailService(configs);
 
-          try {
-            emailService.getProvider('resend');
-          } catch {
-            console.error(
-              '[auth] emailOTP: no email provider configured'
-            );
-            return;
-          }
+          if (!emailService.getProvider('resend'))
+            throw new APIError('SERVICE_UNAVAILABLE', {
+              message: 'Email verification is temporarily unavailable.',
+            });
 
-          await emailService.sendEmail({
+          const result = await emailService.sendEmail({
             to: email,
             subject: 'Verify your email — AI Tattoo Generator',
             react: VerificationCode({
@@ -237,6 +262,11 @@ async function getAuthPlugins(configs: Record<string, string>) {
               ctaText: otp,
             }),
           });
+          if (!result.success)
+            throw new APIError('SERVICE_UNAVAILABLE', {
+              message:
+                'Unable to send verification email. Please try again later.',
+            });
         },
       })
     );

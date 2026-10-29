@@ -1,13 +1,16 @@
+import { requireGenerationUser } from '@/server/auth/generation-access';
+
 import { envConfigs } from '@/config';
 import { AIMediaType } from '@/extensions/ai';
 import { getUuid } from '@/shared/lib/hash';
 import { respData, respErr } from '@/shared/lib/resp';
 import { createAITask, NewAITask } from '@/shared/models/ai_task';
 import { getRemainingCredits } from '@/shared/models/credit';
-import { getUserInfo } from '@/shared/models/user';
 import { getAIService } from '@/shared/services/ai';
 
 export async function POST(request: Request) {
+  const access = await requireGenerationUser();
+  if (access.response) return access.response;
   try {
     let { provider, mediaType, model, prompt, options, scene } =
       await request.json();
@@ -34,7 +37,7 @@ export async function POST(request: Request) {
     }
 
     // get current user
-    const user = await getUserInfo();
+    const user = access.user;
     if (!user) {
       throw new Error('no auth, please sign in');
     }

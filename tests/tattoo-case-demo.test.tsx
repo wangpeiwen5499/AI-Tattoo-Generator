@@ -9,6 +9,7 @@ import {
 } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import common from '@/config/locale/messages/en/common.json';
 import messages from '@/config/locale/messages/en/pages/index.json';
 import { TattooCaseDemo } from '@/shared/blocks/tattoo/tattoo-case-demo';
 
@@ -20,9 +21,14 @@ vi.mock('next/image', () => ({
     ...props
   }: any) => React.createElement('img', props),
 }));
+vi.mock('@/core/auth/client', () => ({
+  useSession: () => ({ data: null, isPending: false }),
+}));
 vi.mock('next-intl', () => ({
-  useTranslations: () => (key: string) =>
-    (messages.page.sections.hero as any).demo[key],
+  useTranslations: (namespace: string) => (key: string) =>
+    namespace === 'common.funnel'
+      ? (common.funnel as any)[key]
+      : (messages.page.sections.hero as any).demo[key],
 }));
 vi.mock('@/core/i18n/navigation', () => ({
   Link: ({ children, ...props }: any) =>
