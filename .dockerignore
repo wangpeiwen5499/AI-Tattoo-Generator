@@ -9,3 +9,12 @@ node_modules
 .git
 vercel.json
 wrangler.toml
+.env
+.env.*
+!.env.example
+.dev.vars
+*.pem
+*.key
+*.log
+tests
+docs

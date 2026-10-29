@@ -99,10 +99,22 @@
         "id": "faq",
         "title": "Pricing FAQ",
         "items": [
-          { "question": "What is a credit?", "answer": "One credit generates a full set of 4 tattoo previews — one for each body part (left arm, right arm, shoulder, calf)." },
-          { "question": "Do credits expire?", "answer": "No. Credits never expire. Buy now and use them whenever you want." },
-          { "question": "What payment methods do you accept?", "answer": "We accept major credit and debit cards through our secure payment partner, Waffo." },
-          { "question": "Can I get a refund?", "answer": "If AI generation fails to produce any usable results, your credit is automatically refunded. For payment issues, contact support@tattoovis.ink." }
+          {
+            "question": "What is a credit?",
+            "answer": "One credit generates a full set of 4 tattoo previews — one for each body part (left arm, right arm, shoulder, calf)."
+          },
+          {
+            "question": "Do credits expire?",
+            "answer": "No. Credits never expire. Buy now and use them whenever you want."
+          },
+          {
+            "question": "What payment methods do you accept?",
+            "answer": "We accept major credit and debit cards through our secure payment partner, Waffo."
+          },
+          {
+            "question": "Can I get a refund?",
+            "answer": "If any of the 4 body previews fails, your generation credit is returned once processing finishes. Available previews remain viewable. Guest daily attempts are not refunded. For payment issues, contact support@tattoovis.ink."
+          }
         ]
       }
     }

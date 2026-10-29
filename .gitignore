@@ -64,5 +64,7 @@ src/config/db/migrations*
 
 .chats.playwright-mcp/\n*.png
 .playwright-mcp/
+*.log
+lint-results.json
 *.png
 示例图/

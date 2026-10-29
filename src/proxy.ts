@@ -56,6 +56,9 @@ export async function proxy(request: NextRequest) {
     !pathWithoutLocale.startsWith('/admin') &&
     !pathWithoutLocale.startsWith('/settings') &&
     !pathWithoutLocale.startsWith('/activity') &&
+    !pathWithoutLocale.startsWith('/history') &&
+    !pathWithoutLocale.startsWith('/generate') &&
+    !pathWithoutLocale.startsWith('/chat') &&
     !pathWithoutLocale.startsWith('/sign-') &&
     !pathWithoutLocale.startsWith('/auth')
   ) {
@@ -67,6 +70,14 @@ export async function proxy(request: NextRequest) {
     intlResponse.headers.set('Cache-Control', cacheControl);
     intlResponse.headers.set('CDN-Cache-Control', cacheControl);
     intlResponse.headers.set('Cloudflare-CDN-Cache-Control', cacheControl);
+  } else {
+    for (const name of [
+      'Cache-Control',
+      'CDN-Cache-Control',
+      'Cloudflare-CDN-Cache-Control',
+    ]) {
+      intlResponse.headers.set(name, 'private, no-store');
+    }
   }
 
   // For all other routes (including /, /sign-in, /sign-up, /sign-out), just return the intl response

@@ -1,7 +1,18 @@
-import { and, asc, count, desc, eq, gt, isNull, or, sum } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gt,
+  isNull,
+  or,
+  sql,
+  sum,
+} from 'drizzle-orm';
 
 import { db } from '@/core/db';
-import { credit } from '@/config/db/schema';
+import { credit, user as userTable } from '@/config/db/schema';
 import { getSnowId, getUuid } from '@/shared/lib/hash';
 
 import { getAllConfigs } from './config';
@@ -157,10 +168,19 @@ export async function consumeCredits({
   metadata?: string;
   tx?: any;
 }) {
+  if (!Number.isSafeInteger(credits) || credits <= 0)
+    throw new Error('Credits must be a positive integer');
   const currentTime = new Date();
 
   // consume credits
   const execute = async (tx: any) => {
+    // Serialize all debits/refunds for a user, including when no grant rows remain.
+    const [owner] = await tx
+      .select({ id: userTable.id })
+      .from(userTable)
+      .where(eq(userTable.id, userId))
+      .for('no key update');
+    if (!owner) throw new Error('User not found');
     // 1. check credits balance
     const [creditsBalance] = await tx
       .select({
@@ -195,7 +215,7 @@ export async function consumeCredits({
     let remainingToConsume = credits; // remaining credits to consume
 
     // only deal with 10000 credit grant records
-    let batchNo = 1; // batch no
+    let batchNo = 0; // batch no
     const maxBatchNo = 10; // max batch no
     const batchSize = 1000; // batch size
     const consumedItems: any[] = [];
@@ -217,18 +237,13 @@ export async function consumeCredits({
             )
           )
         )
-        .orderBy(
-          // FIFO queue: expired credits first, then by expiration date
-          // NULL values (never expires) will be ordered last
-          asc(credit.expiresAt)
-        )
+        .orderBy(asc(credit.expiresAt), asc(credit.createdAt), asc(credit.id))
         .limit(batchSize) // batch size
-        .offset((batchNo - 1) * batchSize) // offset
         .for('update'); // lock for update
 
       // no more credits
       if (batchCredits?.length === 0) {
-        break;
+        throw new Error('Insufficient credits');
       }
 
       // consume credits for each item
@@ -258,14 +273,11 @@ export async function consumeCredits({
           batchNo: batchNo,
         });
 
-        batchNo += 1;
         remainingToConsume -= toConsume;
-
-        // if too many batches, throw error
-        if (batchNo > maxBatchNo) {
-          throw new Error(`Too many batches: ${batchNo} > ${maxBatchNo}`);
-        }
       }
+      batchNo += 1;
+      if (remainingToConsume > 0 && batchNo >= maxBatchNo)
+        throw new Error('Too many credit grant records');
     }
 
     // 3. create consumed credit
@@ -293,6 +305,76 @@ export async function consumeCredits({
 
   // use default transaction
   return await db().transaction(execute);
+}
+
+/** Restore the original grants once; the consumed record is the idempotency key. */
+export async function refundConsumedCredits({
+  userId,
+  creditId,
+  tx,
+}: {
+  userId: string;
+  creditId: string;
+  tx?: any;
+}): Promise<boolean> {
+  const execute = async (transaction: any) => {
+    await transaction
+      .select({ id: userTable.id })
+      .from(userTable)
+      .where(eq(userTable.id, userId))
+      .for('no key update');
+    const [consumed] = await transaction
+      .select()
+      .from(credit)
+      .where(eq(credit.id, creditId))
+      .for('update');
+    if (
+      !consumed ||
+      consumed.userId !== userId ||
+      consumed.transactionType !== CreditTransactionType.CONSUME
+    ) {
+      throw new Error('Invalid consumption record');
+    }
+    if (consumed.status === CreditStatus.DELETED) return false;
+    if (consumed.status !== CreditStatus.ACTIVE)
+      throw new Error('Invalid consumption status');
+    const items: Array<{ creditId: string; creditsConsumed: number }> =
+      JSON.parse(consumed.consumedDetail || '[]');
+    if (
+      !Array.isArray(items) ||
+      items.reduce((total, item) => total + item.creditsConsumed, 0) !==
+        -consumed.credits
+    ) {
+      throw new Error('Invalid consumption details');
+    }
+    for (const item of items) {
+      if (
+        !Number.isSafeInteger(item.creditsConsumed) ||
+        item.creditsConsumed <= 0
+      )
+        throw new Error('Invalid refund amount');
+      const restored = await transaction
+        .update(credit)
+        .set({
+          remainingCredits: sql`${credit.remainingCredits} + ${item.creditsConsumed}`,
+        })
+        .where(
+          and(
+            eq(credit.id, item.creditId),
+            eq(credit.userId, userId),
+            eq(credit.transactionType, CreditTransactionType.GRANT)
+          )
+        )
+        .returning({ id: credit.id });
+      if (!restored.length) throw new Error('Original grant not found');
+    }
+    await transaction
+      .update(credit)
+      .set({ status: CreditStatus.DELETED, deletedAt: new Date() })
+      .where(eq(credit.id, creditId));
+    return true;
+  };
+  return tx ? execute(tx) : db().transaction(execute);
 }
 
 // get remaining credits

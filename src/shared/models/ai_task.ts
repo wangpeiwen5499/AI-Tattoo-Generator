@@ -1,11 +1,11 @@
-import { and, count, desc, eq, sql } from 'drizzle-orm';
+import { and, count, desc, eq } from 'drizzle-orm';
 
 import { db } from '@/core/db';
-import { aiTask, credit } from '@/config/db/schema';
+import { aiTask } from '@/config/db/schema';
 import { AITaskStatus } from '@/extensions/ai';
 import { appendUserToResult, User } from '@/shared/models/user';
 
-import { consumeCredits, CreditStatus } from './credit';
+import { consumeCredits, refundConsumedCredits } from './credit';
 
 export type AITask = typeof aiTask.$inferSelect & {
   user?: User;
@@ -56,40 +56,19 @@ export async function findAITaskById(id: string) {
 
 export async function updateAITaskById(id: string, updateAITask: UpdateAITask) {
   const result = await db().transaction(async (tx) => {
-    // task failed, Revoke credit consumption record
-    if (updateAITask.status === AITaskStatus.FAILED && updateAITask.creditId) {
-      // get consumed credit record
-      const [consumedCredit] = await tx
+    // Use the same idempotent, user-serialized refund path as tattoo generation.
+    if (updateAITask.status === AITaskStatus.FAILED) {
+      const [task] = await tx
         .select()
-        .from(credit)
-        .where(eq(credit.id, updateAITask.creditId));
-      if (consumedCredit && consumedCredit.status === CreditStatus.ACTIVE) {
-        const consumedItems = JSON.parse(consumedCredit.consumedDetail || '[]');
-
-        // console.log('consumedItems', consumedItems);
-
-        // add back consumed credits
-        await Promise.all(
-          consumedItems.map((item: any) => {
-            if (item && item.creditId && item.creditsConsumed > 0) {
-              return tx
-                .update(credit)
-                .set({
-                  remainingCredits: sql`${credit.remainingCredits} + ${item.creditsConsumed}`,
-                })
-                .where(eq(credit.id, item.creditId));
-            }
-          })
-        );
-
-        // delete consumed credit record
-        await tx
-          .update(credit)
-          .set({
-            status: CreditStatus.DELETED,
-          })
-          .where(eq(credit.id, updateAITask.creditId));
-      }
+        .from(aiTask)
+        .where(eq(aiTask.id, id))
+        .for('update');
+      if (task?.creditId)
+        await refundConsumedCredits({
+          userId: task.userId,
+          creditId: task.creditId,
+          tx,
+        });
     }
 
     // update task

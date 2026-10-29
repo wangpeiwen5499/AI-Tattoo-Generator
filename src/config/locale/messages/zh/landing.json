@@ -7,10 +7,26 @@
     },
     "nav": {
       "items": [
-        { "title": "功能", "url": "/#features", "icon": "Sparkles" },
-        { "title": "定价", "url": "/pricing", "icon": "DollarSign" },
-        { "title": "生成", "url": "/generate", "icon": "Wand" },
-        { "title": "历史", "url": "/history", "icon": "History" }
+        {
+          "title": "功能",
+          "url": "/#features",
+          "icon": "Sparkles"
+        },
+        {
+          "title": "定价",
+          "url": "/pricing",
+          "icon": "DollarSign"
+        },
+        {
+          "title": "生成",
+          "url": "/generate",
+          "icon": "Wand"
+        },
+        {
+          "title": "历史",
+          "url": "/history",
+          "icon": "History"
+        }
       ]
     },
     "buttons": [],
@@ -19,8 +35,16 @@
       "show_credits": true,
       "show_sign_out": true,
       "items": [
-        { "title": "账单", "url": "/settings/billing", "icon": "CreditCard" },
-        { "title": "活动", "url": "/activity", "icon": "Activity" }
+        {
+          "title": "账单",
+          "url": "/settings/billing",
+          "icon": "CreditCard"
+        },
+        {
+          "title": "活动",
+          "url": "/activity",
+          "icon": "Activity"
+        }
       ]
     },
     "show_sign": true,
@@ -39,29 +63,61 @@
         {
           "title": "产品",
           "children": [
-            { "title": "功能", "url": "/#features", "target": "_self" },
-            { "title": "定价", "url": "/pricing", "target": "_self" },
-            { "title": "生成", "url": "/generate", "target": "_self" }
+            {
+              "title": "功能",
+              "url": "/#features",
+              "target": "_self"
+            },
+            {
+              "title": "定价",
+              "url": "/pricing",
+              "target": "_self"
+            },
+            {
+              "title": "生成",
+              "url": "/generate",
+              "target": "_self"
+            }
           ]
         },
         {
           "title": "资源",
           "children": [
-            { "title": "聊天", "url": "/chat", "target": "_self" }
+            {
+              "title": "可接受使用政策",
+              "url": "/acceptable-use",
+              "target": "_self"
+            }
           ]
         }
       ]
     },
     "social": {
       "items": [
-        { "title": "Github", "icon": "Github", "url": "https://github.com/wangpeiwen5499/AI-Tattoo-Generator", "target": "_blank" },
-        { "title": "邮箱", "icon": "Mail", "url": "mailto:support@tattoovis.ink", "target": "_self" }
+        {
+          "title": "Github",
+          "icon": "Github",
+          "url": "https://github.com/wangpeiwen5499/AI-Tattoo-Generator",
+          "target": "_blank"
+        },
+        {
+          "title": "邮箱",
+          "icon": "Mail",
+          "url": "mailto:support@tattoovis.ink",
+          "target": "_self"
+        }
       ]
     },
     "agreement": {
       "items": [
-        { "title": "隐私政策", "url": "/privacy-policy" },
-        { "title": "服务条款", "url": "/terms-of-service" }
+        {
+          "title": "隐私政策",
+          "url": "/privacy-policy"
+        },
+        {
+          "title": "服务条款",
+          "url": "/terms-of-service"
+        }
       ]
     },
     "show_theme": true,

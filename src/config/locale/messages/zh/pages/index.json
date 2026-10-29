@@ -14,7 +14,7 @@
         "title": "在纹身之前，先看效果",
         "highlight_text": "先看效果",
         "description": "上传你的照片，描述你的想法，AI 会生成逼真的纹身预览图。<br/>免费试用，无需预约纹身师。",
-        "tip": "🎁 首次预览免费 · 注册再送 3 次",
+        "tip": "🎁 每个网络每天免费预览 3 次 · 注册再送 3 次",
         "buttons": [
           {
             "title": "免费试用",
@@ -46,7 +46,7 @@
         "block": "features-step",
         "id": "usage",
         "title": "使用方法",
-        "description": "三步即可预览你的纹身：",
+        "description": "四步即可预览你的纹身：",
         "text_align": "center",
         "items": [
           {
@@ -100,7 +100,7 @@
           },
           {
             "title": "安全私密",
-            "description": "你的照片和设计经过加密安全存储，我们绝不会分享你的数据。",
+            "description": "照片由 AI 和存储服务商处理，持有图片链接的人可以访问图片。上传前请阅读隐私政策。",
             "icon": "RiLockLine"
           }
         ]
@@ -114,19 +114,28 @@
             "name": "Alex M.",
             "role": "首次纹身体验",
             "quote": "第一次纹身我很紧张。能在手臂上看到确切的效果，给了我勇气去做！",
-            "image": { "src": "/imgs/avatars/1.png", "alt": "Alex M." }
+            "image": {
+              "src": "/imgs/avatars/1.png",
+              "alt": "Alex M."
+            }
           },
           {
             "name": "Sarah K.",
             "role": "纹身收藏者",
             "quote": "每次新纹身前我都会用这个工具。它帮我向纹身师准确传达我想要的设计，花臂规划的神器。",
-            "image": { "src": "/imgs/avatars/2.png", "alt": "Sarah K." }
+            "image": {
+              "src": "/imgs/avatars/2.png",
+              "alt": "Sarah K."
+            }
           },
           {
             "name": "Mike R.",
             "role": "纹身师",
             "quote": "我推荐所有客户使用。当他们带着预览图来时，我们在设计修改上省下了好几个小时。",
-            "image": { "src": "/imgs/avatars/3.png", "alt": "Mike R." }
+            "image": {
+              "src": "/imgs/avatars/3.png",
+              "alt": "Mike R."
+            }
           }
         ]
       },
@@ -140,8 +149,8 @@
             "answer": "上传你想纹身的部位照片，描述你的纹身想法，AI 会生成一个定制设计并逼真地贴到你的照片上。你会看到全部 4 个身体部位（左臂、右臂、肩膀、小腿）的预览。"
           },
           {
-            "question": "首次预览真的免费吗？",
-            "answer": "是的！每位新访客可免费生成 1 次。注册后还将获得 3 次免费额度继续探索设计。"
+            "question": "可以免费预览几次？",
+            "answer": "游客每个网络（IP 地址）每天可免费预览 3 次，按 UTC 日期重置。注册后赠送 3 个账户积分，每次尝试生成 4 个部位的效果。"
           },
           {
             "question": "预览效果有多逼真？",

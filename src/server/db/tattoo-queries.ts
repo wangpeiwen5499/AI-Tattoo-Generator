@@ -1,10 +1,10 @@
 /**
  * 纹身业务数据库查询（Drizzle ORM，适配 ShipAny Two）。
  */
-import { eq, desc } from 'drizzle-orm';
+import { count, desc, eq, inArray } from 'drizzle-orm';
 
 import { db } from '@/core/db';
-import { tattooProject, tattooGeneration } from '@/config/db/schema';
+import { tattooGeneration, tattooProject } from '@/config/db/schema';
 import { getUuid } from '@/shared/lib/hash';
 
 /** 创建生成项目记录 */
@@ -116,7 +116,10 @@ export async function getProjectWithGenerations(projectId: string): Promise<{
 }
 
 /** 查询用户所有已完成的项目（用于历史记录页） */
-export async function listUserTattooProjects(userId: string): Promise<
+export async function listUserTattooProjects(
+  userId: string,
+  options: { page?: number; limit?: number } = {}
+): Promise<
   Array<{
     id: string;
     prompt: string;
@@ -130,18 +133,32 @@ export async function listUserTattooProjects(userId: string): Promise<
     }>;
   }>
 > {
+  const limit = Math.min(50, Math.max(1, Math.floor(options.limit || 20)));
+  const page = Math.min(100000, Math.max(1, Math.floor(options.page || 1)));
   const projects = await db()
     .select()
     .from(tattooProject)
     .where(eq(tattooProject.userId, userId))
-    .orderBy(desc(tattooProject.createdAt));
+    .orderBy(desc(tattooProject.createdAt), desc(tattooProject.id))
+    .limit(limit)
+    .offset((page - 1) * limit);
+
+  if (!projects.length) return [];
+  const generations = await db()
+    .select()
+    .from(tattooGeneration)
+    .where(
+      inArray(
+        tattooGeneration.projectId,
+        projects.map((project) => project.id)
+      )
+    );
 
   const result = await Promise.all(
     projects.map(async (p) => {
-      const gens = await db()
-        .select()
-        .from(tattooGeneration)
-        .where(eq(tattooGeneration.projectId, p.id));
+      const gens = generations.filter(
+        (generation) => generation.projectId === p.id
+      );
 
       return {
         id: p.id,
@@ -159,4 +176,12 @@ export async function listUserTattooProjects(userId: string): Promise<
   );
 
   return result;
+}
+
+export async function countUserTattooProjects(userId: string): Promise<number> {
+  const [result] = await db()
+    .select({ value: count() })
+    .from(tattooProject)
+    .where(eq(tattooProject.userId, userId));
+  return result?.value || 0;
 }

@@ -1,11 +1,14 @@
-import { setRequestLocale } from 'next-intl/server';
 import Link from 'next/link';
+import { BODY_PART_LABELS, BODY_PARTS, type BodyPart } from '@/lib/constants';
+import { getPublicUrl } from '@/lib/r2';
+import {
+  countUserTattooProjects,
+  listUserTattooProjects,
+} from '@/server/db/tattoo-queries';
+import { setRequestLocale } from 'next-intl/server';
 
 import { getMetadata } from '@/shared/lib/seo';
 import { getUserInfo } from '@/shared/models/user';
-import { listUserTattooProjects } from '@/server/db/tattoo-queries';
-import { getPublicUrl } from '@/lib/r2';
-import { BODY_PARTS, BODY_PART_LABELS, type BodyPart } from '@/lib/constants';
 
 export const revalidate = 0;
 export const dynamic = 'force-dynamic';
@@ -14,12 +17,15 @@ export const generateMetadata = getMetadata({
   title: 'My Tattoo History — AI Tattoo Generator',
   description: 'View your past AI-generated tattoo previews.',
   canonicalUrl: '/history',
+  noIndex: true,
 });
 
 export default async function HistoryPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<{ page?: string }>;
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
@@ -31,12 +37,12 @@ export default async function HistoryPage({
         <div className="container">
           <div className="mx-auto max-w-3xl text-center">
             <h1 className="mb-4 text-3xl font-bold">My Tattoo History</h1>
-            <p className="mb-6 text-muted-foreground">
+            <p className="text-muted-foreground mb-6">
               Sign in to view your generated tattoo previews.
             </p>
             <Link
               href="/sign-in"
-              className="text-sm font-medium text-primary underline underline-offset-4"
+              className="text-primary text-sm font-medium underline underline-offset-4"
             >
               Sign in
             </Link>
@@ -46,7 +52,16 @@ export default async function HistoryPage({
     );
   }
 
-  const projects = await listUserTattooProjects(user.id);
+  const requested = Number((await searchParams).page);
+  const page =
+    Number.isSafeInteger(requested) && requested > 0
+      ? Math.min(requested, 100000)
+      : 1;
+  const [projects, total] = await Promise.all([
+    listUserTattooProjects(user.id, { page, limit: 20 }),
+    countUserTattooProjects(user.id),
+  ]);
+  const historyUrl = `${locale === 'en' ? '' : `/${locale}`}/history`;
 
   return (
     <section className="py-24 md:py-36">
@@ -59,7 +74,7 @@ export default async function HistoryPage({
             <p className="text-muted-foreground">
               {projects.length === 0
                 ? 'No generations yet. Create your first tattoo preview!'
-                : `${projects.length} generation${projects.length > 1 ? 's' : ''}`}
+                : `${total} generation${total > 1 ? 's' : ''}`}
             </p>
           </div>
 
@@ -67,7 +82,7 @@ export default async function HistoryPage({
             <div className="text-center">
               <Link
                 href="/generate"
-                className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-medium shadow transition-colors"
               >
                 Generate your first tattoo
               </Link>
@@ -77,11 +92,11 @@ export default async function HistoryPage({
               {projects.map((project) => (
                 <div
                   key={project.id}
-                  className="group overflow-hidden rounded-xl border border-border/40 bg-card shadow-sm transition-shadow hover:shadow-md"
+                  className="group border-border/40 bg-card overflow-hidden rounded-xl border shadow-sm transition-shadow hover:shadow-md"
                 >
                   {/* Tattoo design preview */}
                   {project.tattooDesignUrl ? (
-                    <div className="aspect-square overflow-hidden bg-muted/30">
+                    <div className="bg-muted/30 aspect-square overflow-hidden">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={project.tattooDesignUrl}
@@ -91,7 +106,7 @@ export default async function HistoryPage({
                       />
                     </div>
                   ) : (
-                    <div className="flex aspect-square items-center justify-center bg-muted/20 text-xs text-muted-foreground">
+                    <div className="bg-muted/20 text-muted-foreground flex aspect-square items-center justify-center text-xs">
                       No preview
                     </div>
                   )}
@@ -103,8 +118,11 @@ export default async function HistoryPage({
                     </p>
                     <div className="mt-2 flex flex-wrap gap-1">
                       {BODY_PARTS.map((bp) => {
-                        const gen = project.generations.find((g) => g.bodyPart === bp);
-                        const hasImage = gen?.status === 'completed' && gen?.r2Url;
+                        const gen = project.generations.find(
+                          (g) => g.bodyPart === bp
+                        );
+                        const hasImage =
+                          gen?.status === 'completed' && gen?.r2Url;
                         return (
                           <span
                             key={bp}
@@ -120,7 +138,7 @@ export default async function HistoryPage({
                         );
                       })}
                     </div>
-                    <p className="mt-3 text-xs text-muted-foreground">
+                    <p className="text-muted-foreground mt-3 text-xs">
                       {new Date(project.createdAt).toLocaleDateString('en-US', {
                         year: 'numeric',
                         month: 'short',
@@ -132,7 +150,7 @@ export default async function HistoryPage({
                   {/* Quick view link */}
                   <Link
                     href={`/history/${project.id}`}
-                    className="block border-t border-border/40 px-4 py-2.5 text-center text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+                    className="border-border/40 text-muted-foreground hover:bg-muted/50 hover:text-foreground block border-t px-4 py-2.5 text-center text-xs font-medium transition-colors"
                   >
                     View details →
                   </Link>
@@ -140,6 +158,18 @@ export default async function HistoryPage({
               ))}
             </div>
           )}
+          <nav
+            aria-label="History pages"
+            className="mt-8 flex items-center justify-center gap-6 text-sm"
+          >
+            {page > 1 && (
+              <Link href={`${historyUrl}?page=${page - 1}`}>Previous</Link>
+            )}
+            <span>Page {page}</span>
+            {page * 20 < total && (
+              <Link href={`${historyUrl}?page=${page + 1}`}>Next</Link>
+            )}
+          </nav>
         </div>
       </div>
     </section>

@@ -191,6 +191,19 @@ export async function updateOrderInTransaction({
 
   // need transaction
   const result = await db().transaction(async (tx) => {
+    // Lock before checking/creating grants: repeated webhook requests serialize here.
+    const [lockedOrder] = await tx
+      .select()
+      .from(order)
+      .where(eq(order.orderNo, orderNo))
+      .for('update');
+    if (!lockedOrder) throw new Error('Order not found');
+    if (
+      newCredit &&
+      (newCredit.userId !== lockedOrder.userId || newCredit.orderNo !== orderNo)
+    ) {
+      throw new Error('Credit does not match order');
+    }
     let result: any = {
       order: null,
       subscription: null,
@@ -289,6 +302,12 @@ export async function updateSubscriptionInTransaction({
 
   // need transaction
   const result = await db().transaction(async (tx) => {
+    const [lockedSubscription] = await tx
+      .select()
+      .from(subscription)
+      .where(eq(subscription.subscriptionNo, subscriptionNo))
+      .for('update');
+    if (!lockedSubscription) throw new Error('Subscription not found');
     let result: any = {
       order: null,
       subscription: null,

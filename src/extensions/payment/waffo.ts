@@ -33,7 +33,8 @@ export class WaffoProvider implements PaymentProvider {
 
   // lazy load WaffoPancake (avoid import at module level — breaks build if not installed)
   private getClient() {
-    const { WaffoPancake } = require('@waffo/pancake-ts') as typeof import('@waffo/pancake-ts');
+    const { WaffoPancake } =
+      require('@waffo/pancake-ts') as typeof import('@waffo/pancake-ts');
     return new WaffoPancake({
       merchantId: this.configs.merchantId,
       privateKey: this.configs.privateKey,
@@ -100,7 +101,8 @@ export class WaffoProvider implements PaymentProvider {
 
   async getPaymentEvent({ req }: { req: Request }): Promise<PaymentEvent> {
     try {
-      const { verifyWebhook, WebhookEventType } = require('@waffo/pancake-ts') as typeof import('@waffo/pancake-ts');
+      const { verifyWebhook, WebhookEventType } =
+        require('@waffo/pancake-ts') as typeof import('@waffo/pancake-ts');
 
       const rawBody = await req.text();
       const signature = req.headers.get('x-waffo-signature');
@@ -207,7 +209,16 @@ export class WaffoProvider implements PaymentProvider {
   }
 
   private buildPaymentSessionFromOrder(data: any): PaymentSession {
-    const amount = data.amount ? parseFloat(data.amount) : 0;
+    // Waffo's SDK defines webhook amounts as display strings; DB uses minor units.
+    const amount = Math.round(Number(data.subtotal ?? data.amount) * 100);
+    const paidAmount = Math.round(Number(data.total ?? data.amount) * 100);
+    if (
+      !Number.isSafeInteger(amount) ||
+      !Number.isSafeInteger(paidAmount) ||
+      amount <= 0 ||
+      paidAmount <= 0
+    )
+      throw new Error('Invalid Waffo amount');
     const currency = data.currency || 'USD';
 
     return {
@@ -220,7 +231,7 @@ export class WaffoProvider implements PaymentProvider {
         discountCode: '',
         discountAmount: 0,
         discountCurrency: currency,
-        paymentAmount: amount,
+        paymentAmount: paidAmount,
         paymentCurrency: currency,
         paymentEmail: data.buyerEmail,
         paymentUserId: data.merchantProvidedBuyerIdentity,

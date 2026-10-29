@@ -597,20 +597,54 @@ export const tattooGeneration = table(
     error: text('error'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
-  (table) => [
-    index('idx_tattoo_generation_project_id').on(table.projectId),
-  ]
+  (table) => [index('idx_tattoo_generation_project_id').on(table.projectId)]
 );
 
 // Guest free usage tracking (IP-based, 3 per day limit)
+// Durable state for short, resumable provider operations. Existing projects are untouched.
+export const tattooJob = table(
+  'tattoo_job',
+  {
+    projectId: text('project_id')
+      .primaryKey()
+      .references(() => tattooProject.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    requestId: text('request_id').notNull().unique(),
+    creditId: text('credit_id').references(() => credit.id),
+    stage: text('stage').notNull().default('design'),
+    designTaskId: text('design_task_id'),
+    tasks: text('tasks').notNull().default('[]'),
+    leaseToken: text('lease_token'),
+    leaseUntil: timestamp('lease_until').notNull().defaultNow(),
+    nextRunAt: timestamp('next_run_at').notNull().defaultNow(),
+    expiresAt: timestamp('expires_at').notNull(),
+    refunded: boolean('refunded').notNull().default(false),
+    error: text('error'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at')
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index('idx_tattoo_job_due').on(
+      table.stage,
+      table.nextRunAt,
+      table.leaseUntil
+    ),
+    index('idx_tattoo_job_user').on(table.userId, table.stage),
+  ]
+);
+
 export const guestFreeUsage = table(
   'guest_free_usage',
   {
     ip: text('ip').notNull(),
     usedDate: date('used_date').notNull(),
     count: integer('count').notNull().default(0),
+    uploadCount: integer('upload_count').notNull().default(0),
   },
-  (table) => [
-    primaryKey({ columns: [table.ip, table.usedDate] }),
-  ]
+  (table) => [primaryKey({ columns: [table.ip, table.usedDate] })]
 );

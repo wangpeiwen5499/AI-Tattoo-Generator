@@ -1,14 +1,14 @@
-FROM node:20-alpine AS base
+FROM node:24-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
-RUN apk add --no-cache libc6-compat && yarn global add pnpm
+RUN apk add --no-cache libc6-compat
 
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
-COPY package.json pnpm-lock.yaml* source.config.ts next.config.mjs ./
-RUN pnpm i --frozen-lockfile
+COPY package.json package-lock.json ./
+RUN npm ci --legacy-peer-deps
 
 # Rebuild the source code only when needed
 FROM deps AS builder
@@ -17,7 +17,7 @@ WORKDIR /app
 
 # Install dependencies based on the preferred package manager
 COPY . .
-RUN pnpm build
+RUN npm run build
 
 # Production image, copy all the files and run next
 FROM base AS runner

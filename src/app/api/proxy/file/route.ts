@@ -1,31 +1,30 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
+import { readBoundedBody, trustedFileUrl } from '@/server/storage/file-proxy';
+import { isAllowedImageType } from '@/server/storage/upload-policy';
 
 export async function GET(req: NextRequest) {
-  const url = req.nextUrl.searchParams.get('url');
-
-  if (!url) {
-    return new NextResponse('Missing url parameter', { status: 400 });
-  }
-
+  const url = trustedFileUrl(req.nextUrl.searchParams.get('url') || '');
+  if (!url)
+    return Response.json({ error: 'Untrusted file URL' }, { status: 400 });
   try {
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      return new NextResponse(`Failed to fetch file: ${response.statusText}`, {
-        status: response.status,
-      });
-    }
-
-    const contentType =
-      response.headers.get('content-type') || 'application/octet-stream';
-
-    return new NextResponse(response.body, {
+    const response = await fetch(url, {
+      redirect: 'error',
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!response.ok)
+      return Response.json({ error: 'File unavailable' }, { status: 502 });
+    const type = response.headers.get('content-type')?.split(';')[0];
+    if (!isAllowedImageType(type))
+      return Response.json({ error: 'Unsupported image' }, { status: 415 });
+    const bytes = await readBoundedBody(response, 15 * 1024 * 1024);
+    return new Response(Buffer.from(bytes), {
       headers: {
-        'Content-Type': contentType,
+        'Content-Type': type,
+        'X-Content-Type-Options': 'nosniff',
+        'Cache-Control': 'private, no-store',
       },
     });
-  } catch (error) {
-    console.error('Proxy error:', error);
-    return new NextResponse('Internal Server Error', { status: 500 });
+  } catch {
+    return Response.json({ error: 'File unavailable' }, { status: 502 });
   }
 }

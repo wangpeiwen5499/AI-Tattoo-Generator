@@ -14,7 +14,7 @@
         "title": "See Your Tattoo Before You Ink",
         "highlight_text": "Before You Ink",
         "description": "Upload your photo, describe your idea, and AI generates realistic tattoo previews on your body.<br/>Try it free — no artist appointment needed.",
-        "tip": "🎁 First preview is free · Sign up to get 3 more",
+        "tip": "🎁 3 free previews per day per network · Sign up to get 3 more",
         "buttons": [
           {
             "title": "Try It Free",
@@ -46,7 +46,7 @@
         "block": "features-step",
         "id": "usage",
         "title": "How It Works",
-        "description": "Get your tattoo preview in three simple steps:",
+        "description": "Get your tattoo preview in four simple steps:",
         "text_align": "center",
         "items": [
           {
@@ -100,7 +100,7 @@
           },
           {
             "title": "Secure & Private",
-            "description": "Your photos and designs are encrypted and stored securely. We never share your data.",
+            "description": "Photos are processed by our AI and storage providers. Image links can be accessed by anyone who has the link. See our Privacy Policy before uploading.",
             "icon": "RiLockLine"
           }
         ]
@@ -114,19 +114,28 @@
             "name": "Alex M.",
             "role": "First-time tattoo",
             "quote": "I was nervous about getting my first tattoo. Being able to see exactly how it would look on my arm gave me the confidence to go for it!",
-            "image": { "src": "/imgs/avatars/1.png", "alt": "Alex M." }
+            "image": {
+              "src": "/imgs/avatars/1.png",
+              "alt": "Alex M."
+            }
           },
           {
             "name": "Sarah K.",
             "role": "Tattoo collector",
             "quote": "I use this before every new piece. It helps me communicate exactly what I want to my artist. Game changer for sleeve planning.",
-            "image": { "src": "/imgs/avatars/2.png", "alt": "Sarah K." }
+            "image": {
+              "src": "/imgs/avatars/2.png",
+              "alt": "Sarah K."
+            }
           },
           {
             "name": "Mike R.",
             "role": "Tattoo artist",
             "quote": "I recommend this to all my clients. When they come in with a preview, we save hours of back-and-forth on design revisions.",
-            "image": { "src": "/imgs/avatars/3.png", "alt": "Mike R." }
+            "image": {
+              "src": "/imgs/avatars/3.png",
+              "alt": "Mike R."
+            }
           }
         ]
       },
@@ -140,8 +149,8 @@
             "answer": "Upload a photo of the body part you want tattooed, describe your tattoo idea, and our AI generates a custom design then places it realistically on your photo. You'll see previews on all 4 body positions (left arm, right arm, shoulder, calf)."
           },
           {
-            "question": "Is the first preview really free?",
-            "answer": "Yes! Every new visitor gets 1 free generation. Sign up and you'll receive 3 more free credits to continue exploring designs."
+            "question": "How many free previews can I try?",
+            "answer": "Guests can try 3 previews per network (IP address) per UTC day. Sign up to receive 3 account credits. Each preview attempts all 4 body positions."
           },
           {
             "question": "How realistic are the previews?",

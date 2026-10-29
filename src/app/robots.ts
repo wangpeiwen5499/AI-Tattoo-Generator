@@ -17,9 +17,12 @@ export default function robots(): MetadataRoute.Robots {
         '/activity/*',
         '/admin/*',
         '/api/*',
+        '/history',
+        '/history/*',
+        '/zh/history',
+        '/zh/history/*',
       ],
     },
     sitemap: `${appUrl}/sitemap.xml`,
   };
 }
-

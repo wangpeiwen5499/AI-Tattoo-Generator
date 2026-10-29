@@ -211,10 +211,10 @@ export async function POST(req: Request) {
       },
       type: paymentType,
       metadata: {
+        ...(metadata && typeof metadata === 'object' ? metadata : {}),
         app_name: configs.app_name,
         order_no: orderNo,
         user_id: user.id,
-        ...(metadata || {}),
       },
       successUrl: `${configs.app_url}/api/payment/callback?order_no=${orderNo}`,
       cancelUrl: `${callbackBaseUrl}/pricing`,

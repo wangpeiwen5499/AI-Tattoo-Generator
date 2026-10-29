@@ -1,166 +1,69 @@
-/**
- * POST /api/ai/generate-tattoo
- *
- * 触发纹身 AI 生成（异步模式）。
- * 登录用户：扣积分 → 生成 → 失败退款
- * 游客：IP 限流（3次/天）→ 免费生成（不涉及积分系统）
- *
- * 请求体：{ bodyPhotoKey, bodyPhotoUrl, prompt }
- * 响应：{ projectId }
- */
-import { headers } from 'next/headers';
-import { NextResponse } from 'next/server';
-
-import { getActor } from '@/server/auth/actor';
+import { randomUUID } from 'node:crypto';
+import { after } from 'next/server';
+import { validateUploadedPhoto } from '@/lib/r2';
 import {
-  getRemainingCredits,
-  consumeCredits,
-  createCredit,
-  CreditStatus,
-  CreditTransactionType,
-  CreditTransactionScene,
-} from '@/shared/models/credit';
-import { createTattooProject } from '@/server/db/tattoo-queries';
-import { claimGuestFree, ensureGuestUser } from '@/server/db/guest-queries';
-import { runGeneration } from '@/server/ai/run-generation';
-import { getUuid, getSnowId } from '@/shared/lib/hash';
-import { CREDITS_PER_GENERATION } from '@/lib/constants';
+  advanceTattooJob,
+  GenerationRequestError,
+  startTattooGeneration,
+} from '@/server/ai/tattoo-jobs';
+import { getActor } from '@/server/auth/actor';
+import { z } from 'zod';
+
+import { enforceMinIntervalRateLimit } from '@/shared/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
+const requestSchema = z.object({
+  bodyPhotoKey: z.string().max(250),
+  prompt: z.string().trim().min(1).max(500),
+  requestId: z.uuid().optional(),
+});
 
-const MAX_PROMPT_LENGTH = 500;
-
-export async function POST(req: Request) {
-  // 1. 身份：登录用户 / 游客
+export async function POST(req: Request): Promise<Response> {
   const actor = await getActor();
-  if (!actor) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-  const userId = actor.id;
-  const isGuest = actor.type === 'guest';
-
-  // 2. 解析请求体
-  let body: { bodyPhotoKey?: string; bodyPhotoUrl?: string; prompt?: string };
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
-  }
-
-  const { bodyPhotoKey, bodyPhotoUrl, prompt } = body;
-  if (!bodyPhotoKey || !bodyPhotoUrl || !prompt) {
-    return NextResponse.json(
-      { error: 'Missing required fields: bodyPhotoKey, bodyPhotoUrl, prompt' },
-      { status: 400 }
+  if (!actor)
+    return Response.json(
+      { error: 'Please upload your photo again to start a secure session.' },
+      { status: 401 }
     );
-  }
-  if (typeof prompt !== 'string' || prompt.trim().length === 0) {
-    return NextResponse.json({ error: 'prompt must be non-empty' }, { status: 400 });
-  }
-  if (prompt.length > MAX_PROMPT_LENGTH) {
-    return NextResponse.json(
-      { error: `Prompt too long. Max ${MAX_PROMPT_LENGTH} chars.` },
-      { status: 400 }
-    );
-  }
-
-  // 3. 游客：IP 限流检查
-  if (isGuest) {
-    try {
-      const fwd = (await headers()).get('x-forwarded-for');
-      const ip = fwd?.split(',')[0]?.trim() || 'unknown';
-      const claimed = await claimGuestFree(ip);
-      if (claimed === -1) {
-        return NextResponse.json(
-          { error: 'Guest free limit reached for today. Sign up for 3 more previews.' },
-          { status: 429 }
-        );
-      }
-      // 确保游客在 user 表存在（满足 tattoo_project.user_id 外键约束）
-      await ensureGuestUser(userId);
-    } catch (e) {
-      console.error('[generate-tattoo] claimGuestFree failed:', e);
-      return NextResponse.json({ error: 'Failed to check guest limit' }, { status: 500 });
-    }
-  } else {
-    // 4. 登录用户：余额检查 + 扣积分
-    let credits: number;
-    try {
-      credits = await getRemainingCredits(userId);
-    } catch (e) {
-      console.error('[generate-tattoo] getRemainingCredits failed:', e);
-      return NextResponse.json({ error: 'Failed to check credits' }, { status: 500 });
-    }
-    if (credits < CREDITS_PER_GENERATION) {
-      return NextResponse.json(
-        { error: 'Insufficient credits', credits },
-        { status: 402 }
-      );
-    }
-
-    try {
-      await consumeCredits({
-        userId,
-        credits: CREDITS_PER_GENERATION,
-        scene: CreditTransactionScene.PAYMENT,
-        description: `Generate tattoo: ${prompt.trim().slice(0, 60)}`,
-      });
-    } catch (e: any) {
-      console.error('[generate-tattoo] consumeCredits failed:', e.message);
-      return NextResponse.json(
-        { error: e.message || 'Insufficient credits' },
-        { status: 402 }
-      );
-    }
-  }
-
-  // 5. 创建 project
-  let projectId: string;
-  try {
-    projectId = await createTattooProject({
-      userId,
-      bodyPhotoKey,
-      bodyPhotoUrl,
-      prompt: prompt.trim(),
-    });
-  } catch (e) {
-    console.error('[generate-tattoo] createTattooProject failed:', e);
-    // 非游客才退款（游客没扣分，不用退）
-    if (!isGuest) {
-      await safeRefund(userId);
-    }
-    return NextResponse.json({ error: 'Failed to create project' }, { status: 500 });
-  }
-
-  // 6. 后台异步执行 AI 生成（fire-and-forget，不阻塞响应）
-  void runGeneration({
-    projectId,
-    userId,
-    bodyPhotoUrl,
-    prompt: prompt.trim(),
-  }).catch((err) => {
-    console.error('[generate-tattoo] background generation crashed:', err);
+  const limited = enforceMinIntervalRateLimit(req, {
+    intervalMs: 1500,
+    keyPrefix: 'tattoo-start',
+    extraKey: actor.id,
   });
-
-  return NextResponse.json({ projectId });
-}
-
-async function safeRefund(userId: string): Promise<void> {
+  if (limited) return limited;
+  const parsed = requestSchema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success)
+    return Response.json({ error: 'Invalid photo or prompt' }, { status: 400 });
   try {
-    await createCredit({
-      id: getUuid(),
-      userId,
-      userEmail: '',
-      transactionNo: getSnowId(),
-      transactionType: CreditTransactionType.GRANT,
-      transactionScene: CreditTransactionScene.REWARD,
-      credits: CREDITS_PER_GENERATION,
-      remainingCredits: CREDITS_PER_GENERATION,
-      description: 'Refund for failed project creation',
-      expiresAt: null,
-      status: CreditStatus.ACTIVE,
+    await validateUploadedPhoto(parsed.data.bodyPhotoKey, actor.id);
+  } catch {
+    return Response.json(
+      { error: 'Photo is invalid or unavailable. Please upload it again.' },
+      { status: 400 }
+    );
+  }
+  try {
+    const projectId = await startTattooGeneration({
+      actor,
+      bodyPhotoKey: parsed.data.bodyPhotoKey,
+      prompt: parsed.data.prompt,
+      requestId: parsed.data.requestId || randomUUID(),
+      ip:
+        req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown',
     });
-  } catch (e) {
-    console.error('[generate-tattoo] safeRefund FAILED:', e);
+    after(() => advanceTattooJob(projectId));
+    return Response.json(
+      { projectId },
+      { headers: { 'Cache-Control': 'private, no-store' } }
+    );
+  } catch (error) {
+    if (error instanceof GenerationRequestError)
+      return Response.json({ error: error.message }, { status: error.status });
+    console.error('[tattoo-start] Failed to create generation', error);
+    return Response.json(
+      { error: 'Unable to start generation. Please try again.' },
+      { status: 500 }
+    );
   }
 }

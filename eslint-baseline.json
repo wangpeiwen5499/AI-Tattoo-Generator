@@ -1,0 +1,362 @@
+[
+  {
+    "file": "src/app/[locale]/(chat)/chat/[id]/page.tsx",
+    "rule": "react-hooks/set-state-in-effect",
+    "source": "45f32fbfdd80f4f76a7f0a5c44965976400d68648ccd6bf3f9b85344afe2ce27"
+  },
+  {
+    "file": "src/app/[locale]/(landing)/settings/billing/retrieve/page.tsx",
+    "rule": "react-hooks/error-boundaries",
+    "source": "a0e310130ba07445b0a000a98734a6351cf847be3a8ce31ee2e97a5505bc72bb"
+  },
+  {
+    "file": "src/app/[locale]/(landing)/settings/invoices/retrieve/page.tsx",
+    "rule": "react-hooks/error-boundaries",
+    "source": "e4e7b58f461387ad17ab1ccdd6da4626f9151a526698193a9be96d23c25b52eb"
+  },
+  {
+    "file": "src/app/[locale]/(landing)/terms-of-service/page.tsx",
+    "rule": "@next/next/no-html-link-for-pages",
+    "source": "66aac9ae43b0ad8daca81e0c3e30566d5af7ec624432a800c44a594bc38cfb8b"
+  },
+  {
+    "file": "src/app/[locale]/(landing)/terms-of-service/page.tsx",
+    "rule": "@next/next/no-html-link-for-pages",
+    "source": "66aac9ae43b0ad8daca81e0c3e30566d5af7ec624432a800c44a594bc38cfb8b"
+  },
+  {
+    "file": "src/app/[locale]/(landing)/terms-of-service/page.tsx",
+    "rule": "@next/next/no-html-link-for-pages",
+    "source": "66aac9ae43b0ad8daca81e0c3e30566d5af7ec624432a800c44a594bc38cfb8b"
+  },
+  {
+    "file": "src/app/[locale]/(landing)/terms-of-service/page.tsx",
+    "rule": "@next/next/no-html-link-for-pages",
+    "source": "66aac9ae43b0ad8daca81e0c3e30566d5af7ec624432a800c44a594bc38cfb8b"
+  },
+  {
+    "file": "src/app/[locale]/(landing)/terms-of-service/page.tsx",
+    "rule": "@next/next/no-html-link-for-pages",
+    "source": "85bbe9a61d661b90aa4f575ab0d1189460789ddcd2668364ce53c1131d1806ae"
+  },
+  {
+    "file": "src/app/[locale]/(landing)/terms-of-service/page.tsx",
+    "rule": "@next/next/no-html-link-for-pages",
+    "source": "85bbe9a61d661b90aa4f575ab0d1189460789ddcd2668364ce53c1131d1806ae"
+  },
+  {
+    "file": "src/app/[locale]/(landing)/terms-of-service/page.tsx",
+    "rule": "@next/next/no-html-link-for-pages",
+    "source": "85bbe9a61d661b90aa4f575ab0d1189460789ddcd2668364ce53c1131d1806ae"
+  },
+  {
+    "file": "src/app/[locale]/(landing)/terms-of-service/page.tsx",
+    "rule": "@next/next/no-html-link-for-pages",
+    "source": "85bbe9a61d661b90aa4f575ab0d1189460789ddcd2668364ce53c1131d1806ae"
+  },
+  {
+    "file": "src/core/theme/index.ts",
+    "rule": "@next/next/no-assign-module-variable",
+    "source": "93120a35e06569d47c037349d57443caf87f002c7095353f4181803bbde840a2"
+  },
+  {
+    "file": "src/core/theme/index.ts",
+    "rule": "@next/next/no-assign-module-variable",
+    "source": "6421ca63632a86d38293e8fccf3553c92cd6b9805c948f7134c7e077aca106f3"
+  },
+  {
+    "file": "src/core/theme/index.ts",
+    "rule": "@next/next/no-assign-module-variable",
+    "source": "d9f2b79339c2ca79531c326a04fb3c058b12f2ac2ca3b267e54a486e0f3b2180"
+  },
+  {
+    "file": "src/shared/blocks/chat/history.tsx",
+    "rule": "react-hooks/set-state-in-effect",
+    "source": "c65b9ee0c8b6c204f63aa643877896200e4b40d140616da79de663781c757462"
+  },
+  {
+    "file": "src/shared/blocks/chat/library.tsx",
+    "rule": "react-hooks/set-state-in-effect",
+    "source": "485a5a75a3f332c182b772d32bd2a8cfaef9f0ed83698e4dd440576bf9a56ce6"
+  },
+  {
+    "file": "src/shared/blocks/common/copyright.tsx",
+    "rule": "react-hooks/set-state-in-effect",
+    "source": "75e4ce3bc05ef7ce42a9052ac5523493140dc8391f03e44eef3df6eece58a842"
+  },
+  {
+    "file": "src/shared/blocks/common/locale-detector.tsx",
+    "rule": "react-hooks/rules-of-hooks",
+    "source": "a8ab3aa69ee8cfb5cc9edbd23b5f59ae1b173c36724e45186bad69a1ccaf7d7b"
+  },
+  {
+    "file": "src/shared/blocks/common/locale-detector.tsx",
+    "rule": "react-hooks/rules-of-hooks",
+    "source": "5921d8bbcfc7da27a18289d8a47cc51136866f8fdbebe22e9d1d1135aa55e0e6"
+  },
+  {
+    "file": "src/shared/blocks/common/locale-detector.tsx",
+    "rule": "react-hooks/rules-of-hooks",
+    "source": "4317cc58403a0e5cb3eac4906ef2cc760afb5db3768264f6a0af72f961ec2bbd"
+  },
+  {
+    "file": "src/shared/blocks/common/locale-detector.tsx",
+    "rule": "react-hooks/rules-of-hooks",
+    "source": "52859d656bd4870b08a2bb9038369fc60fa3b78a0b15c54ad495c060e82e3f1a"
+  },
+  {
+    "file": "src/shared/blocks/common/locale-detector.tsx",
+    "rule": "react-hooks/rules-of-hooks",
+    "source": "0a8e1100b9a126c25e90a9476a9ee835f1c6454450ff363a47089d56ae467b94"
+  },
+  {
+    "file": "src/shared/blocks/common/locale-detector.tsx",
+    "rule": "react-hooks/rules-of-hooks",
+    "source": "67ac431641d34ca88512484b08a6705457b2c3baab4b0ad38ec1c1d86fc11f13"
+  },
+  {
+    "file": "src/shared/blocks/common/locale-detector.tsx",
+    "rule": "react-hooks/rules-of-hooks",
+    "source": "c1edc54d82e512e1f48ba0bb7454a6786cd82e304658c529cb8ae2e0182e18af"
+  },
+  {
+    "file": "src/shared/blocks/common/locale-detector.tsx",
+    "rule": "react-hooks/rules-of-hooks",
+    "source": "6587edca4371d409ae850f21dbca358ca34cf5c12c0da99206cc29a75aa25d65"
+  },
+  {
+    "file": "src/shared/blocks/common/locale-detector.tsx",
+    "rule": "react-hooks/rules-of-hooks",
+    "source": "e304e19e80684132364f5fe88279f7d642d95a4ac1ec2f1f50547a80472689c7"
+  },
+  {
+    "file": "src/shared/blocks/common/locale-detector.tsx",
+    "rule": "react-hooks/rules-of-hooks",
+    "source": "f28ea927c74f4339d40c3cf0626cab7fdec954d41ef387a713650bc54eca15b3"
+  },
+  {
+    "file": "src/shared/blocks/common/locale-detector.tsx",
+    "rule": "react-hooks/set-state-in-effect",
+    "source": "761de6fe1b73f9c050b8305ff3d455826d096ea2f53b9b6944e5bb70fe16e4ac"
+  },
+  {
+    "file": "src/shared/blocks/common/locale-detector.tsx",
+    "rule": "react-hooks/rules-of-hooks",
+    "source": "f28ea927c74f4339d40c3cf0626cab7fdec954d41ef387a713650bc54eca15b3"
+  },
+  {
+    "file": "src/shared/blocks/common/locale-detector.tsx",
+    "rule": "react-hooks/rules-of-hooks",
+    "source": "f28ea927c74f4339d40c3cf0626cab7fdec954d41ef387a713650bc54eca15b3"
+  },
+  {
+    "file": "src/shared/blocks/common/locale-selector.tsx",
+    "rule": "react-hooks/set-state-in-effect",
+    "source": "3fc4b0e251100c70a5ba4636803ec7741a202e9954fe2df23cd465ebc47b839c"
+  },
+  {
+    "file": "src/shared/blocks/common/smart-icon.tsx",
+    "rule": "react-hooks/immutability",
+    "source": "ce8b7476ef17c6d19a96af8eaed296291d54fefa82a2b080c90fffb3b26d31e4"
+  },
+  {
+    "file": "src/shared/blocks/common/smart-icon.tsx",
+    "rule": "@next/next/no-assign-module-variable",
+    "source": "9f06113a319821f36a3d8dc9d006df9d9c7de66e90448bc3104ce81de9a0fcbc"
+  },
+  {
+    "file": "src/shared/blocks/common/smart-icon.tsx",
+    "rule": "react-hooks/immutability",
+    "source": "ce8b7476ef17c6d19a96af8eaed296291d54fefa82a2b080c90fffb3b26d31e4"
+  },
+  {
+    "file": "src/shared/blocks/common/smart-icon.tsx",
+    "rule": "@next/next/no-assign-module-variable",
+    "source": "81c5b1d563c675f3001d4766ef975795308e42cabc116a1f029e26ffda944cf8"
+  },
+  {
+    "file": "src/shared/blocks/common/theme-toggler.tsx",
+    "rule": "react-hooks/set-state-in-effect",
+    "source": "3fc4b0e251100c70a5ba4636803ec7741a202e9954fe2df23cd465ebc47b839c"
+  },
+  {
+    "file": "src/shared/blocks/common/top-banner.tsx",
+    "rule": "react-hooks/set-state-in-effect",
+    "source": "fdd50d78e0fbdc13492c4e6450ebc3016c59b5e9d088cbd32c4a8897a2ca652b"
+  },
+  {
+    "file": "src/shared/blocks/dashboard/nav.tsx",
+    "rule": "react-hooks/set-state-in-effect",
+    "source": "3fc4b0e251100c70a5ba4636803ec7741a202e9954fe2df23cd465ebc47b839c"
+  },
+  {
+    "file": "src/shared/blocks/dashboard/sidebar-user.tsx",
+    "rule": "react-hooks/set-state-in-effect",
+    "source": "bfb81c62db3e2f9e396ec86798bc29af4906cc9e6e17e50d65dcb01bf7173514"
+  },
+  {
+    "file": "src/shared/blocks/form/index.tsx",
+    "rule": "react-hooks/immutability",
+    "source": "be64f3aa150803cd2185c91b77c20c7532af1e10a8d7ea68ad7ba4cc951006e1"
+  },
+  {
+    "file": "src/shared/blocks/generator/image.tsx",
+    "rule": "react-hooks/set-state-in-effect",
+    "source": "867a9b19c90779703620f490bdf3121e5cff508a107495a23012460209844034"
+  },
+  {
+    "file": "src/shared/blocks/generator/music.tsx",
+    "rule": "react-hooks/set-state-in-effect",
+    "source": "867a9b19c90779703620f490bdf3121e5cff508a107495a23012460209844034"
+  },
+  {
+    "file": "src/shared/blocks/generator/video.tsx",
+    "rule": "react-hooks/set-state-in-effect",
+    "source": "867a9b19c90779703620f490bdf3121e5cff508a107495a23012460209844034"
+  },
+  {
+    "file": "src/shared/blocks/payment/payment-providers.tsx",
+    "rule": "react-hooks/rules-of-hooks",
+    "source": "5e74a6ed00851d22a397990e4dc94655d0b079ea529b27a45bd2050b133146b2"
+  },
+  {
+    "file": "src/shared/blocks/sign/sign-in-form.tsx",
+    "rule": "react-hooks/rules-of-hooks",
+    "source": "5e74a6ed00851d22a397990e4dc94655d0b079ea529b27a45bd2050b133146b2"
+  },
+  {
+    "file": "src/shared/blocks/sign/sign-in.tsx",
+    "rule": "react-hooks/rules-of-hooks",
+    "source": "5e74a6ed00851d22a397990e4dc94655d0b079ea529b27a45bd2050b133146b2"
+  },
+  {
+    "file": "src/shared/blocks/sign/sign-up.tsx",
+    "rule": "react-hooks/rules-of-hooks",
+    "source": "5e74a6ed00851d22a397990e4dc94655d0b079ea529b27a45bd2050b133146b2"
+  },
+  {
+    "file": "src/shared/blocks/sign/sign-user.tsx",
+    "rule": "react-hooks/set-state-in-effect",
+    "source": "3fc4b0e251100c70a5ba4636803ec7741a202e9954fe2df23cd465ebc47b839c"
+  },
+  {
+    "file": "src/shared/blocks/sign/social-providers.tsx",
+    "rule": "react-hooks/rules-of-hooks",
+    "source": "5e74a6ed00851d22a397990e4dc94655d0b079ea529b27a45bd2050b133146b2"
+  },
+  {
+    "file": "src/shared/blocks/sign/social-providers.tsx",
+    "rule": "react-hooks/immutability",
+    "source": "937a6d2074c9a96b35a201bf70bc50c2c264a308c560b9180629b2c007c7c6f6"
+  },
+  {
+    "file": "src/shared/blocks/table/index.tsx",
+    "rule": "react-hooks/immutability",
+    "source": "6587c324465f267239cc15b017ca719e252542f231bcbd174324d0b1b5583150"
+  },
+  {
+    "file": "src/shared/blocks/table/json-preview.tsx",
+    "rule": "react-hooks/error-boundaries",
+    "source": "ac36b88fb154bb66f106fb1767889aeabedea054f6cec6ce1edd7e5af10ed110"
+  },
+  {
+    "file": "src/shared/blocks/table/time.tsx",
+    "rule": "react-hooks/rules-of-hooks",
+    "source": "1a250c3f7b0990c38e5906cb94b9809f77cb418b9a27a72ec482d3059f6a3b20"
+  },
+  {
+    "file": "src/shared/components/ai-elements/prompt-input.tsx",
+    "rule": "react-hooks/set-state-in-effect",
+    "source": "bb3011596ee7138ec24a544ebfbbe6cbb39611db75312edf43e83211650ea9af"
+  },
+  {
+    "file": "src/shared/components/ai-elements/prompt-input.tsx",
+    "rule": "react-hooks/set-state-in-effect",
+    "source": "3fc4b0e251100c70a5ba4636803ec7741a202e9954fe2df23cd465ebc47b839c"
+  },
+  {
+    "file": "src/shared/components/ai-elements/reasoning.tsx",
+    "rule": "react-hooks/set-state-in-effect",
+    "source": "a26799fffacc58908ed31b6c702582e1a008a98fc8dbea7964f30e865b6fe481"
+  },
+  {
+    "file": "src/shared/components/ai-elements/shimmer.tsx",
+    "rule": "react-hooks/static-components",
+    "source": "40cc6428a528bcdd881f76153365acf5467fb87ee3d3a5d58d01f52349da9448"
+  },
+  {
+    "file": "src/shared/components/magicui/animated-theme-toggler.tsx",
+    "rule": "react-hooks/set-state-in-effect",
+    "source": "3fc4b0e251100c70a5ba4636803ec7741a202e9954fe2df23cd465ebc47b839c"
+  },
+  {
+    "file": "src/shared/components/magicui/meteors.tsx",
+    "rule": "react-hooks/set-state-in-effect",
+    "source": "3f3d30475947e1c76e4a4169fa24eae0ee78ea70ece47ba163685a021c1f34c1"
+  },
+  {
+    "file": "src/shared/components/magicui/particles.tsx",
+    "rule": "react-hooks/immutability",
+    "source": "43a731a6f3c3508ff1b3fc16f79e7751c352a916cc5f4731882663749ad0a0fb"
+  },
+  {
+    "file": "src/shared/components/magicui/particles.tsx",
+    "rule": "react-hooks/immutability",
+    "source": "48d43e1c74a26e76f78587c9d7fd2727b813d24182947fbf381ffd8ff76c56b3"
+  },
+  {
+    "file": "src/shared/components/magicui/particles.tsx",
+    "rule": "react-hooks/immutability",
+    "source": "575ecf9ffaba51cee951613414bffa937ee5e5ecb9b124b8cba3239f6b8b5766"
+  },
+  {
+    "file": "src/shared/components/ui/animated-grid-pattern.tsx",
+    "rule": "react-hooks/set-state-in-effect",
+    "source": "ecdb2a8826babe816836db796ed7dfe2d2852ceb109feeb3d666d9c35678728c"
+  },
+  {
+    "file": "src/shared/components/ui/animated-group.tsx",
+    "rule": "react-hooks/static-components",
+    "source": "40cc6428a528bcdd881f76153365acf5467fb87ee3d3a5d58d01f52349da9448"
+  },
+  {
+    "file": "src/shared/components/ui/carousel.tsx",
+    "rule": "react-hooks/set-state-in-effect",
+    "source": "713ecdf3bf33a72b60b1e893dd42ffac8c4f46cf98b9e6afed8cd762d86a0a2f"
+  },
+  {
+    "file": "src/shared/components/ui/sidebar.tsx",
+    "rule": "react-hooks/purity",
+    "source": "78cebcdaa01b795838d4d37cb547ec2d23367cadb2cb6a7ba59b034f80f1c1b6"
+  },
+  {
+    "file": "src/shared/hooks/use-media-query.ts",
+    "rule": "react-hooks/set-state-in-effect",
+    "source": "2c0a6fff19cd058c5d848f6858076608cbe5bba90f210c11183a59864318dee5"
+  },
+  {
+    "file": "src/shared/hooks/use-media.ts",
+    "rule": "react-hooks/set-state-in-effect",
+    "source": "8b60289baab1522deadcb47d7ab59ffbd87b1e226f29f7e9594bc0a251ecb87b"
+  },
+  {
+    "file": "src/shared/hooks/use-mobile.ts",
+    "rule": "react-hooks/set-state-in-effect",
+    "source": "d9566df1f07495444d27f58007ff62485bd12c1f2f002ced04ce3e756477d1dc"
+  },
+  {
+    "file": "src/themes/default/blocks/header.tsx",
+    "rule": "react-hooks/set-state-in-effect",
+    "source": "3fc4b0e251100c70a5ba4636803ec7741a202e9954fe2df23cd465ebc47b839c"
+  },
+  {
+    "file": "src/themes/default/blocks/pricing.tsx",
+    "rule": "react-hooks/set-state-in-effect",
+    "source": "7338f40299fbe8869446347841a218d7370b7930fb3202a699465d8c13657cfb"
+  },
+  {
+    "file": "src/themes/default/blocks/pricing.tsx",
+    "rule": "react-hooks/set-state-in-effect",
+    "source": "d498ac9fefde3be5fa1c2e1f3a67711651ca7349813d59d12ef4b7a8eeba5a49"
+  }
+]

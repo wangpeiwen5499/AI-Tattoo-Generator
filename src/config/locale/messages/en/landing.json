@@ -63,29 +63,61 @@
         {
           "title": "Product",
           "children": [
-            { "title": "Features", "url": "/#features", "target": "_self" },
-            { "title": "Pricing", "url": "/pricing", "target": "_self" },
-            { "title": "Generate", "url": "/generate", "target": "_self" }
+            {
+              "title": "Features",
+              "url": "/#features",
+              "target": "_self"
+            },
+            {
+              "title": "Pricing",
+              "url": "/pricing",
+              "target": "_self"
+            },
+            {
+              "title": "Generate",
+              "url": "/generate",
+              "target": "_self"
+            }
           ]
         },
         {
           "title": "Resources",
           "children": [
-            { "title": "Chat", "url": "/chat", "target": "_self" }
+            {
+              "title": "Acceptable Use",
+              "url": "/acceptable-use",
+              "target": "_self"
+            }
           ]
         }
       ]
     },
     "social": {
       "items": [
-        { "title": "Github", "icon": "Github", "url": "https://github.com/wangpeiwen5499/AI-Tattoo-Generator", "target": "_blank" },
-        { "title": "Email", "icon": "Mail", "url": "mailto:support@tattoovis.ink", "target": "_self" }
+        {
+          "title": "Github",
+          "icon": "Github",
+          "url": "https://github.com/wangpeiwen5499/AI-Tattoo-Generator",
+          "target": "_blank"
+        },
+        {
+          "title": "Email",
+          "icon": "Mail",
+          "url": "mailto:support@tattoovis.ink",
+          "target": "_self"
+        }
       ]
     },
     "agreement": {
       "items": [
-        { "title": "Privacy Policy", "url": "/privacy-policy" },
-        { "title": "Terms of Service", "url": "/terms-of-service" }
+        {
+          "title": "Privacy Policy",
+          "url": "/privacy-policy"
+        },
+        {
+          "title": "Terms of Service",
+          "url": "/terms-of-service"
+        }
       ]
     },
     "show_theme": true,
