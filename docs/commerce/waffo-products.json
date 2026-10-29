@@ -1,0 +1,63 @@
+[
+  {
+    "name": "Starter",
+    "productId": "PROD_5GdIMzJzJlUpdrBCyuaX2x",
+    "price": "$4.99",
+    "currency": "USD",
+    "credits": 5,
+    "bodyPreviews": 20,
+    "description": "Explore your first tattoo idea with 5 complete AI preview sets.",
+    "features": [
+      "5 credits — 5 complete preview sets",
+      "20 body previews across 4 placements",
+      "Left arm, right arm, shoulder and calf",
+      "Realistic AI tattoo placement on your photo",
+      "Credits never expire",
+      "One-time purchase — no subscription"
+    ],
+    "image": "/imgs/products/waffo/starter-1200x630.png",
+    "width": 1200,
+    "height": 630
+  },
+  {
+    "name": "Most Popular",
+    "productId": "PROD_10hOkpFlMDiWFiqLxcWXHi",
+    "price": "$14.99",
+    "currency": "USD",
+    "credits": 20,
+    "bodyPreviews": 80,
+    "description": "Compare more ideas with 20 complete AI preview sets.",
+    "features": [
+      "20 credits — 20 complete preview sets",
+      "80 body previews across 4 placements",
+      "Left arm, right arm, shoulder and calf",
+      "Realistic AI tattoo placement on your photo",
+      "Credits never expire",
+      "One-time purchase — no subscription"
+    ],
+    "image": "/imgs/products/waffo/popular-1200x630.png",
+    "width": 1200,
+    "height": 630
+  },
+  {
+    "name": "Pro",
+    "productId": "PROD_1COeqPCRSNk89LbIyHYnC",
+    "price": "$29.99",
+    "currency": "USD",
+    "credits": 50,
+    "bodyPreviews": 200,
+    "description": "Explore your next collection with 50 preview sets at our lowest cost per credit.",
+    "features": [
+      "50 credits — 50 complete preview sets",
+      "200 body previews across 4 placements",
+      "Left arm, right arm, shoulder and calf",
+      "Realistic AI tattoo placement on your photo",
+      "Credits never expire",
+      "One-time purchase — no subscription",
+      "Lowest cost per credit"
+    ],
+    "image": "/imgs/products/waffo/pro-1200x630.png",
+    "width": 1200,
+    "height": 630
+  }
+]

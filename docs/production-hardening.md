@@ -17,6 +17,8 @@
 
 ## 1. 配置与数据库升级（先于代码切换）
 
+GitHub 自动部署现在会先运行 `npm run deploy:prepare`：仅在 Vercel production 环境检查认证、存储、AI 和邮件设置，并执行以下幂等增量升级；缺项或升级失败会停止新部署，保留当前线上版本。preview 和本地构建不会连接生产数据库。以下命令仍可用于预演与手动升级。任务调度继续按第 2 节单独配置。
+
 1. 备份数据库，在测试库先执行升级。升级工具默认只输出 SQL，不连接数据库。
 2. `npm run db:upgrade:tattoo-jobs`
 3. 确认 DATABASE_URL 指向目标环境，执行 `npm run db:upgrade:tattoo-jobs -- --apply`。

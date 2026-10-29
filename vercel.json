@@ -1,11 +1,16 @@
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "npm run deploy:prepare && npm run build",
   "installCommand": "npm install --legacy-peer-deps",
   "framework": "nextjs",
   "redirects": [
     {
       "source": "/(.*)",
-      "has": [{ "type": "host", "value": "www.tattoovis.ink" }],
+      "has": [
+        {
+          "type": "host",
+          "value": "www.tattoovis.ink"
+        }
+      ],
       "destination": "https://tattoovis.ink/$1",
       "permanent": true
     }

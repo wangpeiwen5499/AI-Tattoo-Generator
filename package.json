@@ -39,7 +39,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "db:upgrade:tattoo-jobs": "tsx scripts/upgrade-tattoo-jobs.ts",
-    "lint:strict": "eslint ."
+    "lint:strict": "eslint .",
+    "deploy:prepare": "tsx scripts/prepare-deploy.ts"
   },
   "dependencies": {
     "@ai-sdk/react": "^2.0.89",
