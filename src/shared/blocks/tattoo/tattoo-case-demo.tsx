@@ -14,7 +14,7 @@ import {
   CASE_PROMPT,
   type CasePlacement,
 } from './case-study-data';
-import { Lightbox } from './lightbox';
+import { Lightbox, type LightboxImage } from './lightbox';
 import { TrialCta } from './trial-cta';
 
 export function TattooCaseDemo() {
@@ -23,9 +23,11 @@ export function TattooCaseDemo() {
   const [stage, setStage] = useState<'photo' | 'prompt' | 'design'>('photo');
   const [placement, setPlacement] = useState<CasePlacement>('left-arm');
   const [showOriginal, setShowOriginal] = useState(true);
-  const [enlarged, setEnlarged] = useState(false);
+  const [enlargedImage, setEnlargedImage] = useState<LightboxImage | null>(
+    null
+  );
   const previewRef = useRef<HTMLDivElement>(null);
-  const enlargeButtonRef = useRef<HTMLButtonElement>(null);
+  const previewOpenerRef = useRef<HTMLButtonElement | null>(null);
   const generated = stage === 'design';
   const active = showOriginal ? 'before' : placement;
   const currentPart = CASE_PLACEMENTS.find((part) => part.id === placement)!;
@@ -33,9 +35,12 @@ export function TattooCaseDemo() {
   const photoAlt = showOriginal
     ? t('originalAlt')
     : `${t('previewAlt')}: ${t(currentPart.label)}`;
-  const photos = generated
-    ? ['before', ...CASE_PLACEMENTS.map((part) => part.id)]
-    : ['before'];
+  const photos = ['before', ...CASE_PLACEMENTS.map((part) => part.id)];
+
+  function openImage(image: LightboxImage, opener: HTMLButtonElement) {
+    previewOpenerRef.current = opener;
+    setEnlargedImage(image);
+  }
 
   function revealDesign() {
     setStage('design');
@@ -57,24 +62,24 @@ export function TattooCaseDemo() {
     setStage('photo');
     setPlacement('left-arm');
     setShowOriginal(true);
-    setEnlarged(false);
+    setEnlargedImage(null);
   }
 
   return (
     <section
       id="tattoo-case"
       aria-labelledby={`${id}-title`}
-      className="bg-card text-card-foreground mx-auto max-w-6xl scroll-mt-24 overflow-hidden rounded-2xl border shadow-lg shadow-black/5"
+      className="text-foreground mx-auto max-w-6xl scroll-mt-24"
     >
-      <header className="flex flex-wrap items-center justify-between gap-4 border-b px-5 py-5 sm:px-8">
+      <header className="mb-8 flex flex-wrap items-center justify-between gap-4 py-5 sm:mb-10">
         <div>
-          <p className="text-muted-foreground mb-1 flex items-center gap-2 text-xs">
-            <MousePointer2 className="size-3.5" aria-hidden="true" />
+          <p className="text-muted-foreground mb-3 flex items-center gap-2 text-sm">
+            <MousePointer2 className="size-4" aria-hidden="true" />
             {t('eyebrow')}
           </p>
           <h2
             id={`${id}-title`}
-            className="text-lg font-semibold tracking-tight sm:text-xl"
+            className="text-2xl font-normal tracking-tight sm:text-3xl"
           >
             {t('title')}
           </h2>
@@ -82,45 +87,66 @@ export function TattooCaseDemo() {
         <button
           type="button"
           onClick={restart}
-          className="text-muted-foreground hover:text-foreground flex items-center gap-2 rounded-md px-2 py-2 text-xs transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber-500"
+          className="text-muted-foreground hover:text-foreground focus-visible:outline-primary flex items-center gap-2 rounded-md px-2 py-2 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-4"
         >
-          <RotateCcw className="size-3.5" aria-hidden="true" />
+          <RotateCcw className="size-4" aria-hidden="true" />
           {t('restart')}
         </button>
       </header>
 
-      <div className="grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-        <div className="flex flex-col gap-6 p-5 sm:p-8 lg:border-r">
+      <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:gap-16">
+        <div className="flex min-w-0 flex-col gap-10">
           <div>
             <StepHeading
               number="1"
               title={t('uploadTitle')}
               complete={stage !== 'photo'}
             />
-            <div className="mt-3 flex items-center gap-4 pl-10">
-              <Image
-                src={`${CASE_ASSET_ROOT}/before.webp`}
-                alt=""
-                width={66}
-                height={88}
-                className="rounded-md border object-contain"
-                unoptimized
-              />
+            <div className="mt-5 flex items-center gap-5 sm:pl-10">
+              <button
+                type="button"
+                aria-label={t('enlargeOriginal')}
+                onClick={(event) =>
+                  openImage(
+                    {
+                      url: `${CASE_ASSET_ROOT}/before.webp`,
+                      alt: t('originalAlt'),
+                    },
+                    event.currentTarget
+                  )
+                }
+                className="group focus-visible:outline-primary relative shrink-0 overflow-hidden rounded-xl focus-visible:outline-2 focus-visible:outline-offset-4"
+              >
+                <Image
+                  src={`${CASE_ASSET_ROOT}/before.webp`}
+                  alt=""
+                  width={96}
+                  height={128}
+                  className="w-24 object-contain sm:w-28"
+                  unoptimized
+                />
+                <span className="absolute right-2 bottom-2 rounded-full bg-black/60 p-1.5 text-white">
+                  <Expand className="size-3.5" aria-hidden="true" />
+                </span>
+              </button>
               <div className="min-w-0">
-                <p className="text-sm font-medium">{t('samplePhoto')}</p>
-                <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
+                <p className="text-base font-medium">{t('samplePhoto')}</p>
+                <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
                   {t('sampleDescription')}
                 </p>
                 <Button
                   type="button"
                   size="sm"
                   variant="outline"
-                  onClick={() => setStage('prompt')}
-                  disabled={stage !== 'photo'}
-                  className="mt-3 h-8 text-xs"
+                  onClick={() => {
+                    setStage('prompt');
+                    setShowOriginal(true);
+                  }}
+                  aria-pressed={stage !== 'photo'}
+                  className="mt-4"
                 >
                   {stage !== 'photo' && (
-                    <Check className="size-3.5" aria-hidden="true" />
+                    <Check className="size-4" aria-hidden="true" />
                   )}
                   {stage === 'photo' ? t('usePhoto') : t('photoSelected')}
                 </Button>
@@ -134,7 +160,7 @@ export function TattooCaseDemo() {
               title={t('promptTitle')}
               complete={generated}
             />
-            <div className="mt-3 pl-10">
+            <div className="mt-5 sm:pl-10">
               <label htmlFor={`${id}-prompt`} className="sr-only">
                 {t('promptLabel')}
               </label>
@@ -142,14 +168,13 @@ export function TattooCaseDemo() {
                 id={`${id}-prompt`}
                 readOnly
                 value={CASE_PROMPT}
-                rows={5}
-                className="bg-background/60 text-muted-foreground w-full resize-none rounded-lg border px-3 py-3 text-xs leading-relaxed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500"
+                rows={12}
+                className="bg-muted/40 text-foreground focus-visible:outline-primary [field-sizing:content] min-h-64 w-full resize-none rounded-xl border-0 px-4 py-4 text-base leading-7 focus-visible:outline-2 focus-visible:outline-offset-2"
               />
               <Button
                 type="button"
                 onClick={revealDesign}
-                disabled={stage !== 'prompt'}
-                className="mt-3 w-full text-sm"
+                className="mt-4 h-11 w-full text-sm"
               >
                 {generated ? (
                   <>
@@ -169,49 +194,56 @@ export function TattooCaseDemo() {
               title={t('designTitle')}
               complete={generated}
             />
-            <div className="mt-3 pl-10">
-              {generated ? (
-                <div className="flex items-center gap-4">
-                  <Image
-                    src={`${CASE_ASSET_ROOT}/design.webp`}
-                    alt={t('designAlt')}
-                    width={120}
-                    height={120}
-                    className="shrink-0 rounded-lg border bg-white object-contain p-1.5"
-                    unoptimized
-                  />
-                  <div>
-                    <p className="text-sm font-medium">{t('designName')}</p>
-                    <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
-                      {t('designDescription')}
-                    </p>
-                    <p className="mt-3 text-xs font-medium text-amber-700 dark:text-amber-300">
-                      {t('chooseHint')}
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-muted-foreground rounded-lg border border-dashed px-4 py-5 text-xs leading-relaxed">
-                  {t('designPlaceholder')}
+            <div className="mt-5 flex flex-wrap items-center gap-5 sm:pl-10">
+              <button
+                type="button"
+                aria-label={t('enlargeDesign')}
+                onClick={(event) =>
+                  openImage(
+                    {
+                      url: `${CASE_ASSET_ROOT}/design.webp`,
+                      alt: t('designAlt'),
+                    },
+                    event.currentTarget
+                  )
+                }
+                className="group focus-visible:outline-primary relative shrink-0 overflow-hidden rounded-xl bg-white focus-visible:outline-2 focus-visible:outline-offset-4"
+              >
+                <Image
+                  src={`${CASE_ASSET_ROOT}/design.webp`}
+                  alt={t('designAlt')}
+                  width={176}
+                  height={176}
+                  className="w-40 object-contain p-2 sm:w-44"
+                  unoptimized
+                />
+                <span className="absolute right-2 bottom-2 rounded-full bg-black/60 p-1.5 text-white">
+                  <Expand className="size-3.5" aria-hidden="true" />
+                </span>
+              </button>
+              <div className="min-w-32 flex-1">
+                <p className="text-base font-medium">{t('designName')}</p>
+                <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
+                  {t('designDescription')}
                 </p>
-              )}
+                <p className="text-primary mt-4 text-sm font-medium">
+                  {t('chooseHint')}
+                </p>
+              </div>
             </div>
           </div>
 
-          <div className="mt-auto border-t pt-5">
-            <p className="text-muted-foreground text-xs leading-relaxed">
+          <div className="sm:pl-10">
+            <p className="text-muted-foreground text-sm leading-relaxed">
               {t('exampleNote')}
             </p>
-            <TrialCta className="text-primary mt-3 inline-flex rounded-sm text-sm font-medium underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber-500" />
+            <TrialCta className="text-primary focus-visible:outline-primary mt-4 inline-flex rounded-sm text-base font-medium underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4" />
           </div>
         </div>
 
-        <div
-          ref={previewRef}
-          className="bg-muted/35 min-w-0 scroll-mt-24 border-t lg:border-t-0"
-        >
-          <div className="px-4 pt-5 sm:px-6">
-            <p id={`${id}-placements`} className="mb-3 text-sm font-medium">
+        <div ref={previewRef} className="min-w-0 scroll-mt-24">
+          <div className="bg-background/95 sticky top-20 z-10 pt-2 pb-3 backdrop-blur-sm lg:top-24">
+            <p id={`${id}-placements`} className="mb-4 text-lg font-medium">
               {t('placementTitle')}
             </p>
             <div
@@ -223,20 +255,18 @@ export function TattooCaseDemo() {
                 <button
                   key={part.id}
                   type="button"
-                  disabled={!generated}
-                  aria-pressed={
-                    generated && !showOriginal && placement === part.id
-                  }
+                  aria-pressed={!showOriginal && placement === part.id}
                   aria-controls={`${id}-preview`}
                   onClick={() => {
+                    setStage('design');
                     setPlacement(part.id);
                     setShowOriginal(false);
                   }}
                   className={cn(
-                    'rounded-lg border px-2 py-2.5 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500 disabled:cursor-not-allowed disabled:opacity-45 motion-reduce:transition-none sm:whitespace-nowrap',
-                    generated && !showOriginal && placement === part.id
-                      ? 'border-amber-500/70 bg-amber-500/10 text-amber-800 dark:text-amber-200'
-                      : 'bg-background/60 hover:enabled:border-amber-500/60'
+                    'focus-visible:outline-primary scroll-mt-40 rounded-full px-3 py-3 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 motion-reduce:transition-none sm:whitespace-nowrap',
+                    !showOriginal && placement === part.id
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted hover:bg-primary/10'
                   )}
                 >
                   {t(part.label)}
@@ -244,12 +274,8 @@ export function TattooCaseDemo() {
               ))}
             </div>
           </div>
-
-          <figure
-            id={`${id}-preview`}
-            className="mx-auto my-4 w-[calc(100%_-_2rem)] max-w-[420px] overflow-hidden rounded-xl border sm:my-6 sm:w-[calc(100%_-_3rem)]"
-          >
-            <figcaption className="bg-background flex min-h-12 items-center justify-between gap-3 border-b px-4 py-2">
+          <figure id={`${id}-preview`} className="mx-auto mt-5 max-w-[480px]">
+            <figcaption className="mb-3 flex min-h-10 items-center justify-between gap-3">
               <span
                 aria-live="polite"
                 aria-atomic="true"
@@ -259,15 +285,17 @@ export function TattooCaseDemo() {
               </span>
               <button
                 type="button"
-                disabled={!generated}
-                aria-pressed={generated && showOriginal}
-                onClick={() => setShowOriginal((value) => !value)}
-                className="text-muted-foreground hover:text-foreground rounded-sm text-xs underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber-500 disabled:invisible"
+
+                onClick={() => {
+                  setStage('design');
+                  setShowOriginal((value) => !value);
+                }}
+                className="text-muted-foreground hover:text-foreground focus-visible:outline-primary rounded-sm text-sm underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4"
               >
                 {showOriginal ? t('showTattoo') : t('showOriginal')}
               </button>
             </figcaption>
-            <div className="relative mx-auto aspect-[3/4] w-full bg-[#a4a29f]">
+            <div className="relative mx-auto aspect-[3/4] w-full overflow-hidden rounded-2xl bg-[#a4a29f]">
               {photos.map((photo) => (
                 <Image
                   key={photo}
@@ -278,7 +306,7 @@ export function TattooCaseDemo() {
                     photo === active ? 'tattoo-case-photo' : undefined
                   }
                   fill
-                  sizes="(max-width: 1023px) 90vw, 540px"
+                  sizes="(max-width:1023px) 95vw,480px"
                   priority={photo === 'before'}
                   loading={photo === 'before' ? undefined : 'eager'}
                   unoptimized
@@ -291,26 +319,32 @@ export function TattooCaseDemo() {
                 />
               ))}
               <button
-                ref={enlargeButtonRef}
                 type="button"
-                onClick={() => setEnlarged(true)}
+                onClick={(event) =>
+                  openImage(
+                    { url: `${CASE_ASSET_ROOT}/${active}.webp`, alt: photoAlt },
+                    event.currentTarget
+                  )
+                }
                 aria-label={t('enlarge')}
-                className="absolute right-3 bottom-3 rounded-full bg-black/60 p-2.5 text-white transition-colors hover:bg-black/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                className="focus-visible:outline-primary absolute inset-0 rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-4"
               >
-                <Expand className="size-4" aria-hidden="true" />
+                <span className="absolute right-3 bottom-3 rounded-full bg-black/60 p-3 text-white">
+                  <Expand className="size-4" aria-hidden="true" />
+                </span>
               </button>
             </div>
           </figure>
-          <p className="text-muted-foreground px-5 pb-5 text-center text-[11px] leading-relaxed">
-            {generated ? t('anatomyNote') : t('startHint')}
+          <p className="text-muted-foreground mt-4 text-center text-xs leading-relaxed">
+            {t('anatomyNote')}
           </p>
         </div>
       </div>
 
       <Lightbox
-        images={[{ url: `${CASE_ASSET_ROOT}/${active}.webp`, alt: photoAlt }]}
-        index={enlarged ? 0 : null}
-        onClose={() => setEnlarged(false)}
+        images={enlargedImage ? [enlargedImage] : []}
+        index={enlargedImage ? 0 : null}
+        onClose={() => setEnlargedImage(null)}
         onIndexChange={() => {}}
         labels={{
           close: t('closePreview'),
@@ -318,7 +352,7 @@ export function TattooCaseDemo() {
         }}
         onCloseAutoFocus={(event) => {
           event.preventDefault();
-          enlargeButtonRef.current?.focus();
+          previewOpenerRef.current?.focus();
         }}
       />
     </section>
@@ -335,14 +369,14 @@ function StepHeading({
   complete: boolean;
 }) {
   return (
-    <h3 className="flex items-center gap-3 text-sm font-semibold">
+    <h3 className="flex items-center gap-3 text-lg font-medium">
       <span
         aria-hidden="true"
         className={cn(
-          'flex size-7 shrink-0 items-center justify-center rounded-full border text-xs',
+          'flex size-7 shrink-0 items-center justify-center rounded-full text-xs',
           complete
-            ? 'border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300'
-            : 'text-muted-foreground'
+            ? 'bg-primary/10 text-primary'
+            : 'bg-muted text-muted-foreground'
         )}
       >
         {complete ? <Check className="size-3.5" /> : number}

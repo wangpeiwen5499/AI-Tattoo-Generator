@@ -17,7 +17,9 @@ export function BrandLogo({ brand }: { brand: BrandType }) {
           width={brand.logo.width || 80}
           height={brand.logo.height || 80}
           className="h-8 w-auto rounded-lg"
-          unoptimized={brand.logo.src.startsWith('http')}
+          unoptimized={
+            brand.logo.src.startsWith('http') || brand.logo.src.endsWith('.ico')
+          }
         />
       )}
       {brand.title && (

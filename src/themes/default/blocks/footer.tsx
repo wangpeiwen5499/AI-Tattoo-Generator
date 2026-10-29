@@ -1,4 +1,5 @@
 import { Link } from '@/core/i18n/navigation';
+import { envConfigs } from '@/config';
 import {
   BrandLogo,
   Copyright,
@@ -21,7 +22,17 @@ export function Footer({ footer }: { footer: FooterType }) {
           <div className="min-w-0 space-y-4 break-words md:col-span-2 md:space-y-6">
             {footer.brand ? (
               <div className="[&_img]:h-16 [&_img]:w-16 [&_img]:rounded-2xl [&_img]:bg-white [&_img]:object-contain [&_img]:p-2">
-                <BrandLogo brand={footer.brand} />
+                <BrandLogo
+                  brand={{
+                    ...footer.brand,
+                    logo: {
+                      ...footer.brand.logo,
+                      src: envConfigs.app_favicon,
+                      width: 64,
+                      height: 64,
+                    },
+                  }}
+                />
               </div>
             ) : null}
 

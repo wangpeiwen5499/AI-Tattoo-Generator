@@ -58,8 +58,8 @@
       "description": "在纹身之前先看效果。上传照片、描述想法，AI 即可生成逼真的纹身预览。",
       "url": "/",
       "logo": {
-        "src": "/imgs/cases/geometric-wolf/design.webp",
-        "alt": "几何狼头纹身",
+        "src": "/favicon.ico",
+        "alt": "网站图标",
         "width": 64,
         "height": 64
       }

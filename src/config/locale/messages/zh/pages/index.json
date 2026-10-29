@@ -52,7 +52,7 @@
           "designAlt": "生成的几何狼头纹身设计",
           "designName": "几何狼头",
           "designDescription": "黑灰色墨水，清晰线条与点刺阴影。",
-          "chooseHint": "现在，选择你想纹的部位。",
+          "chooseHint": "点击任一部位，查看真实穿戴效果。",
           "designPlaceholder": "狼头图案将在这里展示。先选择原照，再查看设计。",
           "exampleNote": "纹身效果来自网站的真实生成结果。这是可互动的已生成案例，不消耗积分。",
           "createOwn": "用自己的照片试试看",
@@ -70,7 +70,9 @@
           "anatomyNote": "左、右以照片中人物本人的方向为准。",
           "startHint": "先选择示例原照，再体验四个部位的纹身效果。",
           "closePreview": "关闭预览",
-          "previewInstructions": "按 Escape 键关闭预览。"
+          "previewInstructions": "按 Escape 键关闭预览。",
+          "enlargeOriginal": "放大原始照片",
+          "enlargeDesign": "放大纹身设计"
         }
       },
       "usage": {

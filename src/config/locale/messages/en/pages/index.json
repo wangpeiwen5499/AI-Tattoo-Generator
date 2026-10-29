@@ -52,7 +52,7 @@
           "designAlt": "Generated geometric wolf tattoo design",
           "designName": "Geometric wolf",
           "designDescription": "Black and grey ink. Clean lines and dotwork.",
-          "chooseHint": "Now choose a body part.",
+          "chooseHint": "Choose any placement to see the real tattoo result.",
           "designPlaceholder": "Your wolf design will appear here. Select the photo, then reveal the design.",
           "exampleNote": "These tattoo results were generated with this website. Explore this saved example without using credits.",
           "createOwn": "Try it with your own photo",
@@ -70,7 +70,9 @@
           "anatomyNote": "Left and right refer to the person in the photo.",
           "startHint": "Start with the sample photo to explore all four placements.",
           "closePreview": "Close",
-          "previewInstructions": "Press Escape to close the preview."
+          "previewInstructions": "Press Escape to close the preview.",
+          "enlargeOriginal": "Enlarge original photo",
+          "enlargeDesign": "Enlarge tattoo design"
         }
       },
       "usage": {

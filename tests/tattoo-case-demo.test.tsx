@@ -60,7 +60,7 @@ describe('homepage interactive tattoo case', () => {
       screen.getByText('Press Escape to close the preview.')
     ).not.toBeNull();
   });
-  it('starts with an untattooed photo and gates the saved results behind the example steps', () => {
+  it('shows the original, design and directly usable placements on first visit', () => {
     render(<TattooCaseDemo />);
     expect(
       screen.getByTestId('tattoo-case-photo').getAttribute('src')
@@ -68,17 +68,49 @@ describe('homepage interactive tattoo case', () => {
     expect(
       (screen.getByRole('button', { name: 'Left arm' }) as HTMLButtonElement)
         .disabled
-    ).toBe(true);
+    ).toBe(false);
     expect(
       (
         screen.getByRole('button', {
           name: 'Reveal tattoo design',
         }) as HTMLButtonElement
       ).disabled
-    ).toBe(true);
+    ).toBe(false);
     expect(
-      screen.queryByAltText('Generated geometric wolf tattoo design')
-    ).toBeNull();
+      screen
+        .getByAltText('Generated geometric wolf tattoo design')
+        .getAttribute('src')
+    ).toContain('/design.webp');
+    fireEvent.click(screen.getByRole('button', { name: 'Calf' }));
+    expect(
+      screen.getByTestId('tattoo-case-photo').getAttribute('src')
+    ).toContain('/calf.webp');
+  });
+
+  it('enlarges the original and wolf design independently and restores focus to each opener', async () => {
+    render(<TattooCaseDemo />);
+    for (const [label, alt, file] of [
+      [
+        'Enlarge original photo',
+        'Full-body photo of a man without tattoos',
+        'before',
+      ],
+      [
+        'Enlarge tattoo design',
+        'Generated geometric wolf tattoo design',
+        'design',
+      ],
+    ]) {
+      const trigger = screen.getByRole('button', { name: label });
+      fireEvent.click(trigger);
+      const dialog = await screen.findByRole('dialog');
+      expect(dialog.querySelector('img')?.getAttribute('src')).toContain(
+        '/' + file + '.webp'
+      );
+      expect(dialog.querySelector('img')?.getAttribute('alt')).toBe(alt);
+      fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+      await waitFor(() => expect(document.activeElement).toBe(trigger));
+    }
   });
 
   it('reveals the actual wolf design and switches every anatomical placement without an API call', () => {
@@ -129,9 +161,9 @@ describe('homepage interactive tattoo case', () => {
     expect(
       (screen.getByRole('button', { name: 'Left arm' }) as HTMLButtonElement)
         .disabled
-    ).toBe(true);
+    ).toBe(false);
     expect(
-      screen.queryByAltText('Generated geometric wolf tattoo design')
-    ).toBeNull();
+      screen.getByAltText('Generated geometric wolf tattoo design')
+    ).not.toBeNull();
   });
 });

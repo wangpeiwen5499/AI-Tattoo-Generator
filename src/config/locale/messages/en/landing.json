@@ -58,8 +58,8 @@
       "description": "See your tattoo before you ink. Upload a photo, describe your idea, and AI generates realistic tattoo previews.",
       "url": "/",
       "logo": {
-        "src": "/imgs/cases/geometric-wolf/design.webp",
-        "alt": "Geometric wolf tattoo",
+        "src": "/favicon.ico",
+        "alt": "Website icon",
         "width": 64,
         "height": 64
       }
