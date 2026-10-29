@@ -388,14 +388,17 @@ export function Pricing({
             const currencies = getCurrenciesFromItem(item);
 
             return (
-              <Card key={idx} className="relative">
+              <Card
+                key={idx}
+                className="relative md:row-span-2 md:grid md:grid-rows-subgrid"
+              >
                 {item.label && (
                   <span className="absolute inset-x-0 -top-3 mx-auto flex h-6 w-fit items-center rounded-full bg-linear-to-br/increasing from-purple-400 to-amber-300 px-3 py-1 text-xs font-medium text-amber-950 ring-1 ring-white/20 ring-offset-1 ring-offset-gray-950/5 ring-inset">
                     {item.label}
                   </span>
                 )}
 
-                <CardHeader>
+                <CardHeader className="flex flex-col">
                   <CardTitle className="font-medium">
                     <h3 className="text-sm font-medium">{item.title}</h3>
                   </CardTitle>
@@ -457,44 +460,46 @@ export function Pricing({
                     </span>
                   )}
 
-                  {isCurrentPlan ? (
-                    <Button
-                      variant="outline"
-                      className="mt-4 h-9 w-full px-4 py-2"
-                      disabled
-                    >
-                      <span className="hidden text-sm md:block">
-                        {t('current_plan')}
-                      </span>
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={() => handlePayment(item)}
-                      disabled={isLoading}
-                      className={cn(
-                        'focus-visible:ring-ring inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-1 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50',
-                        'mt-4 h-9 w-full px-4 py-2',
-                        'bg-primary text-primary-foreground hover:bg-primary/90 border-[0.5px] border-white/25 shadow-md shadow-black/20'
-                      )}
-                    >
-                      {isLoading && item.product_id === productId ? (
-                        <>
-                          <Loader2 className="size-4 animate-spin" />
-                          <span className="block">{t('processing')}</span>
-                        </>
-                      ) : (
-                        <>
-                          {item.button?.icon && (
-                            <SmartIcon
-                              name={item.button?.icon as string}
-                              className="size-4"
-                            />
-                          )}
-                          <span className="block">{item.button?.title}</span>
-                        </>
-                      )}
-                    </Button>
-                  )}
+                  <div className="mt-auto w-full pt-4">
+                    {isCurrentPlan ? (
+                      <Button
+                        variant="outline"
+                        className="h-9 w-full px-4 py-2"
+                        disabled
+                      >
+                        <span className="hidden text-sm md:block">
+                          {t('current_plan')}
+                        </span>
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={() => handlePayment(item)}
+                        disabled={isLoading}
+                        className={cn(
+                          'focus-visible:ring-ring inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-1 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50',
+                          'h-9 w-full px-4 py-2',
+                          'bg-primary text-primary-foreground hover:bg-primary/90 border-[0.5px] border-white/25 shadow-md shadow-black/20'
+                        )}
+                      >
+                        {isLoading && item.product_id === productId ? (
+                          <>
+                            <Loader2 className="size-4 animate-spin" />
+                            <span className="block">{t('processing')}</span>
+                          </>
+                        ) : (
+                          <>
+                            {item.button?.icon && (
+                              <SmartIcon
+                                name={item.button?.icon as string}
+                                className="size-4"
+                              />
+                            )}
+                            <span className="block">{item.button?.title}</span>
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
                 </CardHeader>
 
                 <CardContent className="space-y-4">
