@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto';
-import {
-  BODY_PART_LABELS,
-  BODY_PARTS,
-  CREDITS_PER_GENERATION,
-  type BodyPart,
-} from '@/lib/constants';
+import { BODY_PART_LABELS, BODY_PARTS, type BodyPart } from '@/lib/constants';
 import { fetchUrlAndUpload, getPublicUrl } from '@/lib/r2';
+import {
+  parseTattooResolution,
+  tattooResolutionPolicy,
+  type TattooResolution,
+} from '@/lib/tattoo-resolution';
 import type { Actor } from '@/server/auth/actor';
 import { isOwnedUploadKey } from '@/server/storage/upload-policy';
 import { and, eq, inArray, lte } from 'drizzle-orm';
@@ -50,6 +50,7 @@ export async function startTattooGeneration(input: {
   prompt: string;
   requestId: string;
   ip: string;
+  resolution?: TattooResolution;
 }): Promise<string> {
   const { actor, bodyPhotoKey, prompt, requestId } = input;
   if (actor.type !== 'user')
@@ -57,6 +58,13 @@ export async function startTattooGeneration(input: {
       'Sign in to generate your own tattoo.',
       401
     );
+  let resolution: TattooResolution;
+  try {
+    resolution = parseTattooResolution(input.resolution);
+  } catch {
+    throw new GenerationRequestError('Unsupported image resolution');
+  }
+  const policy = tattooResolutionPolicy(resolution);
   if (!isOwnedUploadKey(bodyPhotoKey, actor.id))
     throw new GenerationRequestError('Invalid photo ownership');
   if (
@@ -89,7 +97,8 @@ export async function startTattooGeneration(input: {
       if (
         existing.userId !== actor.id ||
         project.bodyPhotoKey !== bodyPhotoKey ||
-        project.prompt !== prompt.trim()
+        project.prompt !== prompt.trim() ||
+        project.resolution !== resolution
       )
         throw new GenerationRequestError('Request ID already used', 409);
       return existing.projectId;
@@ -114,9 +123,10 @@ export async function startTattooGeneration(input: {
       creditId = (
         await consumeCredits({
           userId: actor.id,
-          credits: CREDITS_PER_GENERATION,
+          credits: policy.credits,
           scene: 'tattoo',
-          description: 'Tattoo preview',
+          description: `Tattoo preview (${resolution})`,
+          metadata: JSON.stringify({ resolution, creditsCost: policy.credits }),
           tx,
         })
       ).id;
@@ -132,6 +142,8 @@ export async function startTattooGeneration(input: {
       bodyPhotoKey,
       bodyPhotoUrl: getPublicUrl(bodyPhotoKey),
       prompt: prompt.trim(),
+      resolution,
+      creditsCost: policy.credits,
       status: 'processing',
     });
     await tx.insert(tattooJob).values({
@@ -142,7 +154,7 @@ export async function startTattooGeneration(input: {
       tasks: JSON.stringify(
         BODY_PARTS.map((bodyPart) => ({ bodyPart, status: 'pending' }))
       ),
-      expiresAt: new Date(Date.now() + JOB_TIMEOUT_MS),
+      expiresAt: new Date(Date.now() + policy.timeoutMs),
       leaseUntil: new Date(0),
       nextRunAt: new Date(),
     });
@@ -228,6 +240,7 @@ export async function advanceTattooJob(projectId: string): Promise<void> {
             input: {
               prompt: `${project.prompt}, tattoo design, white background, clean bold lines, high contrast, stencil style, professional tattoo flash`,
               aspect_ratio: '1:1',
+              resolution: parseTattooResolution(project.resolution),
             },
           });
           await save({ designTaskId: taskId });
@@ -250,7 +263,9 @@ export async function advanceTattooJob(projectId: string): Promise<void> {
           const source = resultUrl(info.resultJson);
           const stored = await fetchUrlAndUpload(
             source,
-            `outputs/${job.userId}/${projectId}/design.png`
+            `outputs/${job.userId}/${projectId}/design.png`,
+            tattooResolutionPolicy(project.resolution).maxImageBytes,
+            true
           );
           await db().transaction(async (tx) => {
             await assertLease(tx, projectId, token);
@@ -288,6 +303,7 @@ export async function advanceTattooJob(projectId: string): Promise<void> {
               prompt: `Apply this tattoo design naturally on the ${BODY_PART_LABELS[pending.bodyPart].toLowerCase()} of the person in the photo. Make it look real with natural skin texture, lighting, perspective, and body contour. Do not change anything else in the photo.`,
               input_urls: [project.bodyPhotoUrl, project.tattooDesignUrl!],
               aspect_ratio: '3:4',
+              resolution: parseTattooResolution(project.resolution),
             },
           });
           pending.status = 'running';
@@ -313,7 +329,8 @@ export async function advanceTattooJob(projectId: string): Promise<void> {
       } else if (info.state === 'success') {
         const stored = await fetchUrlAndUpload(
           resultUrl(info.resultJson),
-          `outputs/${job.userId}/${projectId}/${running.bodyPart}.png`
+          `outputs/${job.userId}/${projectId}/${running.bodyPart}.png`,
+          tattooResolutionPolicy(project.resolution).maxImageBytes
         );
         running.status = 'completed';
         running.r2Key = stored.key;

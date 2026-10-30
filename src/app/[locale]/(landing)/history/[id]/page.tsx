@@ -1,11 +1,11 @@
-import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { BODY_PART_LABELS, BODY_PARTS, type BodyPart } from '@/lib/constants';
+import { getProjectWithGenerations } from '@/server/db/tattoo-queries';
 import { setRequestLocale } from 'next-intl/server';
 
 import { getMetadata } from '@/shared/lib/seo';
 import { getUserInfo } from '@/shared/models/user';
-import { getProjectWithGenerations } from '@/server/db/tattoo-queries';
-import { BODY_PARTS, BODY_PART_LABELS, type BodyPart } from '@/lib/constants';
 
 export const revalidate = 0;
 export const dynamic = 'force-dynamic';
@@ -46,7 +46,7 @@ export default async function HistoryDetailPage({
           {/* Back link */}
           <Link
             href="/history"
-            className="mb-8 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground mb-8 inline-flex items-center gap-1 text-sm"
           >
             ← Back to history
           </Link>
@@ -54,15 +54,19 @@ export default async function HistoryDetailPage({
           <h1 className="mb-2 text-2xl font-bold tracking-tight lg:text-3xl">
             Tattoo Preview
           </h1>
-          <p className="mb-8 text-muted-foreground">{project.prompt}</p>
+          <p className="text-muted-foreground mb-8">{project.prompt}</p>
+          <p className="text-muted-foreground mb-6 text-sm">
+            {project.resolution} · {project.creditsCost}{' '}
+            {project.creditsCost === 1 ? 'credit' : 'credits'}
+          </p>
 
           {/* Tattoo design */}
           {project.tattooDesignUrl && (
             <div className="mb-8">
-              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              <h2 className="text-muted-foreground mb-3 text-sm font-semibold tracking-wider uppercase">
                 Design
               </h2>
-              <div className="overflow-hidden rounded-xl border border-border/40 bg-muted/10">
+              <div className="border-border/40 bg-muted/10 overflow-hidden rounded-xl border">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={project.tattooDesignUrl}
@@ -74,18 +78,19 @@ export default async function HistoryDetailPage({
           )}
 
           {/* 4 body part results */}
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          <h2 className="text-muted-foreground mb-3 text-sm font-semibold tracking-wider uppercase">
             Body Previews
           </h2>
           <div className="grid gap-4 sm:grid-cols-2">
             {sortedGenerations.map((gen) => {
-              const label = BODY_PART_LABELS[gen.bodyPart as BodyPart] ?? gen.bodyPart;
+              const label =
+                BODY_PART_LABELS[gen.bodyPart as BodyPart] ?? gen.bodyPart;
               return (
                 <div
                   key={gen.bodyPart}
-                  className="overflow-hidden rounded-xl border border-border/40 bg-muted/10"
+                  className="border-border/40 bg-muted/10 overflow-hidden rounded-xl border"
                 >
-                  <div className="flex items-center gap-2 border-b border-border/20 px-4 py-2">
+                  <div className="border-border/20 flex items-center gap-2 border-b px-4 py-2">
                     <span
                       className={`h-2 w-2 rounded-full ${
                         gen.status === 'completed'
@@ -95,13 +100,13 @@ export default async function HistoryDetailPage({
                     />
                     <span className="text-sm font-medium">{label}</span>
                     {gen.status === 'failed' && (
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-muted-foreground text-xs">
                         Failed
                       </span>
                     )}
                   </div>
                   {gen.r2Url ? (
-                    <div className="aspect-[3/4] bg-muted/20">
+                    <div className="bg-muted/20 aspect-[3/4]">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={gen.r2Url}
@@ -111,7 +116,7 @@ export default async function HistoryDetailPage({
                       />
                     </div>
                   ) : (
-                    <div className="flex aspect-[3/4] items-center justify-center bg-muted/10 text-xs text-muted-foreground">
+                    <div className="bg-muted/10 text-muted-foreground flex aspect-[3/4] items-center justify-center text-xs">
                       No result
                     </div>
                   )}

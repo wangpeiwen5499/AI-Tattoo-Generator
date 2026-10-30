@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { useCredits } from '@/hooks/use-credits';
 import { useGeneration } from '@/hooks/use-generation';
-import { CREDITS_PER_GENERATION } from '@/lib/constants';
+import { tattooResolutionPolicy } from '@/lib/tattoo-resolution';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
@@ -17,16 +17,20 @@ import { Button } from '@/shared/components/ui/button';
 import { Textarea } from '@/shared/components/ui/textarea';
 
 import { CreditsPurchaseNotice } from './credits-purchase-notice';
+import { ResolutionPicker } from './resolution-picker';
 
 export function TattooGenerator() {
   const router = useRouter();
   const t = useTranslations('common.funnel');
   const credits = useCredits();
   const gen = useGeneration();
-  const outOfCredits =
+  const costCredits = tattooResolutionPolicy(gen.resolution).credits;
+  const insufficientCredits =
     credits.credits !== null &&
-    credits.credits < CREDITS_PER_GENERATION &&
+    credits.credits < costCredits &&
     !credits.loading;
+  const outOfCredits =
+    credits.credits !== null && credits.credits < 1 && !credits.loading;
 
   const lastErrorRef = useRef<string | null>(null);
   useEffect(() => {
@@ -72,9 +76,11 @@ export function TattooGenerator() {
       toast.error('Loading credits, please wait a moment');
       return;
     }
-    if (credits.credits < CREDITS_PER_GENERATION) {
-      toast.error(t('noCreditsTitle'), {
-        description: t('noCreditsDescription'),
+    if (credits.credits < costCredits) {
+      toast.error(t('resolutionInsufficientTitle'), {
+        description: t('resolutionInsufficientDescription', {
+          count: costCredits,
+        }),
         action: {
           label: t('buyCredits'),
           onClick: () => router.push('/pricing'),
@@ -101,6 +107,9 @@ export function TattooGenerator() {
                 loading={credits.loading}
               />
             </div>
+            <p className="text-muted-foreground mb-4 text-sm">
+              {gen.resolution} · {t('creditCost', { count: gen.creditsCost })}
+            </p>
             <GenerationProgress
               progress={gen.generateProgress}
               stageLabel={gen.stageLabel}
@@ -129,6 +138,8 @@ export function TattooGenerator() {
               tattooDesignUrl={gen.result.tattooDesignUrl}
               images={gen.result.images}
               refunded={gen.refunded}
+              resolution={gen.result.resolution}
+              creditsCost={gen.result.creditsCost}
               onRegenerate={
                 outOfCredits ? () => router.push('/pricing') : gen.resetPrompt
               }
@@ -162,7 +173,7 @@ export function TattooGenerator() {
           {gen.error && (
             <p role="alert" className="text-destructive mb-4 text-sm">
               {gen.error}
-              {gen.refunded ? ' Your credit has been returned.' : ''}
+              {gen.refunded ? ` ${t('generationChargeReversed')}` : ''}
             </p>
           )}
 
@@ -249,6 +260,22 @@ export function TattooGenerator() {
                 )}
               </div>
 
+              <ResolutionPicker
+                value={gen.resolution}
+                onChange={gen.setResolution}
+                disabled={gen.status === 'uploading'}
+              />
+              {insufficientCredits && !outOfCredits && (
+                <p
+                  role="status"
+                  className="mt-3 text-sm text-amber-700 dark:text-amber-300"
+                >
+                  {t('resolutionInsufficientDescription', {
+                    count: costCredits,
+                  })}
+                </p>
+              )}
+
               {/* ---- Bottom bar: cost + button ---- */}
               <div className="border-border/40 mt-5 flex flex-col gap-4 border-t pt-5 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-2.5">
@@ -257,7 +284,7 @@ export function TattooGenerator() {
                   </div>
                   <div className="text-sm">
                     <span className="font-semibold">
-                      {CREDITS_PER_GENERATION} credit
+                      {t('creditCost', { count: costCredits })}
                     </span>
                     <span className="text-muted-foreground"> · </span>
                     <span className="text-muted-foreground">
@@ -274,17 +301,17 @@ export function TattooGenerator() {
                 <Button
                   size="lg"
                   onClick={
-                    outOfCredits
+                    insufficientCredits
                       ? () => router.push('/pricing')
                       : handleGenerate
                   }
                   disabled={
-                    !outOfCredits &&
+                    !insufficientCredits &&
                     (!ready || !gen.prompt.trim() || gen.status === 'uploading')
                   }
                   className="group h-12 gap-2 px-7 text-base font-semibold shadow-md transition-all hover:shadow-lg"
                 >
-                  {outOfCredits ? (
+                  {insufficientCredits ? (
                     t('buyCredits')
                   ) : gen.status === 'uploading' ? (
                     'Uploading...'

@@ -14,6 +14,8 @@ type Props = {
   tattooDesignUrl: string | null;
   images: GenerateImage[];
   refunded?: boolean;
+  resolution?: string;
+  creditsCost?: number;
   onRegenerate: () => void;
   onReset: () => void;
   regenerateLabel?: string;
@@ -23,6 +25,8 @@ export function GenerationResults({
   tattooDesignUrl,
   images,
   refunded,
+  resolution = '1K',
+  creditsCost = 1,
   onRegenerate,
   onReset,
   regenerateLabel,
@@ -55,13 +59,16 @@ export function GenerationResults({
 
   return (
     <div className="flex flex-col gap-6">
+      <p className="text-muted-foreground text-sm">
+        {resolution} · {t('creditCost', { count: creditsCost })}
+      </p>
       {(refunded || successCount < images.length) && (
         <div className="border-destructive/30 bg-destructive/5 text-destructive flex items-start gap-2 rounded-lg border p-3 text-sm">
           <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
           <div>
             <p className="font-medium">Some previews could not be generated</p>
             <p className="text-xs">
-              {refunded ? 'Your credit has been returned. ' : ''}Available
+              {refunded ? `${t('generationChargeReversed')} ` : ''}Available
               previews are shown below.
             </p>
           </div>

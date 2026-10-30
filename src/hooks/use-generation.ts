@@ -1,6 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  DEFAULT_TATTOO_RESOLUTION,
+  parseTattooResolution,
+  tattooResolutionPolicy,
+  type TattooResolution,
+} from '@/lib/tattoo-resolution';
 
 /** POST /api/ai/generate-tattoo 响应 */
 interface TriggerResponse {
@@ -12,6 +18,8 @@ interface TriggerResponse {
 interface StatusResponse {
   projectId: string;
   createdAt: string;
+  resolution?: TattooResolution;
+  creditsCost?: number;
   status: string;
   tattooDesignUrl: string | null;
   images: Array<{ bodyPart: string; status: string; url: string | null }>;
@@ -24,6 +32,8 @@ interface StatusResponse {
 /** 前端使用的生成结果 */
 export interface GenerateResult {
   projectId: string;
+  resolution: TattooResolution;
+  creditsCost: number;
   tattooDesignUrl: string | null;
   images: Array<{ bodyPart: string; status: string; url: string | null }>;
 }
@@ -40,6 +50,8 @@ export type GenState = {
   photoKey: string | null;
   photoUrl: string | null;
   prompt: string;
+  resolution: TattooResolution;
+  creditsCost: number;
   result: GenerateResult | null;
   refunded: boolean;
   error: string | null;
@@ -54,13 +66,15 @@ const INITIAL_STATE: GenState = {
   photoKey: null,
   photoUrl: null,
   prompt: '',
+  resolution: DEFAULT_TATTOO_RESOLUTION,
+  creditsCost: 1,
   result: null,
   refunded: false,
   error: null,
 };
 
 const POLL_INTERVAL_MS = 3000;
-const POLL_TIMEOUT_MS = 21 * 60 * 1000;
+const POLL_TIMEOUT_MS = 46 * 60 * 1000;
 const ACTIVE_PROJECT_KEY = 'tattoo-active-project';
 
 export function useGeneration() {
@@ -97,6 +111,21 @@ export function useGeneration() {
   const setPrompt = useCallback((prompt: string) => {
     requestIdRef.current = null;
     setState((s) => ({ ...s, prompt }));
+  }, []);
+
+  const setResolution = useCallback((value: TattooResolution) => {
+    const resolution = parseTattooResolution(value);
+    if (stateRef.current.status === 'generating') return;
+    requestIdRef.current = null;
+    setState((s) =>
+      s.status === 'generating'
+        ? s
+        : {
+            ...s,
+            resolution,
+            creditsCost: tattooResolutionPolicy(resolution).credits,
+          }
+    );
   }, []);
 
   const uploadPhoto = useCallback(async (file: File) => {
@@ -230,6 +259,10 @@ export function useGeneration() {
 
           setState((s) => ({
             ...s,
+            resolution: parseTattooResolution(data.resolution),
+            creditsCost:
+              data.creditsCost ??
+              tattooResolutionPolicy(data.resolution).credits,
             generateProgress:
               data.stage === 'design'
                 ? 5
@@ -263,11 +296,18 @@ export function useGeneration() {
       setState((s) => ({
         ...s,
         status: data.status === 'failed' ? 'error' : 'completed',
+        resolution: parseTattooResolution(data.resolution),
+        creditsCost:
+          data.creditsCost ?? tattooResolutionPolicy(data.resolution).credits,
         generateProgress: 100,
         stageLabel: data.status === 'failed' ? 'Generation failed' : 'Done!',
         result: data.tattooDesignUrl
           ? {
               projectId,
+              resolution: parseTattooResolution(data.resolution),
+              creditsCost:
+                data.creditsCost ??
+                tattooResolutionPolicy(data.resolution).credits,
               tattooDesignUrl: data.tattooDesignUrl,
               images: data.images,
             }
@@ -320,6 +360,9 @@ export function useGeneration() {
           ...s,
           status: 'generating',
           stageLabel: 'Resuming your generation',
+          resolution: parseTattooResolution(data.resolution),
+          creditsCost:
+            data.creditsCost ?? tattooResolutionPolicy(data.resolution).credits,
         }));
         progressTimerRef.current = setInterval(
           () =>
@@ -408,6 +451,7 @@ export function useGeneration() {
           bodyPhotoUrl: current.photoUrl,
           prompt: current.prompt.trim(),
           requestId: requestIdRef.current,
+          resolution: current.resolution,
         }),
         signal: abortRef.current.signal,
       });
@@ -426,6 +470,7 @@ export function useGeneration() {
       }
 
       sessionStorage.setItem(ACTIVE_PROJECT_KEY, trigger.projectId);
+      window.dispatchEvent(new Event('credits:refresh'));
       const data = await pollStatus(trigger.projectId);
       applyResult(trigger.projectId, data);
     } catch (e) {
@@ -461,6 +506,8 @@ export function useGeneration() {
     clearTimers();
     setState((s) => ({
       ...INITIAL_STATE,
+      resolution: s.resolution,
+      creditsCost: tattooResolutionPolicy(s.resolution).credits,
       photoKey: s.photoKey,
       photoUrl: s.photoUrl,
       status: s.photoKey ? 'ready' : 'idle',
@@ -480,6 +527,7 @@ export function useGeneration() {
   return {
     ...state,
     setPrompt,
+    setResolution,
     uploadPhoto,
     generate,
     reset,

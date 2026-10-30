@@ -568,6 +568,8 @@ export const tattooProject = table(
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
     prompt: text('prompt').notNull(),
+    resolution: text('resolution').notNull().default('1K'),
+    creditsCost: integer('credits_cost').notNull().default(1),
     bodyPhotoKey: text('body_photo_key').notNull(),
     bodyPhotoUrl: text('body_photo_url').notNull(),
     tattooDesignKey: text('tattoo_design_key'),

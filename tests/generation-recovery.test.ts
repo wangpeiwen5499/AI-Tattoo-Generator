@@ -14,6 +14,8 @@ for (const savedState of ['completed', 'unavailable']) {
     sessionStorage.setItem('tattoo-active-project', 'old-project');
     const active = {
       projectId: 'active-project',
+      resolution: '4K',
+      creditsCost: 3,
       createdAt: new Date().toISOString(),
       status: 'processing',
       stage: 'design',
@@ -39,6 +41,8 @@ for (const savedState of ['completed', 'unavailable']) {
     );
     const { result } = renderHook(() => useGeneration());
     await waitFor(() => expect(result.current.status).toBe('generating'));
+    expect(result.current.resolution).toBe('4K');
+    expect(result.current.creditsCost).toBe(3);
     expect(sessionStorage.getItem('tattoo-active-project')).toBe(
       'active-project'
     );

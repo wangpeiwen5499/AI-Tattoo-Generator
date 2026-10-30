@@ -46,6 +46,11 @@ async function main() {
     db(),
     process.env.DB_SCHEMA || 'public'
   );
+  const { applyTattooResolutionsUpgrade } =
+    await import('./lib/tattoo-resolutions-upgrade');
+  console.log(
+    await applyTattooResolutionsUpgrade(db(), process.env.DB_SCHEMA || 'public')
+  );
   console.log('Production prerequisites verified. ' + result + '. ' + refunds);
   if (!process.env.CRON_SECRET)
     console.warn(

@@ -41,13 +41,14 @@ let now = Date.now();
 let service: typeof import('@/server/ai/tattoo-jobs');
 const userId = 'generation-test-user';
 const key = () => `uploads/${userId}/${randomUUID()}.png`;
-const start = (requestId = randomUUID()) =>
+const start = (requestId = randomUUID(), resolution?: '1K' | '2K' | '4K') =>
   service.startTattooGeneration({
     actor: { type: 'user', id: userId },
     bodyPhotoKey: key(),
     prompt: 'A dragon',
     requestId,
     ip: '127.0.0.1',
+    resolution,
   });
 async function tick(id: string) {
   now += 4000;
@@ -241,5 +242,76 @@ describe('durable tattoo jobs', () => {
       .where(eq(schema.user.id, userId));
     await expect(start()).rejects.toThrow(/Verify/);
     expect(await getRemainingCredits(userId)).toBe(3);
+  });
+  for (const [resolution, cost] of [
+    ['1K', 1],
+    ['2K', 2],
+    ['4K', 3],
+  ] as const) {
+    it(`persists ${resolution}/${cost} credits and uses it for all five provider images`, async () => {
+      const id = await start(randomUUID(), resolution);
+      expect(await getRemainingCredits(userId)).toBe(3 - cost);
+      await finish(id);
+      const project = (
+        await mocks.database
+          .select()
+          .from(schema.tattooProject)
+          .where(eq(schema.tattooProject.id, id))
+      )[0];
+      expect(project.resolution).toBe(resolution);
+      expect(project.creditsCost).toBe(cost);
+      expect(mocks.create).toHaveBeenCalledTimes(5);
+      for (const [body] of mocks.create.mock.calls)
+        expect(body.input.resolution).toBe(resolution);
+    });
+    it(`returns the original ${cost}-credit charge on ${resolution} failure only once`, async () => {
+      mocks.record.mockResolvedValue({
+        state: 'failed',
+        failMsg: 'Provider failed',
+      });
+      const id = await start(randomUUID(), resolution);
+      expect(await getRemainingCredits(userId)).toBe(3 - cost);
+      await finish(id);
+      expect(await getRemainingCredits(userId)).toBe(3);
+      await tick(id);
+      expect(await getRemainingCredits(userId)).toBe(3);
+    });
+  }
+  it('rejects resolution changes under the same request id without a second debit', async () => {
+    const params = {
+      actor: { type: 'user' as const, id: userId },
+      bodyPhotoKey: key(),
+      prompt: 'Wolf',
+      requestId: randomUUID(),
+      ip: '127.0.0.1',
+      resolution: '2K' as const,
+    };
+    const id = await service.startTattooGeneration(params);
+    expect(await service.startTattooGeneration(params)).toBe(id);
+    await expect(
+      service.startTattooGeneration({ ...params, resolution: '4K' })
+    ).rejects.toThrow(/Request ID/);
+    expect(await getRemainingCredits(userId)).toBe(1);
+  });
+  it('rejects unsupported resolutions and insufficient 4K balance before creating a project or provider call', async () => {
+    const params = {
+      actor: { type: 'user' as const, id: userId },
+      bodyPhotoKey: key(),
+      prompt: 'Wolf',
+      requestId: randomUUID(),
+      ip: '127.0.0.1',
+    };
+    await expect(
+      service.startTattooGeneration({ ...params, resolution: '8K' as any })
+    ).rejects.toThrow(/resolution/i);
+    await mocks.database.update(schema.credit).set({ remainingCredits: 2 });
+    await expect(
+      service.startTattooGeneration({ ...params, resolution: '4K' })
+    ).rejects.toThrow(/Insufficient/);
+    expect(await getRemainingCredits(userId)).toBe(2);
+    expect(mocks.create).not.toHaveBeenCalled();
+    expect(
+      await mocks.database.select().from(schema.tattooProject)
+    ).toHaveLength(0);
   });
 });

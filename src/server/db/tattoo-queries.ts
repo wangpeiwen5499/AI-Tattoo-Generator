@@ -74,6 +74,8 @@ export async function getProjectWithGenerations(projectId: string): Promise<{
   id: string;
   userId: string;
   prompt: string;
+  resolution: string;
+  creditsCost: number;
   status: string;
   tattooDesignKey: string | null;
   tattooDesignUrl: string | null;
@@ -102,6 +104,8 @@ export async function getProjectWithGenerations(projectId: string): Promise<{
     id: project[0].id,
     userId: project[0].userId,
     prompt: project[0].prompt,
+    resolution: project[0].resolution,
+    creditsCost: project[0].creditsCost,
     status: project[0].status,
     tattooDesignKey: project[0].tattooDesignKey,
     tattooDesignUrl: project[0].tattooDesignUrl,
@@ -123,6 +127,8 @@ export async function listUserTattooProjects(
   Array<{
     id: string;
     prompt: string;
+    resolution: string;
+    creditsCost: number;
     status: string;
     tattooDesignUrl: string | null;
     createdAt: Date;
@@ -163,6 +169,8 @@ export async function listUserTattooProjects(
       return {
         id: p.id,
         prompt: p.prompt,
+        resolution: p.resolution,
+        creditsCost: p.creditsCost,
         status: p.status,
         tattooDesignUrl: p.tattooDesignUrl,
         createdAt: p.createdAt,

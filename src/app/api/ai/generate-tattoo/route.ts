@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { after } from 'next/server';
 import { validateUploadedPhoto } from '@/lib/r2';
+import { TATTOO_RESOLUTIONS } from '@/lib/tattoo-resolution';
 import {
   advanceTattooJob,
   GenerationRequestError,
@@ -17,6 +18,7 @@ const requestSchema = z.object({
   bodyPhotoKey: z.string().max(250),
   prompt: z.string().trim().min(1).max(500),
   requestId: z.uuid().optional(),
+  resolution: z.enum(TATTOO_RESOLUTIONS).default('1K'),
 });
 
 export async function POST(req: Request): Promise<Response> {
@@ -31,7 +33,10 @@ export async function POST(req: Request): Promise<Response> {
   if (limited) return limited;
   const parsed = requestSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success)
-    return Response.json({ error: 'Invalid photo or prompt' }, { status: 400 });
+    return Response.json(
+      { error: 'Invalid photo, prompt or resolution' },
+      { status: 400 }
+    );
   try {
     await validateUploadedPhoto(parsed.data.bodyPhotoKey, actor.id);
   } catch {
@@ -45,6 +50,7 @@ export async function POST(req: Request): Promise<Response> {
       actor,
       bodyPhotoKey: parsed.data.bodyPhotoKey,
       prompt: parsed.data.prompt,
+      resolution: parsed.data.resolution,
       requestId: parsed.data.requestId || randomUUID(),
       ip:
         req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown',

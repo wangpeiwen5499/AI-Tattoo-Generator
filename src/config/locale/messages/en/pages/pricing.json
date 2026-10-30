@@ -1,7 +1,7 @@
 {
   "metadata": {
     "title": "Pricing",
-    "description": "Buy tattoo preview credits — each credit generates 4 realistic AI tattoo previews on your body"
+    "description": "Buy flexible tattoo preview credits. Generate complete sets at 1K, 2K or 4K; credits never expire."
   },
   "messages": {
     "current_plan": "Current Plan",
@@ -13,7 +13,7 @@
       "pricing": {
         "id": "pricing",
         "title": "Choose Your Credits",
-        "description": "Each credit gives you 4 AI-generated tattoo previews on different body parts. Credits never expire.",
+        "description": "Choose your resolution for each complete set: 1K costs 1 credit, 2K costs 2, and 4K costs 3. Credits never expire.",
         "groups": [
           {
             "name": "one-time",
@@ -30,13 +30,13 @@
             "currency": "USD",
             "amount": 4.99,
             "credits": 5,
-            "description": "Explore your first tattoo idea with 5 complete AI preview sets.",
+            "description": "5 flexible credits for tattoo designs and previews at your chosen resolution.",
             "features_title": "Includes",
             "features": [
-              "5 credits — 5 complete preview sets",
-              "20 body previews across 4 placements",
+              "5 credits — mix 1K, 2K and 4K sets",
+              "1K: 1 credit · 2K: 2 credits · 4K: 3 credits per set",
+              "One tattoo design + four body previews per set",
               "Left arm, right arm, shoulder and calf",
-              "Realistic AI tattoo placement on your photo",
               "Credits never expire",
               "One-time purchase — no subscription"
             ],
@@ -55,14 +55,14 @@
             "currency": "USD",
             "amount": 14.99,
             "credits": 20,
-            "description": "Compare more ideas with 20 complete AI preview sets.",
+            "description": "20 flexible credits for tattoo designs and previews at your chosen resolution.",
             "label": "Most Popular",
             "features_title": "Includes",
             "features": [
-              "20 credits — 20 complete preview sets",
-              "80 body previews across 4 placements",
+              "20 credits — mix 1K, 2K and 4K sets",
+              "1K: 1 credit · 2K: 2 credits · 4K: 3 credits per set",
+              "One tattoo design + four body previews per set",
               "Left arm, right arm, shoulder and calf",
-              "Realistic AI tattoo placement on your photo",
               "Credits never expire",
               "One-time purchase — no subscription"
             ],
@@ -81,13 +81,13 @@
             "currency": "USD",
             "amount": 29.99,
             "credits": 50,
-            "description": "Explore your next collection with 50 preview sets at our lowest cost per credit.",
+            "description": "50 flexible credits for tattoo designs and previews at your chosen resolution.",
             "features_title": "Includes",
             "features": [
-              "50 credits — 50 complete preview sets",
-              "200 body previews across 4 placements",
+              "50 credits — mix 1K, 2K and 4K sets",
+              "1K: 1 credit · 2K: 2 credits · 4K: 3 credits per set",
+              "One tattoo design + four body previews per set",
               "Left arm, right arm, shoulder and calf",
-              "Realistic AI tattoo placement on your photo",
               "Credits never expire",
               "One-time purchase — no subscription",
               "Lowest cost per credit"
@@ -110,7 +110,7 @@
           },
           {
             "question": "What is a credit?",
-            "answer": "One credit generates a full set of 4 tattoo previews — one for each body part (left arm, right arm, shoulder, calf)."
+            "answer": "Credits pay for complete preview sets: 1K costs 1 credit, 2K costs 2 credits, and 4K costs 3 credits. Each set includes one tattoo design and four body placements. You can mix resolutions using the same balance."
           },
           {
             "question": "Do credits expire?",

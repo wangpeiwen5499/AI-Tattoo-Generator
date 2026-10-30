@@ -112,7 +112,9 @@ export function makeOutputKey(
 /** 从外部 URL 下载并直接 PUT 到 R2 */
 export async function fetchUrlAndUpload(
   sourceUrl: string,
-  key: string
+  key: string,
+  maxBytes = 15 * 1024 * 1024,
+  designReference = false
 ): Promise<{ key: string; publicUrl: string; contentType: string }> {
   const source = new URL(sourceUrl);
   if (source.protocol !== 'https:' || source.username || source.password)
@@ -127,13 +129,25 @@ export async function fetchUrlAndUpload(
     );
   }
 
-  const contentType =
+  let contentType =
     response.headers.get('content-type')?.split(';')[0].trim() || 'image/png';
   if (!isAllowedImageType(contentType))
     throw new Error('Unsupported AI image type');
-  const buffer = await readBoundedBody(response, 15 * 1024 * 1024);
+  let buffer = await readBoundedBody(response, maxBytes);
   if (!hasImageSignature(buffer, contentType))
     throw new Error('Invalid AI image content');
+
+  if (designReference) {
+    const { prepareDesignReference } =
+      await import('@/server/storage/design-reference');
+    const prepared = await prepareDesignReference(
+      Buffer.from(buffer),
+      contentType
+    );
+    buffer = prepared.buffer;
+    contentType = prepared.contentType;
+    if (contentType === 'image/jpeg') key = key.replace(/\.png$/, '.jpg');
+  }
 
   const client = getS3Client();
   await client.send(

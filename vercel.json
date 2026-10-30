@@ -33,6 +33,9 @@
     },
     "src/app/api/storage/**/*.ts": {
       "maxDuration": 30
+    },
+    "src/app/api/proxy/**/*.ts": {
+      "maxDuration": 90
     }
   },
   "crons": []

@@ -139,6 +139,8 @@ export default async function HistoryPage({
                       })}
                     </div>
                     <p className="text-muted-foreground mt-3 text-xs">
+                      {project.resolution} · {project.creditsCost}{' '}
+                      {project.creditsCost === 1 ? 'credit' : 'credits'} ·{' '}
                       {new Date(project.createdAt).toLocaleDateString('en-US', {
                         year: 'numeric',
                         month: 'short',

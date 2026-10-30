@@ -67,6 +67,9 @@ export async function GET(req: Request): Promise<Response> {
   return NextResponse.json(
     {
       projectId: id,
+      resolution: project.resolution,
+      creditsCost: project.creditsCost,
+      expiresAt: job?.expiresAt.toISOString() ?? null,
       createdAt: project.createdAt.toISOString(),
       status: project.status,
       tattooDesignUrl,
