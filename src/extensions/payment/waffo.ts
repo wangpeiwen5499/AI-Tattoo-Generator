@@ -112,7 +112,12 @@ export class WaffoProvider implements PaymentProvider {
       }
 
       // verifyWebhook uses built-in public keys (no webhook secret needed)
-      const event = verifyWebhook<Record<string, any>>(rawBody, signature);
+      // Waffo retries retain the original signature timestamp; the final retry
+      // can arrive after 31 minutes. Keep RSA verification and a bounded window.
+      // Order-row locking and order-linked grants deduplicate successful retries.
+      const event = verifyWebhook<Record<string, any>>(rawBody, signature, {
+        toleranceMs: 45 * 60 * 1000,
+      });
 
       if (!event || !event.eventType) {
         throw new Error('Invalid webhook payload');
