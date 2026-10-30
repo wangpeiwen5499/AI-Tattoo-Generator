@@ -74,15 +74,12 @@ export class ResendProvider implements EmailProvider {
       }
 
       if (email.react) {
-        console.log('resend email react', email.react);
         resendEmail.react = email.react;
       }
 
       const result = await this.client.emails.send(
         resendEmail as CreateEmailOptions
       );
-
-      console.log('resend email result', result);
 
       if (result.error) {
         return {
