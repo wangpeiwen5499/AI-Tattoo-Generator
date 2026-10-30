@@ -125,7 +125,7 @@ export function SignUp({
 
   return (
     <Card className="mx-auto w-full md:max-w-md">
-      <CardHeader>
+      <CardHeader className="text-center">
         <CardTitle className="text-lg md:text-xl">
           <h1>{t('sign_up_title')}</h1>
         </CardTitle>
@@ -135,6 +135,24 @@ export function SignUp({
       </CardHeader>
       <CardContent>
         <div className="grid gap-4">
+          <SocialProviders
+            configs={configs}
+            callbackUrl={destination}
+            loading={loading}
+            setLoading={setLoading}
+          />
+          {(isGoogleAuthEnabled || isGithubAuthEnabled) &&
+            isEmailAuthEnabled && (
+              <div
+                role="separator"
+                aria-label={t('or')}
+                className="text-muted-foreground flex items-center gap-4 py-1 text-xs"
+              >
+                <span className="bg-border h-px flex-1" />
+                <span>{t('or')}</span>
+                <span className="bg-border h-px flex-1" />
+              </div>
+            )}
           {isEmailAuthEnabled && (
             <>
               <div className="grid gap-2">
@@ -211,20 +229,13 @@ export function SignUp({
               </Button>
             </>
           )}
-
-          <SocialProviders
-            configs={configs}
-            callbackUrl={destination}
-            loading={loading}
-            setLoading={setLoading}
-          />
         </div>
       </CardContent>
       {isEmailAuthEnabled && (
         <CardFooter>
           <div className="flex w-full justify-center border-t py-4">
             <p className="text-center text-xs text-neutral-500">
-              {t('already_have_account')}
+              {t('already_have_account')}{' '}
               <Link
                 href={`/sign-in?callbackUrl=${encodeURIComponent(destination)}`}
                 className="underline"

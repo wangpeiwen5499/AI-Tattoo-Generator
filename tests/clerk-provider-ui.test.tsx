@@ -19,6 +19,13 @@ const mocks = vi.hoisted(() => ({
   toast: vi.fn(),
   loading: vi.fn(),
   push: vi.fn(),
+  controller: vi.fn(),
+}));
+vi.mock('next/dynamic', () => ({
+  default: () => (props: unknown) => {
+    mocks.controller(props);
+    return null;
+  },
 }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: mocks.push }) }));
 vi.mock('@/core/auth/client', () => ({
@@ -83,4 +90,28 @@ it('hides Google when no provider has been configured', () => {
   expect(
     screen.queryByRole('button', { name: 'Sign in with Google' })
   ).toBeNull();
+});
+
+it('warms Clerk on the login screen and starts inline without opening the intermediate route', () => {
+  render(
+    <SocialProviders
+      configs={{
+        clerk_google_auth_enabled: 'true',
+        clerk_publishable_key: 'pk_test_example',
+      }}
+      callbackUrl="/history"
+      loading={false}
+      setLoading={mocks.loading}
+    />
+  );
+  expect(mocks.controller).toHaveBeenLastCalledWith(
+    expect.objectContaining({ requested: false, destination: '/history' })
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Sign in with Google' }));
+  expect(mocks.controller).toHaveBeenLastCalledWith(
+    expect.objectContaining({ requested: true, destination: '/history' })
+  );
+  expect(mocks.push).not.toHaveBeenCalled();
+  expect(mocks.close).not.toHaveBeenCalled();
+  expect(mocks.loading).toHaveBeenCalledWith(true);
 });

@@ -36,6 +36,7 @@
     "no_account": "还没有账户？",
     "already_have_account": "已经有一个账户？",
     "email_sign_in": "使用邮箱登录",
+    "continue_email": "使用电子邮件继续",
     "google_sign_in_title": "使用 Google 登录",
     "github_sign_in_title": "使用 GitHub 登录",
     "close_title": "关闭",

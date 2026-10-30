@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   close: vi.fn(),
   signin: vi.fn(),
   verified: false,
+  google: false,
 }));
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mocks.push, refresh: mocks.refresh }),
@@ -29,12 +30,15 @@ vi.mock('@/core/i18n/navigation', () => ({
 vi.mock('@/core/auth/client', () => ({ signIn: { email: mocks.signin } }));
 vi.mock('@/shared/contexts/app', () => ({
   useAppContext: () => ({
-    configs: { email_auth_enabled: 'true' },
+    configs: {
+      email_auth_enabled: 'true',
+      clerk_google_auth_enabled: mocks.google ? 'true' : 'false',
+    },
     setIsShowSignModal: mocks.close,
   }),
 }));
 vi.mock('@/shared/blocks/sign/social-providers', () => ({
-  SocialProviders: () => null,
+  SocialProviders: () => <button>Google option</button>,
 }));
 vi.mock('next-intl', () => ({
   useLocale: () => 'en',
@@ -44,9 +48,22 @@ vi.mock('next-intl', () => ({
 afterEach(cleanup);
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.google = false;
   mocks.signin.mockImplementation(async (_body, options) =>
     options.onSuccess({ data: { user: { emailVerified: mocks.verified } } })
   );
+});
+
+it('shows Google first and reveals email login only when requested', async () => {
+  mocks.google = true;
+  render(<SignInForm callbackUrl="/generate" />);
+  expect(screen.queryByLabelText('Email')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Continue with email' }));
+  const email = await screen.findByLabelText('Email');
+  const google = screen.getByRole('button', { name: 'Google option' });
+  expect(
+    google.compareDocumentPosition(email) & Node.DOCUMENT_POSITION_FOLLOWING
+  ).toBeTruthy();
 });
 async function login() {
   render(<SignInForm callbackUrl="/generate" />);

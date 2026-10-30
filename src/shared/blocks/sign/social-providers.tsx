@@ -1,8 +1,12 @@
 'use client';
 
+import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
-import { RiGithubFill, RiGoogleFill } from 'react-icons/ri';
+import { FcGoogle } from 'react-icons/fc';
+import { RiGithubFill } from 'react-icons/ri';
 import { toast } from 'sonner';
 
 import { signIn } from '@/core/auth/client';
@@ -11,6 +15,14 @@ import { useAppContext } from '@/shared/contexts/app';
 import { safeAuthCallback } from '@/shared/lib/auth-callback';
 import { cn } from '@/shared/lib/utils';
 import { Button as ButtonType } from '@/shared/types/blocks/common';
+
+const NativeGoogleController = dynamic(
+  () =>
+    import('./clerk-google-controller').then(
+      (module) => module.NativeGoogleController
+    ),
+  { ssr: false }
+);
 
 export function SocialProviders({
   configs,
@@ -25,6 +37,8 @@ export function SocialProviders({
 }) {
   const t = useTranslations('common.sign');
   const router = useRouter();
+  const [nativeRequested, setNativeRequested] = useState(false);
+  const publishableKey = configs.clerk_publishable_key;
 
   const { setIsShowSignModal } = useAppContext();
 
@@ -33,6 +47,11 @@ export function SocialProviders({
 
   const handleSignIn = async ({ provider }: { provider: string }) => {
     if (provider === 'clerk') {
+      if (publishableKey) {
+        setLoading(true);
+        setNativeRequested(true);
+        return;
+      }
       setIsShowSignModal(false);
       router.push(
         safeAuthCallback(
@@ -73,7 +92,7 @@ export function SocialProviders({
     providers.push({
       name: 'google',
       title: t('google_sign_in_title'),
-      icon: <RiGoogleFill />,
+      icon: <FcGoogle aria-hidden className="size-5" />,
       onClick: () =>
         handleSignIn({
           provider:
@@ -91,6 +110,8 @@ export function SocialProviders({
     });
   }
 
+  if (providers.length === 0) return null;
+
   return (
     <div
       className={cn(
@@ -98,16 +119,39 @@ export function SocialProviders({
         'flex-col justify-between'
       )}
     >
+      {configs.clerk_google_auth_enabled === 'true' && publishableKey && (
+        <NativeGoogleController
+          publishableKey={publishableKey}
+          requested={nativeRequested}
+          destination={destination}
+          locale={locale}
+          onFailure={() => {
+            setNativeRequested(false);
+            setLoading(false);
+            toast.error(t('social_failed'));
+          }}
+        />
+      )}
       {providers.map((provider) => (
         <Button
           key={provider.name}
           variant="outline"
-          className={cn('w-full gap-2')}
+          className={cn(
+            'h-11 w-full gap-2 rounded-[10px]',
+            provider.name === 'google' &&
+              'relative border-gray-200 bg-white text-base font-medium text-gray-900 shadow-sm hover:bg-gray-100 hover:text-gray-900 hover:shadow-md dark:border-gray-200 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100'
+          )}
           disabled={loading}
           onClick={provider.onClick}
         >
-          {provider.icon}
-          <h3>{provider.title}</h3>
+          <span className={provider.name === 'google' ? 'absolute left-4' : ''}>
+            {provider.name === 'google' && nativeRequested && loading ? (
+              <Loader2 aria-hidden className="size-5 animate-spin" />
+            ) : (
+              provider.icon
+            )}
+          </span>
+          <span>{provider.title}</span>
         </Button>
       ))}
     </div>

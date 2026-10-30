@@ -34,7 +34,7 @@ export function SignModal({ callbackUrl = '/' }: { callbackUrl?: string }) {
     return (
       <Dialog open={isShowSignModal} onOpenChange={setIsShowSignModal}>
         <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
+          <DialogHeader className="text-center sm:text-center">
             <DialogTitle>{t('sign_in_title')}</DialogTitle>
             <DialogDescription>{t('sign_in_description')}</DialogDescription>
           </DialogHeader>
@@ -47,7 +47,7 @@ export function SignModal({ callbackUrl = '/' }: { callbackUrl?: string }) {
   return (
     <Drawer open={isShowSignModal} onOpenChange={setIsShowSignModal}>
       <DrawerContent>
-        <DrawerHeader className="text-left">
+        <DrawerHeader className="text-center">
           <DrawerTitle>{t('sign_in_title')}</DrawerTitle>
           <DrawerDescription>{t('sign_in_description')}</DrawerDescription>
         </DrawerHeader>

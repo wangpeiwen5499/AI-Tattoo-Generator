@@ -43,6 +43,7 @@ export function ClerkGoogleFlow({
   return (
     <ClerkProvider
       publishableKey={publishableKey}
+      prefetchUI={step === 'continue' || step === 'callback'}
       signInUrl={continuation}
       signUpUrl={route('continue', true)}
       signInFallbackRedirectUrl={complete}
@@ -123,12 +124,14 @@ function LoginError({
   );
 }
 
-function StartGoogle({
+export function StartGoogle({
   callback,
   complete,
+  onFailure,
 }: {
   callback: string;
   complete: string;
+  onFailure?: () => void;
 }) {
   const { signIn } = useSignIn();
   const clerk = useClerk();
@@ -149,9 +152,13 @@ function StartGoogle({
         redirectCallbackUrl: callback,
         redirectUrl: complete,
       });
-      if (result.error) setError(true);
+      if (result.error) {
+        if (onFailure) onFailure();
+        else setError(true);
+      }
     } catch {
-      setError(true);
+      if (onFailure) onFailure();
+      else setError(true);
     }
   }
   useEffect(() => {
@@ -188,7 +195,7 @@ function CompleteGoogle({
     void (async () => {
       try {
         if (!isSignedIn) throw new Error('NO_SESSION');
-        const token = await getToken({ skipCache: true });
+        const token = await getToken();
         if (!token) throw new Error('NO_SESSION');
         const response = await fetch('/api/auth/clerk/sign-in', {
           method: 'POST',

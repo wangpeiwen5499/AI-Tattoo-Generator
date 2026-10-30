@@ -10,6 +10,7 @@ import {
 import { afterEach, expect, it, vi } from 'vitest';
 
 import messages from '@/config/locale/messages/en/common.json';
+import { NativeGoogleController } from '@/shared/blocks/sign/clerk-google-controller';
 import { ClerkGoogleFlow } from '@/shared/blocks/sign/clerk-google-flow';
 
 const mocks = vi.hoisted(() => ({
@@ -22,12 +23,18 @@ const mocks = vi.hoisted(() => ({
   authSession: { currentTask: null } as {
     currentTask: { key: string } | null;
   } | null,
+  loaded: true,
+  failed: false,
+  provider: vi.fn(),
 }));
 vi.mock('@clerk/react', () => ({
-  ClerkProvider: ({ children }: any) => children,
-  ClerkLoaded: ({ children }: any) => children,
+  ClerkProvider: ({ children, ...props }: any) => {
+    mocks.provider(props);
+    return children;
+  },
+  ClerkLoaded: ({ children }: any) => (mocks.loaded ? children : null),
   ClerkLoading: () => null,
-  ClerkFailed: () => null,
+  ClerkFailed: ({ children }: any) => (mocks.failed ? children : null),
   HandleSSOCallback: () => null,
   RedirectToTasks: (props: unknown) => {
     mocks.tasks(props);
@@ -54,6 +61,114 @@ afterEach(() => {
   vi.unstubAllGlobals();
   mocks.session = null;
   mocks.authSession = { currentTask: null };
+  mocks.loaded = true;
+  mocks.failed = false;
+});
+
+it('preloads core Clerk without starting login and preserves a click queued before SDK readiness', async () => {
+  mocks.loaded = false;
+  mocks.sso.mockResolvedValue({ error: null });
+  const onFailure = vi.fn();
+  const view = render(
+    <NativeGoogleController
+      publishableKey="pk_test_example"
+      requested={false}
+      destination="/history"
+      locale="en"
+      onFailure={onFailure}
+    />
+  );
+  expect(mocks.provider).toHaveBeenLastCalledWith(
+    expect.objectContaining({ prefetchUI: false })
+  );
+  expect(mocks.sso).not.toHaveBeenCalled();
+  view.rerender(
+    <NativeGoogleController
+      publishableKey="pk_test_example"
+      requested
+      destination="/history"
+      locale="en"
+      onFailure={onFailure}
+    />
+  );
+  expect(mocks.sso).not.toHaveBeenCalled();
+  mocks.loaded = true;
+  view.rerender(
+    <NativeGoogleController
+      publishableKey="pk_test_example"
+      requested
+      destination="/history"
+      locale="en"
+      onFailure={onFailure}
+    />
+  );
+  await waitFor(() => expect(mocks.sso).toHaveBeenCalledOnce());
+  expect(mocks.sso.mock.calls[0][0].redirectUrl).toBe(
+    '/auth/google/tasks?callbackUrl=%2Fhistory'
+  );
+});
+
+it('reports a failed SDK load only after a login attempt', async () => {
+  mocks.loaded = false;
+  mocks.failed = true;
+  const onFailure = vi.fn();
+  const view = render(
+    <NativeGoogleController
+      publishableKey="pk_test_example"
+      requested={false}
+      destination="/"
+      locale="en"
+      onFailure={onFailure}
+    />
+  );
+  expect(onFailure).not.toHaveBeenCalled();
+  view.rerender(
+    <NativeGoogleController
+      publishableKey="pk_test_example"
+      requested
+      destination="/"
+      locale="en"
+      onFailure={onFailure}
+    />
+  );
+  await waitFor(() => expect(onFailure).toHaveBeenCalledOnce());
+});
+
+it('lets the parent retry inline after a failed Google SSO attempt', async () => {
+  mocks.sso
+    .mockResolvedValueOnce({ error: {} })
+    .mockResolvedValue({ error: null });
+  const onFailure = vi.fn();
+  const view = render(
+    <NativeGoogleController
+      publishableKey="pk_test_example"
+      requested
+      destination="/"
+      locale="en"
+      onFailure={onFailure}
+    />
+  );
+  await waitFor(() => expect(onFailure).toHaveBeenCalledOnce());
+  view.rerender(
+    <NativeGoogleController
+      publishableKey="pk_test_example"
+      requested={false}
+      destination="/"
+      locale="en"
+      onFailure={onFailure}
+    />
+  );
+  view.rerender(
+    <NativeGoogleController
+      publishableKey="pk_test_example"
+      requested
+      destination="/"
+      locale="en"
+      onFailure={onFailure}
+    />
+  );
+  await waitFor(() => expect(mocks.sso).toHaveBeenCalledTimes(2));
+  expect(onFailure).toHaveBeenCalledOnce();
 });
 
 it('starts Google directly with account selection and local SDK callback paths', async () => {

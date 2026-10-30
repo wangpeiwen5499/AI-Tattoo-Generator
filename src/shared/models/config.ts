@@ -120,9 +120,11 @@ export async function getPublicConfigs(): Promise<Configs> {
     }
   }
 
+  const clerk = getClerkNativeConfig();
   const configs = {
     ...publicConfigs,
-    clerk_google_auth_enabled: getClerkNativeConfig() ? 'true' : 'false',
+    clerk_google_auth_enabled: clerk ? 'true' : 'false',
+    clerk_publishable_key: clerk?.publishableKey || '',
   };
 
   return configs;

@@ -36,6 +36,7 @@
     "no_account": "Don't have an account?",
     "already_have_account": "Already have an account?",
     "email_sign_in": "Sign in with Email",
+    "continue_email": "Continue with email",
     "google_sign_in_title": "Sign in with Google",
     "github_sign_in_title": "Sign in with GitHub",
     "close_title": "Close",

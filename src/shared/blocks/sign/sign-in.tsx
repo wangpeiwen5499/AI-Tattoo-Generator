@@ -40,12 +40,13 @@ export function SignIn({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  const [showEmail, setShowEmail] = useState(false);
 
   const isGoogleAuthEnabled =
     configs.google_auth_enabled === 'true' ||
     configs.clerk_google_auth_enabled === 'true';
   const isGithubAuthEnabled = configs.github_auth_enabled === 'true';
+  const hasSocial = isGoogleAuthEnabled || isGithubAuthEnabled;
   const isEmailAuthEnabled =
     configs.email_auth_enabled !== 'false' ||
     (!isGoogleAuthEnabled && !isGithubAuthEnabled); // no social providers enabled, auto enable email auth
@@ -124,7 +125,7 @@ export function SignIn({
 
   return (
     <Card className="mx-auto w-full md:max-w-md">
-      <CardHeader>
+      <CardHeader className="text-center">
         <CardTitle className="text-lg md:text-xl">
           <h1>{t('sign_in_title')}</h1>
         </CardTitle>
@@ -142,7 +143,35 @@ export function SignIn({
               {t('social_failed')}
             </p>
           )}
-          {isEmailAuthEnabled && (
+          <SocialProviders
+            configs={configs}
+            callbackUrl={destination}
+            loading={loading}
+            setLoading={setLoading}
+          />
+          {hasSocial && isEmailAuthEnabled && (
+            <>
+              <div
+                role="separator"
+                aria-label={t('or')}
+                className="text-muted-foreground flex items-center gap-4 py-1 text-xs"
+              >
+                <span className="bg-border h-px flex-1" />
+                <span>{t('or')}</span>
+                <span className="bg-border h-px flex-1" />
+              </div>
+              {!showEmail && (
+                <Button
+                  variant="ghost"
+                  className="text-muted-foreground h-10 w-full font-normal"
+                  onClick={() => setShowEmail(true)}
+                >
+                  {t('continue_email')}
+                </Button>
+              )}
+            </>
+          )}
+          {isEmailAuthEnabled && (!hasSocial || showEmail) && (
             <>
               <div className="grid gap-2">
                 <Label htmlFor="email">{t('email_title')}</Label>
@@ -179,16 +208,6 @@ export function SignIn({
                 />
               </div>
 
-              {/* <div className="flex items-center gap-2">
-            <Checkbox
-              id="remember"
-              onClick={() => {
-                setRememberMe(!rememberMe);
-              }}
-            />
-            <Label htmlFor="remember">Remember me</Label>
-          </div> */}
-
               <Button
                 type="submit"
                 className="w-full"
@@ -203,20 +222,13 @@ export function SignIn({
               </Button>
             </>
           )}
-
-          <SocialProviders
-            configs={configs}
-            callbackUrl={destination}
-            loading={loading}
-            setLoading={setLoading}
-          />
         </div>
       </CardContent>
       {isEmailAuthEnabled && (
         <CardFooter>
           <div className="flex w-full justify-center border-t py-4">
             <p className="text-center text-xs text-neutral-500">
-              {t('no_account')}
+              {t('no_account')}{' '}
               <Link
                 href={`/sign-up?callbackUrl=${encodeURIComponent(destination)}`}
                 className="underline"
