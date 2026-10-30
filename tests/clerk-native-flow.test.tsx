@@ -14,7 +14,7 @@ import { NativeGoogleController } from '@/shared/blocks/sign/clerk-google-contro
 import { ClerkGoogleFlow } from '@/shared/blocks/sign/clerk-google-flow';
 
 const mocks = vi.hoisted(() => ({
-  sso: vi.fn(),
+  redirect: vi.fn(),
   token: vi.fn(),
   fetch: vi.fn(),
   signOut: vi.fn(),
@@ -42,10 +42,17 @@ vi.mock('@clerk/react', () => ({
   },
   SignIn: () => null,
   SignUp: () => null,
-  useSignIn: () => ({ signIn: { sso: mocks.sso } }),
+  // A retained needs_identifier attempt makes the newer sso API resolve without navigating.
+  useSignIn: () => ({ signIn: { sso: async () => ({ error: null }) } }),
   useClerk: () => ({ session: mocks.session, signOut: mocks.signOut }),
   useAuth: () => ({ isLoaded: true, isSignedIn: true, getToken: mocks.token }),
   useSession: () => ({ isLoaded: true, session: mocks.authSession }),
+}));
+vi.mock('@clerk/react/legacy', () => ({
+  useSignIn: () => ({
+    isLoaded: true,
+    signIn: { authenticateWithRedirect: mocks.redirect },
+  }),
 }));
 vi.mock('next-intl', () => ({
   useLocale: () => 'en',
@@ -67,7 +74,7 @@ afterEach(() => {
 
 it('preloads core Clerk without starting login and preserves a click queued before SDK readiness', async () => {
   mocks.loaded = false;
-  mocks.sso.mockResolvedValue({ error: null });
+  mocks.redirect.mockResolvedValue({ error: null });
   const onFailure = vi.fn();
   const view = render(
     <NativeGoogleController
@@ -81,7 +88,7 @@ it('preloads core Clerk without starting login and preserves a click queued befo
   expect(mocks.provider).toHaveBeenLastCalledWith(
     expect.objectContaining({ prefetchUI: false })
   );
-  expect(mocks.sso).not.toHaveBeenCalled();
+  expect(mocks.redirect).not.toHaveBeenCalled();
   view.rerender(
     <NativeGoogleController
       publishableKey="pk_test_example"
@@ -91,7 +98,7 @@ it('preloads core Clerk without starting login and preserves a click queued befo
       onFailure={onFailure}
     />
   );
-  expect(mocks.sso).not.toHaveBeenCalled();
+  expect(mocks.redirect).not.toHaveBeenCalled();
   mocks.loaded = true;
   view.rerender(
     <NativeGoogleController
@@ -102,8 +109,8 @@ it('preloads core Clerk without starting login and preserves a click queued befo
       onFailure={onFailure}
     />
   );
-  await waitFor(() => expect(mocks.sso).toHaveBeenCalledOnce());
-  expect(mocks.sso.mock.calls[0][0].redirectUrl).toBe(
+  await waitFor(() => expect(mocks.redirect).toHaveBeenCalledOnce());
+  expect(mocks.redirect.mock.calls[0][0].redirectUrlComplete).toBe(
     '/auth/google/tasks?callbackUrl=%2Fhistory'
   );
 });
@@ -135,8 +142,8 @@ it('reports a failed SDK load only after a login attempt', async () => {
 });
 
 it('lets the parent retry inline after a failed Google SSO attempt', async () => {
-  mocks.sso
-    .mockResolvedValueOnce({ error: {} })
+  mocks.redirect
+    .mockRejectedValueOnce(new Error('OAuth failed'))
     .mockResolvedValue({ error: null });
   const onFailure = vi.fn();
   const view = render(
@@ -167,12 +174,12 @@ it('lets the parent retry inline after a failed Google SSO attempt', async () =>
       onFailure={onFailure}
     />
   );
-  await waitFor(() => expect(mocks.sso).toHaveBeenCalledTimes(2));
+  await waitFor(() => expect(mocks.redirect).toHaveBeenCalledTimes(2));
   expect(onFailure).toHaveBeenCalledOnce();
 });
 
-it('starts Google directly with account selection and local SDK callback paths', async () => {
-  mocks.sso.mockResolvedValue({ error: null });
+it('starts a fresh Google attempt even when Clerk retains an unfinished sign-in', async () => {
+  mocks.redirect.mockResolvedValue({ error: null });
   render(
     <ClerkGoogleFlow
       publishableKey="pk_test_example"
@@ -180,23 +187,23 @@ it('starts Google directly with account selection and local SDK callback paths',
       callbackUrl="https://attacker.example"
     />
   );
-  await waitFor(() => expect(mocks.sso).toHaveBeenCalledOnce());
-  expect(mocks.sso).toHaveBeenCalledWith({
+  await waitFor(() => expect(mocks.redirect).toHaveBeenCalledOnce());
+  expect(mocks.redirect).toHaveBeenCalledWith({
     strategy: 'oauth_google',
     oidcPrompt: 'select_account',
-    redirectCallbackUrl: '/auth/google/callback?callbackUrl=%2Fgenerate',
-    redirectUrl: '/auth/google/tasks?callbackUrl=%2Fgenerate',
+    redirectUrl: '/auth/google/callback?callbackUrl=%2Fgenerate',
+    redirectUrlComplete: '/auth/google/tasks?callbackUrl=%2Fgenerate',
   });
   expect(screen.queryByText('Connecting to Google…')).toBeNull();
   expect(screen.queryByRole('link', { name: 'Back to sign in' })).toBeNull();
 });
 
 it('supports another Google account selection after website logout leaves a Clerk session', async () => {
-  mocks.sso.mockResolvedValue({ error: null });
+  mocks.redirect.mockResolvedValue({ error: null });
   const first = render(
     <ClerkGoogleFlow publishableKey="pk_test_example" step="start" />
   );
-  await waitFor(() => expect(mocks.sso).toHaveBeenCalledOnce());
+  await waitFor(() => expect(mocks.redirect).toHaveBeenCalledOnce());
   first.unmount();
   mocks.session = { id: 'previous-clerk-session' };
   mocks.signOut.mockImplementation(async (callback: () => void) => {
@@ -204,14 +211,14 @@ it('supports another Google account selection after website logout leaves a Cler
     callback();
   });
   render(<ClerkGoogleFlow publishableKey="pk_test_example" step="start" />);
-  await waitFor(() => expect(mocks.sso).toHaveBeenCalledTimes(2));
+  await waitFor(() => expect(mocks.redirect).toHaveBeenCalledTimes(2));
   expect(mocks.signOut).toHaveBeenCalledWith(expect.any(Function), {
     sessionId: 'previous-clerk-session',
   });
   expect(mocks.signOut.mock.invocationCallOrder[0]).toBeLessThan(
-    mocks.sso.mock.invocationCallOrder[1]
+    mocks.redirect.mock.invocationCallOrder[1]
   );
-  expect(mocks.sso.mock.calls[1][0].oidcPrompt).toBe('select_account');
+  expect(mocks.redirect.mock.calls[1][0].oidcPrompt).toBe('select_account');
 });
 
 it('routes real pending session requirements through Clerk tasks before completing website login', () => {
@@ -267,14 +274,14 @@ it('continues automatically when a pending Clerk task is completed', async () =>
 });
 
 it('shows a retry when Clerk cannot start Google', async () => {
-  mocks.sso.mockResolvedValue({ error: { message: 'Cancelled' } });
+  mocks.redirect.mockRejectedValue(new Error('Cancelled'));
   render(<ClerkGoogleFlow publishableKey="pk_test_example" step="start" />);
   expect(await screen.findByRole('alert')).toHaveProperty(
     'textContent',
     messages.sign.social_failed
   );
   fireEvent.click(screen.getByRole('button', { name: 'Sign in with Google' }));
-  await waitFor(() => expect(mocks.sso).toHaveBeenCalledTimes(2));
+  await waitFor(() => expect(mocks.redirect).toHaveBeenCalledTimes(2));
 });
 
 it('submits only the Clerk session token and handles an existing account that needs verification', async () => {

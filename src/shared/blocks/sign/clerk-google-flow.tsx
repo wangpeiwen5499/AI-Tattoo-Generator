@@ -12,8 +12,8 @@ import {
   useAuth,
   useClerk,
   useSession,
-  useSignIn,
 } from '@clerk/react';
+import { useSignIn } from '@clerk/react/legacy';
 import { useLocale, useTranslations } from 'next-intl';
 
 import { Link } from '@/core/i18n/navigation';
@@ -146,16 +146,16 @@ export function StartGoogle({
       // on Clerk's default single-session instances. The callback avoids a reload.
       if (clerk.session)
         await clerk.signOut(() => {}, { sessionId: clerk.session.id });
-      const result = await signIn.sso({
+      // The resource API creates a fresh attempt by default. The signal sso()
+      // method can silently reuse an abandoned needs_identifier attempt and
+      // resolve without ever preparing Google or navigating.
+      if (!signIn) throw new Error('Clerk sign-in is not ready');
+      await signIn.authenticateWithRedirect({
         strategy: 'oauth_google',
         oidcPrompt: 'select_account',
-        redirectCallbackUrl: callback,
-        redirectUrl: complete,
+        redirectUrl: callback,
+        redirectUrlComplete: complete,
       });
-      if (result.error) {
-        if (onFailure) onFailure();
-        else setError(true);
-      }
     } catch {
       if (onFailure) onFailure();
       else setError(true);
