@@ -40,7 +40,13 @@ async function main() {
     await buildTattooJobsUpgrade(),
     process.env.DB_SCHEMA || 'public'
   );
-  console.log('Production prerequisites verified. ' + result);
+  const { applyPaymentRefundsUpgrade } =
+    await import('./lib/payment-refunds-upgrade');
+  const refunds = await applyPaymentRefundsUpgrade(
+    db(),
+    process.env.DB_SCHEMA || 'public'
+  );
+  console.log('Production prerequisites verified. ' + result + '. ' + refunds);
   if (!process.env.CRON_SECRET)
     console.warn(
       'CRON_SECRET is not configured. Background task advancement still requires scheduler setup; active browser polling continues to advance jobs.'

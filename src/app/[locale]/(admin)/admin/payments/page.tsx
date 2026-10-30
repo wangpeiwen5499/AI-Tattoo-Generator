@@ -4,6 +4,7 @@ import { PERMISSIONS, requirePermission } from '@/core/rbac';
 import { PaymentType } from '@/extensions/payment/types';
 import { Header, Main, MainHeader } from '@/shared/blocks/dashboard';
 import { TableCard } from '@/shared/blocks/table';
+import { parseRefundLedger } from '@/shared/lib/payment-refund';
 import { getOrders, getOrdersCount, OrderStatus } from '@/shared/models/order';
 import { Crumb, Filter, Search, Tab } from '@/shared/types/blocks/common';
 import { type Table } from '@/shared/types/blocks/table';
@@ -83,6 +84,10 @@ export default async function PaymentsPage({
           label: t('list.filters.status.options.paid'),
         },
         {
+          value: OrderStatus.REFUNDED,
+          label: t('list.filters.status.options.refunded'),
+        },
+        {
           value: OrderStatus.CREATED,
           label: t('list.filters.status.options.created'),
         },
@@ -98,6 +103,7 @@ export default async function PaymentsPage({
       value: provider,
       options: [
         { value: 'all', label: t('list.filters.provider.options.all') },
+        { value: 'waffo', label: 'Waffo' },
         {
           value: 'stripe',
           label: t('list.filters.provider.options.stripe'),
@@ -160,6 +166,26 @@ export default async function PaymentsPage({
         type: 'copy',
       },
       { name: 'status', title: t('fields.status'), type: 'label' },
+      {
+        name: 'refundInfo',
+        title: t('fields.refund_status'),
+        callback: (item) => {
+          if (!item.refundInfo) return '-';
+          try {
+            const ledger = parseRefundLedger(item.refundInfo);
+            const status = ledger.fullyRefunded
+              ? 'refunded'
+              : ledger.manualReview
+                ? 'manual_review'
+                : ledger.events.some((e) => e.status === 'failed')
+                  ? 'failed'
+                  : 'received';
+            return t(`refund_status.${status}`);
+          } catch {
+            return t('refund_status.manual_review');
+          }
+        },
+      },
       {
         name: 'paymentType',
         title: t('fields.type'),

@@ -1,10 +1,20 @@
-import { and, count, desc, eq } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, ne } from 'drizzle-orm';
 
 import { db } from '@/core/db';
-import { credit, order, subscription } from '@/config/db/schema';
+import {
+  credit,
+  order,
+  subscription,
+  user as userTable,
+} from '@/config/db/schema';
 import { PaymentType } from '@/extensions/payment/types';
+import {
+  parseRefundLedger,
+  resolveRefundLedger,
+} from '@/shared/lib/payment-refund';
 
 import { NewCredit } from './credit';
+import { revokeOrderGrant } from './payment-refund';
 import {
   NewSubscription,
   UpdateSubscription,
@@ -27,6 +37,7 @@ export enum OrderStatus {
   // final status
   COMPLETED = 'completed', // checkout completed, but failed
   PAID = 'paid', // order paid success
+  REFUNDED = 'refunded',
   FAILED = 'failed', // order paid, but failed
 }
 
@@ -54,7 +65,7 @@ export async function getOrders({
 }: {
   orderNo?: string;
   userId?: string;
-  status?: OrderStatus;
+  status?: OrderStatus | OrderStatus[];
   getUser?: boolean;
   paymentType?: PaymentType;
   paymentProvider?: string;
@@ -68,7 +79,11 @@ export async function getOrders({
       and(
         orderNo ? eq(order.orderNo, orderNo) : undefined,
         userId ? eq(order.userId, userId) : undefined,
-        status ? eq(order.status, status) : undefined,
+        status
+          ? Array.isArray(status)
+            ? inArray(order.status, status)
+            : eq(order.status, status)
+          : undefined,
         paymentType ? eq(order.paymentType, paymentType) : undefined,
         paymentProvider ? eq(order.paymentProvider, paymentProvider) : undefined
       )
@@ -98,7 +113,7 @@ export async function getOrdersCount({
   userId?: string;
   paymentType?: PaymentType;
   paymentProvider?: string;
-  status?: OrderStatus;
+  status?: OrderStatus | OrderStatus[];
 } = {}): Promise<number> {
   const [result] = await db()
     .select({ count: count() })
@@ -107,7 +122,11 @@ export async function getOrdersCount({
       and(
         orderNo ? eq(order.orderNo, orderNo) : undefined,
         userId ? eq(order.userId, userId) : undefined,
-        status ? eq(order.status, status) : undefined,
+        status
+          ? Array.isArray(status)
+            ? inArray(order.status, status)
+            : eq(order.status, status)
+          : undefined,
         paymentType ? eq(order.paymentType, paymentType) : undefined,
         paymentProvider ? eq(order.paymentProvider, paymentProvider) : undefined
       )
@@ -147,7 +166,14 @@ export async function updateOrderByOrderNo(
   const [result] = await db()
     .update(order)
     .set(updateOrder)
-    .where(eq(order.orderNo, orderNo))
+    .where(
+      and(
+        eq(order.orderNo, orderNo),
+        updateOrder.status && updateOrder.status !== OrderStatus.REFUNDED
+          ? ne(order.status, OrderStatus.REFUNDED)
+          : undefined
+      )
+    )
     .returning();
 
   return result;
@@ -191,6 +217,17 @@ export async function updateOrderInTransaction({
 
   // need transaction
   const result = await db().transaction(async (tx) => {
+    // All credit mutation paths lock user -> order -> grants, matching consumption.
+    const [owner] = await tx
+      .select({ userId: order.userId })
+      .from(order)
+      .where(eq(order.orderNo, orderNo));
+    if (!owner) throw new Error('Order not found');
+    await tx
+      .select({ id: userTable.id })
+      .from(userTable)
+      .where(eq(userTable.id, owner.userId))
+      .for('no key update');
     // Lock before checking/creating grants: repeated webhook requests serialize here.
     const [lockedOrder] = await tx
       .select()
@@ -203,6 +240,49 @@ export async function updateOrderInTransaction({
       (newCredit.userId !== lockedOrder.userId || newCredit.orderNo !== orderNo)
     ) {
       throw new Error('Credit does not match order');
+    }
+    let effectiveUpdate = updateOrder;
+    let suppressGrant = false;
+    if (lockedOrder.refundInfo) {
+      const paidAmount = updateOrder.paymentAmount ?? lockedOrder.paymentAmount;
+      const ledger = parseRefundLedger(lockedOrder.refundInfo);
+      for (const event of ledger.events) {
+        if (
+          event.currency !==
+          (
+            updateOrder.paymentCurrency ||
+            lockedOrder.paymentCurrency ||
+            lockedOrder.currency
+          ).toUpperCase()
+        )
+          throw new Error('Refund currency does not match payment');
+      }
+      const next = resolveRefundLedger(
+        ledger,
+        paidAmount,
+        updateOrder.transactionId || lockedOrder.transactionId
+      );
+      suppressGrant = next.fullyRefunded;
+      if (suppressGrant) {
+        const fullEvent = next.events.find(
+          (e) =>
+            e.status === 'succeeded' &&
+            e.amount === (paidAmount || e.originalChargedAmount)
+        )!;
+        const recovered = await revokeOrderGrant(
+          tx,
+          lockedOrder.userId,
+          orderNo,
+          fullEvent.id
+        );
+        fullEvent.recoveredCredits =
+          (fullEvent.recoveredCredits || 0) + recovered;
+      }
+      effectiveUpdate = {
+        ...updateOrder,
+        refundInfo: JSON.stringify(next),
+        ...(suppressGrant ? { status: OrderStatus.REFUNDED } : {}),
+      };
     }
     let result: any = {
       order: null,
@@ -242,12 +322,14 @@ export async function updateOrderInTransaction({
     }
 
     // deal with credit
-    if (newCredit) {
+    if (newCredit && !suppressGrant) {
       // not create credit with same order no
       let [existingCredit] = await tx
         .select()
         .from(credit)
-        .where(eq(credit.orderNo, orderNo));
+        .where(
+          and(eq(credit.orderNo, orderNo), eq(credit.transactionType, 'grant'))
+        );
 
       if (!existingCredit) {
         // create credit
@@ -265,7 +347,7 @@ export async function updateOrderInTransaction({
     // update order
     const [orderResult] = await tx
       .update(order)
-      .set(updateOrder)
+      .set(effectiveUpdate)
       .where(eq(order.orderNo, orderNo))
       .returning();
 

@@ -62,6 +62,7 @@ export enum PaymentStatus {
   SUCCESS = 'paid', // paid means payment success
   FAILED = 'failed', // failed means payment failed
   CANCELED = 'canceled', // canceled means payment canceled
+  REFUNDED = 'refunded',
 }
 
 /**
@@ -185,6 +186,7 @@ export interface PaymentSession {
   paymentStatus?: PaymentStatus; // payment status
   paymentInfo?: PaymentInfo; // payment info after payment success
   paymentResult?: any; // provider payment result
+  refundInfo?: PaymentRefund;
 
   // subscription info
   subscriptionId?: string;
@@ -194,11 +196,22 @@ export interface PaymentSession {
   metadata?: any;
 }
 
+export interface PaymentRefund {
+  id: string;
+  status: 'succeeded' | 'failed';
+  transactionId: string;
+  paymentId?: string;
+  amount: number | null;
+  originalChargedAmount: number | null;
+  currency: string;
+}
+
 export enum PaymentEventType {
   CHECKOUT_SUCCESS = 'checkout.success', // checkout success
   PAYMENT_SUCCESS = 'payment.success', // payment success
   PAYMENT_FAILED = 'payment.failed', // payment failed
-  PAYMENT_REFUNDED = 'payment.refunded', // payment refunded
+  PAYMENT_REFUNDED = 'payment.refunded',
+  REFUND_FAILED = 'payment.refund_failed', // payment refunded
   SUBSCRIBE_UPDATED = 'subscribe.updated', // subscription updated
   SUBSCRIBE_CANCELED = 'subscribe.canceled', // subscription canceled
 }

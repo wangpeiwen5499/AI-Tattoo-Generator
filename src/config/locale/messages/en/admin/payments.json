@@ -9,7 +9,8 @@
     "provider": "Provider",
     "created_at": "Created At",
     "status": "Status",
-    "action": "Action"
+    "action": "Action",
+    "refund_status": "Refund"
   },
   "list": {
     "title": "Payments",
@@ -29,7 +30,8 @@
           "all": "All",
           "paid": "Paid",
           "created": "Created",
-          "failed": "Failed"
+          "failed": "Failed",
+          "refunded": "Fully refunded"
         }
       },
       "provider": {
@@ -49,5 +51,11 @@
         "placeholder": "Order No"
       }
     }
+  },
+  "refund_status": {
+    "refunded": "Fully refunded",
+    "manual_review": "Manual review required",
+    "failed": "Refund failed",
+    "received": "Received"
   }
 }

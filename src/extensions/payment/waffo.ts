@@ -131,8 +131,15 @@ export class WaffoProvider implements PaymentProvider {
         paymentSession = this.buildPaymentSessionFromOrder(event.data);
       } else if (eventType === PaymentEventType.PAYMENT_FAILED) {
         paymentSession = this.buildPaymentSessionFromOrder(event.data);
-      } else if (eventType === PaymentEventType.PAYMENT_REFUNDED) {
-        paymentSession = this.buildPaymentSessionFromOrder(event.data);
+      } else if (
+        eventType === PaymentEventType.PAYMENT_REFUNDED ||
+        eventType === PaymentEventType.REFUND_FAILED
+      ) {
+        paymentSession = this.buildRefundSession(
+          event.data,
+          event.eventId || event.id,
+          eventType === PaymentEventType.PAYMENT_REFUNDED
+        );
       } else if (
         eventType === PaymentEventType.SUBSCRIBE_UPDATED ||
         eventType === PaymentEventType.SUBSCRIBE_CANCELED
@@ -207,16 +214,66 @@ export class WaffoProvider implements PaymentProvider {
       case 'refund.succeeded':
         return PaymentEventType.PAYMENT_REFUNDED;
       case 'refund.failed':
-        return PaymentEventType.PAYMENT_FAILED;
+        return PaymentEventType.REFUND_FAILED;
       default:
         throw new Error(`Unknown Waffo event type: ${eventType}`);
     }
   }
 
+  private buildRefundSession(
+    data: any,
+    id: unknown,
+    succeeded: boolean
+  ): PaymentSession {
+    if (
+      !data ||
+      typeof id !== 'string' ||
+      !id ||
+      typeof data.orderId !== 'string' ||
+      !data.orderId
+    )
+      throw new Error('Missing Waffo refund identity');
+    const status = succeeded ? 'succeeded' : 'failed';
+    if (data.refundStatus && data.refundStatus !== status)
+      throw new Error('Inconsistent Waffo refund status');
+    const cents = (value: unknown): number | null => {
+      if (value === undefined || value === null) return null;
+      const text = String(value);
+      if (!/^\d+(\.\d{1,2})?$/.test(text))
+        throw new Error('Invalid Waffo refund amount');
+      const result = Math.round(Number(text) * 100);
+      if (!Number.isSafeInteger(result) || result <= 0)
+        throw new Error('Invalid Waffo refund amount');
+      return result;
+    };
+    if (typeof data.currency !== 'string' || !/^[A-Z]{3}$/i.test(data.currency))
+      throw new Error('Invalid refund currency');
+    return {
+      provider: this.name,
+      paymentStatus: succeeded ? PaymentStatus.REFUNDED : PaymentStatus.FAILED,
+      paymentResult: data,
+      metadata: {
+        ...data.orderMetadata,
+        order_no: data.orderMetadata?.order_no || data.orderMerchantExternalId,
+      },
+      refundInfo: {
+        id,
+        status,
+        transactionId: data.orderId,
+        paymentId: data.paymentId,
+        amount: cents(data.refundedAmount ?? data.amount),
+        originalChargedAmount: cents(data.originalChargedAmount),
+        currency: data.currency.toUpperCase(),
+      },
+    };
+  }
+
   private buildPaymentSessionFromOrder(data: any): PaymentSession {
     // Waffo's SDK defines webhook amounts as display strings; DB uses minor units.
     const amount = Math.round(Number(data.subtotal ?? data.amount) * 100);
-    const paidAmount = Math.round(Number(data.total ?? data.amount) * 100);
+    const paidAmount = Math.round(
+      Number(data.chargedAmount ?? data.total ?? data.amount) * 100
+    );
     if (
       !Number.isSafeInteger(amount) ||
       !Number.isSafeInteger(paidAmount) ||

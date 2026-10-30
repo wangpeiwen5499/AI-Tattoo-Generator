@@ -29,11 +29,13 @@ export enum CreditStatus {
   ACTIVE = 'active',
   EXPIRED = 'expired',
   DELETED = 'deleted',
+  REFUNDED = 'refunded',
 }
 
 export enum CreditTransactionType {
   GRANT = 'grant', // grant credit
   CONSUME = 'consume', // consume credit
+  REVOKE = 'revoke', // unused order credits revoked after payment refund
 }
 
 export enum CreditTransactionScene {
@@ -352,6 +354,20 @@ export async function refundConsumedCredits({
         item.creditsConsumed <= 0
       )
         throw new Error('Invalid refund amount');
+      const [original] = await transaction
+        .select()
+        .from(credit)
+        .where(
+          and(
+            eq(credit.id, item.creditId),
+            eq(credit.userId, userId),
+            eq(credit.transactionType, CreditTransactionType.GRANT)
+          )
+        )
+        .for('update');
+      if (!original) throw new Error('Original grant not found');
+      // A failed generation must not resurrect a purchase that was refunded.
+      if (original.status === CreditStatus.REFUNDED) continue;
       const restored = await transaction
         .update(credit)
         .set({

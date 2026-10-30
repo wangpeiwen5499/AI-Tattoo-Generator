@@ -11,6 +11,7 @@ import {
   handleSubscriptionRenewal,
   handleSubscriptionUpdated,
 } from '@/shared/services/payment';
+import { handleWaffoRefund } from '@/shared/services/payment-refund';
 
 export async function POST(
   req: Request,
@@ -47,6 +48,15 @@ export async function POST(
     }
 
     // console.log('notify payment session', session);
+
+    if (
+      provider === 'waffo' &&
+      (eventType === PaymentEventType.PAYMENT_REFUNDED ||
+        eventType === PaymentEventType.REFUND_FAILED)
+    ) {
+      const refund = await handleWaffoRefund(session);
+      return Response.json({ message: 'success', refund });
+    }
 
     if (eventType === PaymentEventType.CHECKOUT_SUCCESS) {
       // one-time payment or subscription first payment

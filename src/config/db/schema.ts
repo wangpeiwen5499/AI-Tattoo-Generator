@@ -206,6 +206,7 @@ export const order = table(
     checkoutInfo: text('checkout_info').notNull(), // checkout request info
     checkoutResult: text('checkout_result'), // checkout result
     paymentResult: text('payment_result'), // payment result
+    refundInfo: text('refund_info'), // independent refund event ledger; preserves original payment
     discountCode: text('discount_code'), // discount code
     discountAmount: integer('discount_amount'), // discount amount in cents
     discountCurrency: text('discount_currency'), // discount currency
