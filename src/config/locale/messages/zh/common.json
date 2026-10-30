@@ -99,7 +99,14 @@
     "resolutionHelp": "每组包含 1 张纹身设计图和 4 张身体效果图，均使用所选分辨率。高分辨率可能需要更长时间。",
     "resolutionInsufficientTitle": "积分不足以使用此分辨率",
     "resolutionInsufficientDescription": "此分辨率需要 {count} 个积分。可以选择较低分辨率，或购买更多积分。",
-    "generationChargeReversed": "本次生成扣费已撤销。"
+    "generationChargeReversed": "本次生成扣费已撤销。",
+    "restoringGeneration": "正在恢复你的生成任务…",
+    "generationContinues": "任务将在后台继续。你可以随时返回此页或打开历史记录查看进度，完成的图片会逐张显示在下方。",
+    "previewPending": "正在生成…",
+    "resumeGeneration": "返回生成进度",
+    "activeGeneration": "你的纹身预览正在生成中。",
+    "recoverSavedResults": "找回 AI 已生成的图片（不扣积分）",
+    "recoveryUnavailable": "暂无可恢复的结果。"
   },
   "reviews": {
     "pause": "暂停滚动",

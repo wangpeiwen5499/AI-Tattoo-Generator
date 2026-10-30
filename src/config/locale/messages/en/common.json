@@ -99,7 +99,14 @@
     "resolutionHelp": "One tattoo design + four body previews at your chosen resolution. Higher resolutions may take longer.",
     "resolutionInsufficientTitle": "Not enough credits for this resolution",
     "resolutionInsufficientDescription": "This resolution needs {count} credits. Choose a lower resolution or buy more credits.",
-    "generationChargeReversed": "This generation’s credit charge has been reversed."
+    "generationChargeReversed": "This generation’s credit charge has been reversed.",
+    "restoringGeneration": "Restoring your generation…",
+    "generationContinues": "Your task continues in the background. Return here or open History to see progress. Completed images appear below as they are ready.",
+    "previewPending": "Generating…",
+    "resumeGeneration": "Resume generation",
+    "activeGeneration": "Your tattoo preview is in progress.",
+    "recoverSavedResults": "Check saved AI results — no credits charged",
+    "recoveryUnavailable": "No saved results could be recovered."
   },
   "reviews": {
     "pause": "Pause reviews",

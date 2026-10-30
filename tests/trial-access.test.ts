@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+vi.mock('@/server/ai/tattoo-scheduler', () => ({
+  ensureTattooWorkflow: vi.fn(),
+}));
+
 const mocks = vi.hoisted(() => ({
   user: vi.fn(),
   validate: vi.fn(),

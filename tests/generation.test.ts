@@ -210,6 +210,109 @@ describe('durable tattoo jobs', () => {
     expect(await getRemainingCredits(userId)).toBe(3);
   });
 
+  it('submits all four body tasks together after the design is ready', async () => {
+    const id = await start();
+    await tick(id);
+    await tick(id);
+    await tick(id);
+    expect(mocks.create).toHaveBeenCalledTimes(5);
+    const tasks = JSON.parse((await service.getTattooJob(id))!.tasks);
+    expect(tasks.every((task: any) => task.status === 'running')).toBe(true);
+  });
+
+  it('reconciles already-generated body tasks after the deadline without reissuing or refunding them', async () => {
+    const id = await start();
+    for (let i = 0; i < 6; i++) await tick(id);
+    expect(mocks.create).toHaveBeenCalledTimes(5);
+    now += 21 * 60 * 1000;
+    await tick(id);
+    const results = await mocks.database.select().from(schema.tattooGeneration);
+    expect(results.filter((r: any) => r.status === 'completed')).toHaveLength(
+      4
+    );
+    expect(mocks.create).toHaveBeenCalledTimes(5);
+    expect(await getRemainingCredits(userId)).toBe(2);
+  });
+  it('reverses an unstarted charge when background scheduling fails, exactly once', async () => {
+    const id = await start(randomUUID(), '4K');
+    expect(await getRemainingCredits(userId)).toBe(0);
+    expect(await service.failUnstartedTattooJob(id)).toBe(true);
+    expect(await getRemainingCredits(userId)).toBe(3);
+    expect(await service.failUnstartedTattooJob(id)).toBe(false);
+    expect(await getRemainingCredits(userId)).toBe(3);
+    await tick(id);
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
+  it('does not cancel or reverse an already-submitted provider task on a scheduler error', async () => {
+    const id = await start();
+    await tick(id);
+    expect(await service.failUnstartedTattooJob(id)).toBe(false);
+    expect(await getRemainingCredits(userId)).toBe(2);
+  });
+
+  it('recovers an old settled task from its existing provider ids without charging again or duplicating history rows', async () => {
+    mocks.record.mockImplementation(async (id) =>
+      id === 'design-task'
+        ? {
+            state: 'success',
+            resultJson: JSON.stringify({
+              resultUrls: ['https://ai.example/design.png'],
+            }),
+          }
+        : { state: 'generating' }
+    );
+    const id = await start();
+    await tick(id);
+    await tick(id);
+    await tick(id);
+    now += 21 * 60 * 1000;
+    await tick(id);
+    expect(await getRemainingCredits(userId)).toBe(3);
+    expect((await service.getTattooJob(id))?.stage).toBe('failed');
+    expect(await service.recoverSubmittedTattooJob(id, 'another-user')).toBe(
+      false
+    );
+    mocks.record.mockImplementation(async (taskId) => ({
+      state: 'success',
+      resultJson: JSON.stringify({
+        resultUrls: [`https://ai.example/${taskId}.png`],
+      }),
+    }));
+    expect(await service.recoverSubmittedTattooJob(id, userId)).toBe(true);
+    await finish(id);
+    const results = await mocks.database.select().from(schema.tattooGeneration);
+    expect(results).toHaveLength(4);
+    expect(results.every((row: any) => row.status === 'completed')).toBe(true);
+    expect(await getRemainingCredits(userId)).toBe(3);
+    expect((await service.getTattooJob(id))?.refunded).toBe(true);
+    expect(mocks.create).toHaveBeenCalledTimes(5);
+  });
+
+  it('recovers a design-only expired job without submitting new body work or recharging', async () => {
+    mocks.record.mockResolvedValue({ state: 'generating' });
+    const id = await start();
+    await tick(id);
+    now += 21 * 60 * 1000;
+    await tick(id);
+    expect(await getRemainingCredits(userId)).toBe(3);
+    mocks.record.mockResolvedValue({
+      state: 'success',
+      resultJson: JSON.stringify({
+        resultUrls: ['https://ai.example/design.png'],
+      }),
+    });
+    expect(await service.recoverSubmittedTattooJob(id, userId)).toBe(true);
+    await finish(id);
+    const [project] = await mocks.database
+      .select()
+      .from(schema.tattooProject)
+      .where(eq(schema.tattooProject.id, id));
+    expect(project.tattooDesignUrl).toContain('design.png');
+    expect(mocks.create).toHaveBeenCalledTimes(1);
+    expect(await getRemainingCredits(userId)).toBe(3);
+    expect((await service.getTattooJob(id))?.refunded).toBe(true);
+  });
+
   it('rejects guests at the transactional service boundary before creating anything', async () => {
     const actor = { type: 'guest' as const, id: `guest_${randomUUID()}` };
     const params = () => ({

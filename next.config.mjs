@@ -1,5 +1,6 @@
 import bundleAnalyzer from '@next/bundle-analyzer';
 import createNextIntlPlugin from 'next-intl/plugin';
+import { withWorkflow } from 'workflow/next';
 
 const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env.ANALYZE === 'true',
@@ -51,4 +52,4 @@ const nextConfig = {
   reactCompiler: true,
 };
 
-export default withBundleAnalyzer(withNextIntl(nextConfig));
+export default withWorkflow(withBundleAnalyzer(withNextIntl(nextConfig)));

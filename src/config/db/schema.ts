@@ -618,6 +618,8 @@ export const tattooJob = table(
     creditId: text('credit_id').references(() => credit.id),
     stage: text('stage').notNull().default('design'),
     designTaskId: text('design_task_id'),
+    workflowRunId: text('workflow_run_id'),
+    workflowCheckedAt: timestamp('workflow_checked_at'),
     tasks: text('tasks').notNull().default('[]'),
     leaseToken: text('lease_token'),
     leaseUntil: timestamp('lease_until').notNull().defaultNow(),

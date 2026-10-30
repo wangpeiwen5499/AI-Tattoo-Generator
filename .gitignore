@@ -69,3 +69,4 @@ src/config/db/migrations*
 lint-results.json
 *.png
 示例图/
+/.swc

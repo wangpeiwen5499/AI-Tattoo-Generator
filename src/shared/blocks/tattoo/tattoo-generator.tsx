@@ -19,11 +19,11 @@ import { Textarea } from '@/shared/components/ui/textarea';
 import { CreditsPurchaseNotice } from './credits-purchase-notice';
 import { ResolutionPicker } from './resolution-picker';
 
-export function TattooGenerator() {
+export function TattooGenerator({ projectId }: { projectId?: string } = {}) {
   const router = useRouter();
   const t = useTranslations('common.funnel');
   const credits = useCredits();
-  const gen = useGeneration();
+  const gen = useGeneration(projectId);
   const costCredits = tattooResolutionPolicy(gen.resolution).credits;
   const insufficientCredits =
     credits.credits !== null &&
@@ -95,6 +95,29 @@ export function TattooGenerator() {
     }
   }
 
+  async function recoverResults() {
+    const id = gen.result?.projectId || projectId;
+    if (!id) return;
+    const response = await fetch('/api/ai/generate-tattoo/recover', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ projectId: id }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      toast.error(data.error || t('recoveryUnavailable'));
+      return;
+    }
+    window.location.assign(`/generate?projectId=${encodeURIComponent(id)}`);
+  }
+
+  if (gen.restoring)
+    return (
+      <div role="status" className="py-32 text-center">
+        {t('restoringGeneration')}
+      </div>
+    );
+
   // --- generating ---
   if (gen.status === 'generating') {
     return (
@@ -115,6 +138,17 @@ export function TattooGenerator() {
               stageLabel={gen.stageLabel}
               elapsedSeconds={gen.elapsedSeconds}
             />
+            <p className="text-muted-foreground mt-4 mb-6 text-sm">
+              {t('generationContinues')}
+            </p>
+            {gen.result && (
+              <GenerationResults
+                {...gen.result}
+                processing
+                onRegenerate={gen.resetPrompt}
+                onReset={gen.reset}
+              />
+            )}
           </div>
         </div>
       </section>
@@ -146,6 +180,16 @@ export function TattooGenerator() {
               regenerateLabel={outOfCredits ? t('buyCredits') : undefined}
               onReset={gen.reset}
             />
+            {gen.result.images.filter((image) => image.status === 'completed')
+              .length < 4 && (
+              <Button
+                variant="outline"
+                className="mt-5 w-full"
+                onClick={recoverResults}
+              >
+                {t('recoverSavedResults')}
+              </Button>
+            )}
           </div>
         </div>
       </section>
@@ -175,6 +219,11 @@ export function TattooGenerator() {
               {gen.error}
               {gen.refunded ? ` ${t('generationChargeReversed')}` : ''}
             </p>
+          )}
+          {projectId && gen.status === 'error' && !gen.result && (
+            <Button variant="outline" className="mb-5" onClick={recoverResults}>
+              {t('recoverSavedResults')}
+            </Button>
           )}
 
           {/* --- Credits --- */}

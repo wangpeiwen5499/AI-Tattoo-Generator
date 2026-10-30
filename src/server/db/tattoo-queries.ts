@@ -79,6 +79,8 @@ export async function getProjectWithGenerations(projectId: string): Promise<{
   status: string;
   tattooDesignKey: string | null;
   tattooDesignUrl: string | null;
+  bodyPhotoKey: string | null;
+  bodyPhotoUrl: string;
   createdAt: Date;
   generations: Array<{
     bodyPart: string;
@@ -109,6 +111,8 @@ export async function getProjectWithGenerations(projectId: string): Promise<{
     status: project[0].status,
     tattooDesignKey: project[0].tattooDesignKey,
     tattooDesignUrl: project[0].tattooDesignUrl,
+    bodyPhotoKey: project[0].bodyPhotoKey,
+    bodyPhotoUrl: project[0].bodyPhotoUrl,
     createdAt: project[0].createdAt,
     generations: gens.map((g) => ({
       bodyPart: g.bodyPart,

@@ -139,6 +139,11 @@ export default async function HistoryPage({
                       })}
                     </div>
                     <p className="text-muted-foreground mt-3 text-xs">
+                      {project.status === 'processing' && (
+                        <span className="text-primary mr-2 font-medium">
+                          In progress
+                        </span>
+                      )}
                       {project.resolution} · {project.creditsCost}{' '}
                       {project.creditsCost === 1 ? 'credit' : 'credits'} ·{' '}
                       {new Date(project.createdAt).toLocaleDateString('en-US', {
@@ -154,7 +159,9 @@ export default async function HistoryPage({
                     href={`/history/${project.id}`}
                     className="border-border/40 text-muted-foreground hover:bg-muted/50 hover:text-foreground block border-t px-4 py-2.5 text-center text-xs font-medium transition-colors"
                   >
-                    View details →
+                    {project.status === 'processing'
+                      ? 'Resume generation →'
+                      : 'View details →'}
                   </Link>
                 </div>
               ))}

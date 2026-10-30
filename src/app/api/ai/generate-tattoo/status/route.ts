@@ -17,6 +17,7 @@ import {
   getActiveTattooJob,
   getTattooJob,
 } from '@/server/ai/tattoo-jobs';
+import { ensureTattooWorkflow } from '@/server/ai/tattoo-scheduler';
 import { getActor } from '@/server/auth/actor';
 import { getProjectWithGenerations } from '@/server/db/tattoo-queries';
 
@@ -54,19 +55,42 @@ export async function GET(req: Request): Promise<Response> {
       BODY_PARTS.indexOf(b.bodyPart as BodyPart)
   );
 
-  const images = sortedGenerations.map((g) => ({
+  let images = sortedGenerations.map((g) => ({
     bodyPart: g.bodyPart,
     status: g.status as 'completed' | 'failed',
     url: g.r2Url,
   }));
 
   const job = await getTattooJob(id);
+  if (job && project.status === 'processing') {
+    const tasks = JSON.parse(job.tasks);
+    images = BODY_PARTS.map((bodyPart) => {
+      const task = tasks.find(
+        (item: { bodyPart: string }) => item.bodyPart === bodyPart
+      );
+      return {
+        bodyPart,
+        status: task?.status ?? 'pending',
+        url: task?.r2Url ?? null,
+      };
+    });
+  }
   if (actor.type === 'user' && job && project.status === 'processing')
-    after(() => advanceTattooJob(id));
+    after(async () => {
+      try {
+        await ensureTattooWorkflow(id);
+      } catch {
+        console.error('[tattoo-job] background scheduling failed', id);
+      }
+      await advanceTattooJob(id);
+    });
 
   return NextResponse.json(
     {
       projectId: id,
+      bodyPhotoKey: project.bodyPhotoKey,
+      bodyPhotoUrl: project.bodyPhotoUrl,
+      prompt: project.prompt,
       resolution: project.resolution,
       creditsCost: project.creditsCost,
       expiresAt: job?.expiresAt.toISOString() ?? null,

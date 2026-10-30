@@ -27,6 +27,9 @@ interface StatusResponse {
   stage: string;
   completedParts: number;
   error?: string | null;
+  bodyPhotoKey?: string | null;
+  bodyPhotoUrl?: string;
+  prompt?: string;
 }
 
 /** 前端使用的生成结果 */
@@ -77,7 +80,8 @@ const POLL_INTERVAL_MS = 3000;
 const POLL_TIMEOUT_MS = 46 * 60 * 1000;
 const ACTIVE_PROJECT_KEY = 'tattoo-active-project';
 
-export function useGeneration() {
+export function useGeneration(projectId?: string) {
+  const [restoring, setRestoring] = useState(true);
   const [state, setState] = useState<GenState>(INITIAL_STATE);
   const abortRef = useRef<AbortController | null>(null);
   const progressTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -259,6 +263,17 @@ export function useGeneration() {
 
           setState((s) => ({
             ...s,
+            result: data.tattooDesignUrl
+              ? {
+                  projectId,
+                  resolution: parseTattooResolution(data.resolution),
+                  creditsCost:
+                    data.creditsCost ??
+                    tattooResolutionPolicy(data.resolution).credits,
+                  tattooDesignUrl: data.tattooDesignUrl,
+                  images: data.images,
+                }
+              : null,
             resolution: parseTattooResolution(data.resolution),
             creditsCost:
               data.creditsCost ??
@@ -296,6 +311,9 @@ export function useGeneration() {
       setState((s) => ({
         ...s,
         status: data.status === 'failed' ? 'error' : 'completed',
+        photoKey: data.bodyPhotoKey ?? s.photoKey,
+        photoUrl: data.bodyPhotoUrl ?? s.photoUrl,
+        prompt: data.prompt ?? s.prompt,
         resolution: parseTattooResolution(data.resolution),
         creditsCost:
           data.creditsCost ?? tattooResolutionPolicy(data.resolution).credits,
@@ -330,11 +348,19 @@ export function useGeneration() {
       try {
         const savedId = sessionStorage.getItem(ACTIVE_PROJECT_KEY);
         // An active job from another tab takes priority over an older saved result.
-        let res = await fetch('/api/ai/generate-tattoo/status', {
-          signal: controller.signal,
-          cache: 'no-store',
-        });
-        if (res.status === 204 && savedId) {
+        const selectedId =
+          projectId ||
+          new URLSearchParams(window.location.search).get('projectId');
+        let res = await fetch(
+          selectedId
+            ? `/api/ai/generate-tattoo/status?id=${encodeURIComponent(selectedId)}`
+            : '/api/ai/generate-tattoo/status',
+          {
+            signal: controller.signal,
+            cache: 'no-store',
+          }
+        );
+        if (!selectedId && res.status === 204 && savedId) {
           res = await fetch(
             `/api/ai/generate-tattoo/status?id=${encodeURIComponent(savedId)}`,
             { signal: controller.signal, cache: 'no-store' }
@@ -359,11 +385,15 @@ export function useGeneration() {
         setState((s) => ({
           ...s,
           status: 'generating',
+          photoKey: data.bodyPhotoKey ?? s.photoKey,
+          photoUrl: data.bodyPhotoUrl ?? s.photoUrl,
+          prompt: data.prompt ?? s.prompt,
           stageLabel: 'Resuming your generation',
           resolution: parseTattooResolution(data.resolution),
           creditsCost:
             data.creditsCost ?? tattooResolutionPolicy(data.resolution).credits,
         }));
+        setRestoring(false);
         progressTimerRef.current = setInterval(
           () =>
             setState((s) => ({
@@ -392,6 +422,8 @@ export function useGeneration() {
                 : 'Unable to resume generation',
           }));
         }
+      } finally {
+        if (!cancelled) setRestoring(false);
       }
     };
     void restore();
@@ -399,7 +431,7 @@ export function useGeneration() {
       cancelled = true;
       controller.abort();
     };
-  }, [applyResult, clearTimers, pollStatus]);
+  }, [applyResult, clearTimers, pollStatus, projectId]);
 
   const generate = useCallback(async () => {
     if (stateRef.current.status === 'generating') {
@@ -463,6 +495,8 @@ export function useGeneration() {
         throw new Error('Invalid response from server');
       }
 
+      if (trigger.projectId)
+        sessionStorage.setItem(ACTIVE_PROJECT_KEY, trigger.projectId);
       if (!res.ok || !trigger.projectId) {
         throw new Error(
           trigger.error || `Generation failed (HTTP ${res.status})`
@@ -526,6 +560,7 @@ export function useGeneration() {
 
   return {
     ...state,
+    restoring,
     setPrompt,
     setResolution,
     uploadPhoto,

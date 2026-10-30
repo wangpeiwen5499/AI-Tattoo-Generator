@@ -1,12 +1,12 @@
 import { randomUUID } from 'node:crypto';
-import { after } from 'next/server';
 import { validateUploadedPhoto } from '@/lib/r2';
 import { TATTOO_RESOLUTIONS } from '@/lib/tattoo-resolution';
 import {
-  advanceTattooJob,
+  failUnstartedTattooJob,
   GenerationRequestError,
   startTattooGeneration,
 } from '@/server/ai/tattoo-jobs';
+import { ensureTattooWorkflow } from '@/server/ai/tattoo-scheduler';
 import { requireGenerationUser } from '@/server/auth/generation-access';
 import { z } from 'zod';
 
@@ -55,7 +55,21 @@ export async function POST(req: Request): Promise<Response> {
       ip:
         req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown',
     });
-    after(() => advanceTattooJob(projectId));
+    try {
+      await ensureTattooWorkflow(projectId);
+    } catch {
+      console.error('[tattoo-start] background scheduling failed', projectId);
+      if (await failUnstartedTattooJob(projectId))
+        return Response.json(
+          {
+            projectId,
+            error:
+              'Unable to start background generation. The generation charge has been reversed.',
+          },
+          { status: 503 }
+        );
+      // A run whose acknowledgement was lost may already be executing. Return its saved project.
+    }
     return Response.json(
       { projectId },
       { headers: { 'Cache-Control': 'private, no-store' } }

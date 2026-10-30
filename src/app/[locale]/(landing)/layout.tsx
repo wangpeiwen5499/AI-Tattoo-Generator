@@ -3,6 +3,7 @@ import { getTranslations } from 'next-intl/server';
 
 import { getThemeLayout } from '@/core/theme';
 import { LocaleDetector, TopBanner } from '@/shared/blocks/common';
+import { ActiveGenerationNotice } from '@/shared/blocks/tattoo/active-generation-notice';
 import {
   Footer as FooterType,
   Header as HeaderType,
@@ -38,6 +39,7 @@ export default async function LandingLayout({
           dismissedExpiryDays={header.topbanner?.dismissedExpiryDays ?? 1}
         />
       )}
+      <ActiveGenerationNotice />
       {children}
     </Layout>
   );

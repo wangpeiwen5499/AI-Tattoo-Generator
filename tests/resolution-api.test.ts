@@ -1,6 +1,10 @@
 import { POST } from '@/app/api/ai/generate-tattoo/route';
 import { afterEach, expect, it, vi } from 'vitest';
 
+vi.mock('@/server/ai/tattoo-scheduler', () => ({
+  ensureTattooWorkflow: vi.fn(),
+}));
+
 const mocks = vi.hoisted(() => ({ start: vi.fn(), validate: vi.fn() }));
 vi.mock('next/server', () => ({ after: vi.fn() }));
 vi.mock('@/server/auth/generation-access', () => ({

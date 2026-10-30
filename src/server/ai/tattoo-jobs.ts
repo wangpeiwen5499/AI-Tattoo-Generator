@@ -202,7 +202,7 @@ export async function advanceTattooJob(projectId: string): Promise<void> {
   const save = async (changes: Partial<typeof tattooJob.$inferInsert>) => {
     const [updated] = await db()
       .update(tattooJob)
-      .set(changes)
+      .set({ ...changes, leaseUntil: new Date(Date.now() + LEASE_MS) })
       .where(
         and(eq(tattooJob.projectId, projectId), eq(tattooJob.leaseToken, token))
       )
@@ -216,10 +216,50 @@ export async function advanceTattooJob(projectId: string): Promise<void> {
       .from(tattooProject)
       .where(eq(tattooProject.id, projectId));
     if (!project) throw new Error('Project not found');
-    if (job.stage === 'finalizing' || job.expiresAt.getTime() <= Date.now()) {
+    if (job.stage === 'finalizing') {
       await save({
         stage: 'finalizing',
         error: job.error || 'Generation timed out. Please try again.',
+      });
+      await finalizeJob(job, token);
+      return;
+    }
+    const expired = job.expiresAt.getTime() <= Date.now();
+    if (expired) {
+      // Collect existing paid provider work before settling a task abandoned by its browser.
+      if (
+        job.stage === 'design' &&
+        job.designTaskId &&
+        job.designTaskId !== 'submitting'
+      ) {
+        try {
+          const info = await getRecordInfo(job.designTaskId);
+          if (info.state === 'success' && !project.tattooDesignUrl) {
+            const stored = await fetchUrlAndUpload(
+              resultUrl(info.resultJson),
+              `outputs/${job.userId}/${projectId}/design.png`,
+              tattooResolutionPolicy(project.resolution).maxImageBytes,
+              true
+            );
+            await db()
+              .update(tattooProject)
+              .set({
+                tattooDesignKey: stored.key,
+                tattooDesignUrl: stored.publicUrl,
+              })
+              .where(eq(tattooProject.id, projectId));
+          }
+        } catch {
+          /* Unavailable expired work is settled with the original charge reversed. */
+        }
+      }
+      const tasks: Task[] = JSON.parse(job.tasks);
+      await collectBodyResults(tasks, project.resolution, job, async () =>
+        save({ tasks: JSON.stringify(tasks) })
+      );
+      await save({
+        stage: 'finalizing',
+        error: 'Generation timed out. Available results have been recovered.',
       });
       await finalizeJob(job, token);
       return;
@@ -286,59 +326,49 @@ export async function advanceTattooJob(projectId: string): Promise<void> {
       return;
     }
     const tasks: Task[] = JSON.parse(job.tasks);
-    const pending = tasks.find(
+    const pending = tasks.filter(
       (task) => task.status === 'pending' || task.status === 'submitting'
     );
-    if (pending) {
-      if (pending.status === 'submitting') {
-        pending.status = 'failed';
-        pending.error = 'Provider submission was interrupted';
-      } else {
-        pending.status = 'submitting';
-        await save({ tasks: JSON.stringify(tasks) });
-        try {
-          pending.taskId = await createTask({
-            model: 'gpt-image-2-image-to-image',
-            input: {
-              prompt: `Apply this tattoo design naturally on the ${BODY_PART_LABELS[pending.bodyPart].toLowerCase()} of the person in the photo. Make it look real with natural skin texture, lighting, perspective, and body contour. Do not change anything else in the photo.`,
-              input_urls: [project.bodyPhotoUrl, project.tattooDesignUrl!],
-              aspect_ratio: '3:4',
-              resolution: parseTattooResolution(project.resolution),
-            },
-          });
-          pending.status = 'running';
-        } catch {
-          pending.status = 'failed';
-          pending.error = 'Unable to submit body preview';
-        }
+    if (pending.length) {
+      const fresh = pending.filter((task) => task.status === 'pending');
+      for (const task of pending) {
+        if (task.status === 'submitting') {
+          task.status = 'failed';
+          task.error = 'Provider submission was interrupted';
+        } else task.status = 'submitting';
       }
       await save({ tasks: JSON.stringify(tasks) });
+      let persistence = Promise.resolve();
+      await Promise.all(
+        fresh.map(async (task) => {
+          try {
+            task.taskId = await createTask({
+              model: 'gpt-image-2-image-to-image',
+              input: {
+                prompt: `Apply this tattoo design naturally on the ${BODY_PART_LABELS[task.bodyPart].toLowerCase()} of the person in the photo. Make it look real with natural skin texture, lighting, perspective, and body contour. Do not change anything else in the photo.`,
+                input_urls: [project.bodyPhotoUrl, project.tattooDesignUrl!],
+                aspect_ratio: '3:4',
+                resolution: parseTattooResolution(project.resolution),
+              },
+            });
+            task.status = 'running';
+          } catch {
+            task.status = 'failed';
+            task.error = 'Unable to submit body preview';
+          }
+          // Persist each returned ID promptly; serialize snapshots under the job lease.
+          persistence = persistence.then(() =>
+            save({ tasks: JSON.stringify(tasks) })
+          );
+          await persistence;
+        })
+      );
       return;
     }
-    const running = tasks
-      .filter((task) => task.status === 'running')
-      .sort((a, b) => (a.checkedAt || 0) - (b.checkedAt || 0))[0];
-    if (running) {
-      running.checkedAt = Date.now();
-      // Persist the attempt before fallible I/O so one broken task cannot starve its siblings.
-      await save({ tasks: JSON.stringify(tasks) });
-      const info = await getRecordInfo(running.taskId!);
-      if (info.state === 'failed' || info.state === 'fail') {
-        running.status = 'failed';
-        running.error = 'Body preview failed';
-      } else if (info.state === 'success') {
-        const stored = await fetchUrlAndUpload(
-          resultUrl(info.resultJson),
-          `outputs/${job.userId}/${projectId}/${running.bodyPart}.png`,
-          tattooResolutionPolicy(project.resolution).maxImageBytes
-        );
-        running.status = 'completed';
-        running.r2Key = stored.key;
-        running.r2Url = stored.publicUrl;
-      }
-      await save({ tasks: JSON.stringify(tasks) });
-      if (tasks.some((task) => task.status === 'running')) return;
-    }
+    await collectBodyResults(tasks, project.resolution, job, async () =>
+      save({ tasks: JSON.stringify(tasks) })
+    );
+    if (tasks.some((task) => task.status === 'running')) return;
     await save({ stage: 'finalizing' });
     await finalizeJob(job, token);
   } catch (error) {
@@ -359,6 +389,50 @@ export async function advanceTattooJob(projectId: string): Promise<void> {
       .where(
         and(eq(tattooJob.projectId, projectId), eq(tattooJob.leaseToken, token))
       );
+  }
+}
+
+async function collectBodyResults(
+  tasks: Task[],
+  resolution: string,
+  job: Job,
+  persist: () => Promise<void>
+) {
+  const running = tasks.filter(
+    (task) => task.status === 'running' && task.taskId
+  );
+  // Provider status requests are small and independent; large image transfers remain bounded and serial.
+  const states = await Promise.allSettled(
+    running.map((task) => getRecordInfo(task.taskId!))
+  );
+  for (let i = 0; i < running.length; i++) {
+    const task = running[i];
+    const state = states[i];
+    if (state.status === 'rejected') continue;
+    const info = state.value;
+    task.checkedAt = Date.now();
+    if (info.state === 'failed' || info.state === 'fail') {
+      task.status = 'failed';
+      task.error = 'Body preview failed';
+    } else if (info.state === 'success') {
+      try {
+        const stored = await fetchUrlAndUpload(
+          resultUrl(info.resultJson),
+          `outputs/${job.userId}/${job.projectId}/${task.bodyPart}.png`,
+          tattooResolutionPolicy(resolution).maxImageBytes
+        );
+        task.status = 'completed';
+        task.r2Key = stored.key;
+        task.r2Url = stored.publicUrl;
+      } catch (error) {
+        console.error(
+          '[tattoo-job] body result transfer failed',
+          job.projectId,
+          task.bodyPart
+        );
+      }
+    }
+    await persist();
   }
 }
 
@@ -387,6 +461,11 @@ async function assertLease(tx: any, projectId: string, token: string) {
 
 async function finalizeJob(job: Job, token: string): Promise<void> {
   await db().transaction(async (tx) => {
+    await tx
+      .select({ id: user.id })
+      .from(user)
+      .where(eq(user.id, job.userId))
+      .for('no key update');
     const current = await assertLease(tx, job.projectId, token);
     const tasks: Task[] = JSON.parse(current.tasks);
     const successful = tasks.filter(
@@ -400,6 +479,14 @@ async function finalizeJob(job: Job, token: string): Promise<void> {
         tx,
       });
     for (const task of tasks) {
+      await tx
+        .delete(tattooGeneration)
+        .where(
+          and(
+            eq(tattooGeneration.projectId, current.projectId),
+            eq(tattooGeneration.bodyPart, task.bodyPart)
+          )
+        );
       await tx.insert(tattooGeneration).values({
         id: randomUUID(),
         projectId: current.projectId,
@@ -422,12 +509,120 @@ async function finalizeJob(job: Job, token: string): Promise<void> {
       .update(tattooJob)
       .set({
         stage: status,
-        refunded: incomplete && !!current.creditId,
+        refunded: current.refunded || (incomplete && !!current.creditId),
         error: incomplete
           ? current.error || 'Some previews could not be generated.'
           : null,
       })
       .where(eq(tattooJob.projectId, current.projectId));
+  });
+}
+
+// Explicit recovery only re-queries saved provider IDs; it never creates or charges a task.
+export async function recoverSubmittedTattooJob(
+  projectId: string,
+  userId: string
+): Promise<boolean> {
+  return db().transaction(async (tx) => {
+    await tx
+      .select({ id: user.id })
+      .from(user)
+      .where(eq(user.id, userId))
+      .for('no key update');
+    const [job] = await tx
+      .select()
+      .from(tattooJob)
+      .where(
+        and(eq(tattooJob.projectId, projectId), eq(tattooJob.userId, userId))
+      )
+      .for('update');
+    if (!job || ACTIVE_STAGES.includes(job.stage)) return false;
+    const tasks: Task[] = JSON.parse(job.tasks);
+    const hasBodyWork = tasks.some(
+      (task) => task.taskId && task.status !== 'completed'
+    );
+    const [project] = await tx
+      .select({ designUrl: tattooProject.tattooDesignUrl })
+      .from(tattooProject)
+      .where(eq(tattooProject.id, projectId));
+    const hasDesignWork =
+      !!job.designTaskId &&
+      job.designTaskId !== 'submitting' &&
+      !project?.designUrl;
+    if (!hasBodyWork && !hasDesignWork) return false;
+    for (const task of tasks) {
+      if (task.taskId && task.status !== 'completed') {
+        task.status = 'running';
+        delete task.error;
+      } else if (!task.taskId && task.status !== 'completed')
+        task.status = 'failed';
+    }
+    await tx
+      .update(tattooJob)
+      .set({
+        stage: hasBodyWork ? 'fusion' : 'design',
+        tasks: JSON.stringify(tasks),
+        error: null,
+        workflowRunId: null,
+        workflowCheckedAt: null,
+        leaseToken: null,
+        leaseUntil: new Date(0),
+        nextRunAt: new Date(),
+        expiresAt: hasBodyWork ? new Date(Date.now() + 120_000) : new Date(0),
+      })
+      .where(eq(tattooJob.projectId, projectId));
+    await tx
+      .update(tattooProject)
+      .set({ status: 'processing' })
+      .where(eq(tattooProject.id, projectId));
+    return true;
+  });
+}
+
+export async function failUnstartedTattooJob(
+  projectId: string
+): Promise<boolean> {
+  const snapshot = await getTattooJob(projectId);
+  if (!snapshot) return false;
+  return db().transaction(async (tx) => {
+    await tx
+      .select({ id: user.id })
+      .from(user)
+      .where(eq(user.id, snapshot.userId))
+      .for('no key update');
+    const [job] = await tx
+      .select()
+      .from(tattooJob)
+      .where(eq(tattooJob.projectId, projectId))
+      .for('update');
+    if (
+      !job ||
+      !ACTIVE_STAGES.includes(job.stage) ||
+      job.designTaskId ||
+      job.workflowRunId ||
+      job.leaseUntil.getTime() > Date.now()
+    )
+      return false;
+    if (job.creditId)
+      await refundConsumedCredits({
+        userId: job.userId,
+        creditId: job.creditId,
+        tx,
+      });
+    await tx
+      .update(tattooProject)
+      .set({ status: 'failed' })
+      .where(eq(tattooProject.id, projectId));
+    await tx
+      .update(tattooJob)
+      .set({
+        stage: 'failed',
+        refunded: !!job.creditId,
+        error:
+          'Background generation could not start. The generation charge has been reversed.',
+      })
+      .where(eq(tattooJob.projectId, projectId));
+    return true;
   });
 }
 

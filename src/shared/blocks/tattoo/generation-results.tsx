@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { BODY_PART_LABELS, type BodyPart } from '@/lib/constants';
-import { AlertTriangle, RotateCcw, Sparkles } from 'lucide-react';
+import { AlertTriangle, Loader2, RotateCcw, Sparkles } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { Lightbox, type LightboxImage } from '@/shared/blocks/tattoo/lightbox';
@@ -19,6 +19,7 @@ type Props = {
   onRegenerate: () => void;
   onReset: () => void;
   regenerateLabel?: string;
+  processing?: boolean;
 };
 
 export function GenerationResults({
@@ -30,6 +31,7 @@ export function GenerationResults({
   onRegenerate,
   onReset,
   regenerateLabel,
+  processing = false,
 }: Props) {
   const t = useTranslations('common.funnel');
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -62,7 +64,7 @@ export function GenerationResults({
       <p className="text-muted-foreground text-sm">
         {resolution} · {t('creditCost', { count: creditsCost })}
       </p>
-      {(refunded || successCount < images.length) && (
+      {!processing && (refunded || successCount < images.length) && (
         <div className="border-destructive/30 bg-destructive/5 text-destructive flex items-start gap-2 rounded-lg border p-3 text-sm">
           <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
           <div>
@@ -116,6 +118,7 @@ export function GenerationResults({
               key={img.bodyPart}
               image={img}
               saveLabel={t('savePreview')}
+              pendingLabel={t('previewPending')}
               onZoom={() => {
                 const idx = partLightboxIndex[i];
                 if (idx >= 0) setLightboxIndex(idx);
@@ -125,15 +128,21 @@ export function GenerationResults({
         </div>
       </section>
 
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <Button onClick={onRegenerate} variant="default" className="sm:flex-1">
-          <RotateCcw className="mr-2 h-4 w-4" />
-          {regenerateLabel || 'Try another idea'}
-        </Button>
-        <Button onClick={onReset} variant="outline" className="sm:flex-1">
-          Start over
-        </Button>
-      </div>
+      {!processing && (
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button
+            onClick={onRegenerate}
+            variant="default"
+            className="sm:flex-1"
+          >
+            <RotateCcw className="mr-2 h-4 w-4" />
+            {regenerateLabel || 'Try another idea'}
+          </Button>
+          <Button onClick={onReset} variant="outline" className="sm:flex-1">
+            Start over
+          </Button>
+        </div>
+      )}
 
       <Lightbox
         images={lightboxImages}
@@ -149,8 +158,10 @@ function ResultCell({
   image,
   onZoom,
   saveLabel,
+  pendingLabel,
 }: {
   saveLabel: string;
+  pendingLabel: string;
   image: GenerateImage;
   onZoom: () => void;
 }) {
@@ -159,9 +170,15 @@ function ResultCell({
   if (image.status !== 'completed' || !image.url) {
     return (
       <div className="border-border/50 bg-muted flex aspect-[3/4] flex-col items-center justify-center gap-2 rounded-lg border p-4 text-center">
-        <AlertTriangle className="text-muted-foreground h-5 w-5" />
+        {image.status === 'failed' ? (
+          <AlertTriangle className="text-muted-foreground h-5 w-5" />
+        ) : (
+          <Loader2 className="text-primary h-5 w-5 animate-spin" />
+        )}
         <p className="text-xs font-medium">{label}</p>
-        <p className="text-muted-foreground text-xs">This part failed</p>
+        <p className="text-muted-foreground text-xs">
+          {image.status === 'failed' ? 'This part failed' : pendingLabel}
+        </p>
       </div>
     );
   }
