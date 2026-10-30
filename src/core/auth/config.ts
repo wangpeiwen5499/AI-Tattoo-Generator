@@ -1,6 +1,6 @@
 import { claimRegistrationAttempt } from '@/server/db/guest-queries';
 import { APIError } from 'better-auth/api';
-import { emailOTP, oneTap } from 'better-auth/plugins';
+import { emailOTP, genericOAuth, oneTap } from 'better-auth/plugins';
 import { getLocale } from 'next-intl/server';
 
 import { db } from '@/core/db';
@@ -14,6 +14,7 @@ import { getUuid } from '@/shared/lib/hash';
 import { getClientIp } from '@/shared/lib/ip';
 import { grantRoleForNewUser } from '@/shared/services/rbac';
 
+import { getClerkOAuthConfig } from './clerk';
 import { createAuthDatabase } from './trial-adapter';
 
 // Static auth options - NO database connection
@@ -149,13 +150,47 @@ export async function getAuthOptions(configs: Record<string, string>) {
     },
     emailAndPassword: {
       enabled: configs.email_auth_enabled !== 'false',
+      resetPasswordTokenExpiresIn: 30 * 60,
+      revokeSessionsOnPasswordReset: true,
+      async sendResetPassword({
+        user,
+        url,
+      }: {
+        user: { email: string };
+        url: string;
+      }) {
+        if (!configs.resend_api_key || !configs.resend_sender_email)
+          throw new APIError('SERVICE_UNAVAILABLE', {
+            message: 'Password recovery is temporarily unavailable.',
+          });
+        const { getEmailService } = await import('@/shared/services/email');
+        const { PasswordResetEmail } =
+          await import('@/shared/blocks/email/password-reset');
+        const result = await (
+          await getEmailService(configs)
+        ).sendEmail({
+          to: user.email,
+          subject: 'Reset your password — TattooVis',
+          text: `Reset your TattooVis password using this link (valid for 30 minutes):\n${url}\n\nIf you did not request this, ignore this email.`,
+          react: PasswordResetEmail({ url }),
+        });
+        if (!result.success)
+          throw new APIError('SERVICE_UNAVAILABLE', {
+            message:
+              'Unable to send password reset email. Please try again later.',
+          });
+      },
     },
     emailVerification: { autoSignInAfterVerification: true },
     rateLimit: {
       enabled: true,
       window: 60,
       max: 30,
-      customRules: { '/sign-up/email': { window: 60, max: 5 } },
+      customRules: {
+        '/sign-up/email': { window: 60, max: 5 },
+        '/request-password-reset': { window: 60, max: 3 },
+        '/reset-password': { window: 60, max: 5 },
+      },
     },
     socialProviders: await getSocialProviders(configs),
     plugins: await getAuthPlugins(configs),
@@ -206,8 +241,13 @@ export function getDatabaseProvider(
 // get auth plugins based on configs
 async function getAuthPlugins(configs: Record<string, string>) {
   const plugins: Array<
-    ReturnType<typeof oneTap> | ReturnType<typeof emailOTP>
+    | ReturnType<typeof oneTap>
+    | ReturnType<typeof emailOTP>
+    | ReturnType<typeof genericOAuth>
   > = [];
+
+  const clerk = getClerkOAuthConfig();
+  if (clerk) plugins.push(genericOAuth({ config: [clerk] }));
 
   // Google One Tap
   if (configs.google_client_id && configs.google_one_tap_enabled === 'true') {

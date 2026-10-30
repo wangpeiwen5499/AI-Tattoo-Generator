@@ -34,7 +34,9 @@ export function SignInForm({
 
   const { configs, setIsShowSignModal } = useAppContext();
 
-  const isGoogleAuthEnabled = configs.google_auth_enabled === 'true';
+  const isGoogleAuthEnabled =
+    configs.google_auth_enabled === 'true' ||
+    configs.clerk_google_auth_enabled === 'true';
   const isGithubAuthEnabled = configs.github_auth_enabled === 'true';
   const isEmailAuthEnabled =
     configs.email_auth_enabled !== 'false' ||
@@ -141,7 +143,16 @@ export function SignInForm({
               </Link>
             </div> */}
 
-              <Label htmlFor="password">{t('password_title')}</Label>
+              <div className="flex items-center justify-between gap-3">
+                <Label htmlFor="password">{t('password_title')}</Label>
+                <Link
+                  href={`/forgot-password?callbackUrl=${encodeURIComponent(destination)}`}
+                  className="text-sm underline"
+                  onClick={() => setIsShowSignModal(false)}
+                >
+                  {t('forgot_password')}
+                </Link>
+              </div>
 
               <Input
                 id="password"

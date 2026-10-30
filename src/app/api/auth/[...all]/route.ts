@@ -74,7 +74,11 @@ export async function OPTIONS(request: Request) {
 }
 
 export async function POST(request: Request) {
-  if (new URL(request.url).pathname.endsWith('/sign-up/email')) {
+  if (
+    ['/sign-up/email', '/request-password-reset'].some((path) =>
+      new URL(request.url).pathname.endsWith(path)
+    )
+  ) {
     const configs = await getAllConfigs();
     if (!configs.resend_api_key || !configs.resend_sender_email)
       return Response.json(

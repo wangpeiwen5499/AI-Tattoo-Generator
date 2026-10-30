@@ -1,5 +1,6 @@
 import { revalidateTag, unstable_cache } from 'next/cache';
 
+import { getClerkOAuthConfig } from '@/core/auth/clerk';
 import { db } from '@/core/db';
 import { envConfigs } from '@/config';
 import { config } from '@/config/db/schema';
@@ -121,6 +122,7 @@ export async function getPublicConfigs(): Promise<Configs> {
 
   const configs = {
     ...publicConfigs,
+    clerk_google_auth_enabled: getClerkOAuthConfig() ? 'true' : 'false',
   };
 
   return configs;

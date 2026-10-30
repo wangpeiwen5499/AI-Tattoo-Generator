@@ -61,6 +61,8 @@ export async function proxy(request: NextRequest) {
     !pathWithoutLocale.startsWith('/chat') &&
     !pathWithoutLocale.startsWith('/sign-') &&
     !pathWithoutLocale.startsWith('/verify-email') &&
+    !pathWithoutLocale.startsWith('/forgot-password') &&
+    !pathWithoutLocale.startsWith('/reset-password') &&
     !pathWithoutLocale.startsWith('/auth')
   ) {
     intlResponse.headers.delete('Set-Cookie');
@@ -79,6 +81,10 @@ export async function proxy(request: NextRequest) {
     ]) {
       intlResponse.headers.set(name, 'private, no-store');
     }
+  }
+
+  if (pathWithoutLocale.startsWith('/reset-password')) {
+    intlResponse.headers.set('Referrer-Policy', 'no-referrer');
   }
 
   // For all other routes (including /, /sign-in, /sign-up, /sign-out), just return the intl response

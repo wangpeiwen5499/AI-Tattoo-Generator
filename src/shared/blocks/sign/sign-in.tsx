@@ -29,9 +29,11 @@ import { SocialProviders } from './social-providers';
 export function SignIn({
   configs,
   callbackUrl = '/',
+  socialError = false,
 }: {
   configs: Record<string, string>;
   callbackUrl: string;
+  socialError?: boolean;
 }) {
   const router = useRouter();
   const t = useTranslations('common.sign');
@@ -40,7 +42,9 @@ export function SignIn({
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
-  const isGoogleAuthEnabled = configs.google_auth_enabled === 'true';
+  const isGoogleAuthEnabled =
+    configs.google_auth_enabled === 'true' ||
+    configs.clerk_google_auth_enabled === 'true';
   const isGithubAuthEnabled = configs.github_auth_enabled === 'true';
   const isEmailAuthEnabled =
     configs.email_auth_enabled !== 'false' ||
@@ -130,6 +134,14 @@ export function SignIn({
       </CardHeader>
       <CardContent>
         <div className="grid gap-4">
+          {socialError && (
+            <p
+              role="alert"
+              className="text-destructive text-sm leading-relaxed"
+            >
+              {t('social_failed')}
+            </p>
+          )}
           {isEmailAuthEnabled && (
             <>
               <div className="grid gap-2">
@@ -149,12 +161,12 @@ export function SignIn({
               <div className="grid gap-2">
                 <div className="flex items-center">
                   <Label htmlFor="password">{t('password_title')}</Label>
-                  {/* <Link
-                    href="#"
+                  <Link
+                    href={`/forgot-password?callbackUrl=${encodeURIComponent(destination)}`}
                     className="ml-auto inline-block text-sm underline"
                   >
-                    Forgot your password?
-                  </Link> */}
+                    {t('forgot_password')}
+                  </Link>
                 </div>
 
                 <Input

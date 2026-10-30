@@ -39,9 +39,12 @@ export function SignUp({
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const isGoogleAuthEnabled = configs.google_auth_enabled === 'true';
+  const isGoogleAuthEnabled =
+    configs.google_auth_enabled === 'true' ||
+    configs.clerk_google_auth_enabled === 'true';
   const isGithubAuthEnabled = configs.github_auth_enabled === 'true';
   const isEmailAuthEnabled =
     configs.email_auth_enabled !== 'false' ||
@@ -80,6 +83,11 @@ export function SignUp({
 
     if (!email || !password || !name) {
       toast.error('email, password and name are required');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      toast.error(t('password_mismatch'));
       return;
     }
 
@@ -163,9 +171,29 @@ export function SignUp({
                   id="password"
                   type="password"
                   placeholder={t('password_placeholder')}
-                  autoComplete="password"
+                  autoComplete="new-password"
+                  minLength={8}
+                  maxLength={128}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="confirm-password">
+                  {t('confirm_password')}
+                </Label>
+                <Input
+                  id="confirm-password"
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder={t('confirm_password_placeholder')}
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  aria-invalid={
+                    confirmPassword.length > 0 && password !== confirmPassword
+                  }
                 />
               </div>
 

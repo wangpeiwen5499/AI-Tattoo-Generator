@@ -28,11 +28,17 @@ export async function generateMetadata({
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ callbackUrl?: string }>;
+  searchParams: Promise<{ callbackUrl?: string; error?: string }>;
 }) {
-  const { callbackUrl } = await searchParams;
+  const { callbackUrl, error } = await searchParams;
 
   const configs = await getPublicConfigs();
 
-  return <SignIn configs={configs} callbackUrl={callbackUrl || '/generate'} />;
+  return (
+    <SignIn
+      configs={configs}
+      callbackUrl={callbackUrl || '/generate'}
+      socialError={Boolean(error)}
+    />
+  );
 }

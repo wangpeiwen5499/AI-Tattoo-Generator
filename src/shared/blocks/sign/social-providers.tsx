@@ -4,8 +4,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { RiGithubFill, RiGoogleFill } from 'react-icons/ri';
 import { toast } from 'sonner';
 
-import { signIn } from '@/core/auth/client';
-import { useRouter } from '@/core/i18n/navigation';
+import { authClient, signIn } from '@/core/auth/client';
 import { Button } from '@/shared/components/ui/button';
 import { useAppContext } from '@/shared/contexts/app';
 import { safeAuthCallback } from '@/shared/lib/auth-callback';
@@ -24,7 +23,6 @@ export function SocialProviders({
   setLoading: (loading: boolean) => void;
 }) {
   const t = useTranslations('common.sign');
-  const router = useRouter();
 
   const { setIsShowSignModal } = useAppContext();
 
@@ -32,6 +30,26 @@ export function SocialProviders({
   const destination = safeAuthCallback(callbackUrl, locale);
 
   const handleSignIn = async ({ provider }: { provider: string }) => {
+    if (provider === 'clerk') {
+      setLoading(true);
+      try {
+        const result = await authClient.signIn.oauth2({
+          providerId: 'clerk',
+          callbackURL: destination,
+          errorCallbackURL: safeAuthCallback(
+            `/sign-in?error=oauth&callbackUrl=${encodeURIComponent(destination)}`,
+            locale
+          ),
+        });
+        if (result.error) toast.error(t('social_failed'));
+        else setIsShowSignModal(false);
+      } catch {
+        toast.error(t('social_failed'));
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
     await signIn.social(
       {
         provider: provider,
@@ -56,12 +74,19 @@ export function SocialProviders({
 
   const providers: ButtonType[] = [];
 
-  if (configs.google_auth_enabled === 'true') {
+  if (
+    configs.clerk_google_auth_enabled === 'true' ||
+    configs.google_auth_enabled === 'true'
+  ) {
     providers.push({
       name: 'google',
       title: t('google_sign_in_title'),
       icon: <RiGoogleFill />,
-      onClick: () => handleSignIn({ provider: 'google' }),
+      onClick: () =>
+        handleSignIn({
+          provider:
+            configs.clerk_google_auth_enabled === 'true' ? 'clerk' : 'google',
+        }),
     });
   }
 
