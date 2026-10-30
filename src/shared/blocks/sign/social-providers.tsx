@@ -1,10 +1,11 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { RiGithubFill, RiGoogleFill } from 'react-icons/ri';
 import { toast } from 'sonner';
 
-import { authClient, signIn } from '@/core/auth/client';
+import { signIn } from '@/core/auth/client';
 import { Button } from '@/shared/components/ui/button';
 import { useAppContext } from '@/shared/contexts/app';
 import { safeAuthCallback } from '@/shared/lib/auth-callback';
@@ -23,6 +24,7 @@ export function SocialProviders({
   setLoading: (loading: boolean) => void;
 }) {
   const t = useTranslations('common.sign');
+  const router = useRouter();
 
   const { setIsShowSignModal } = useAppContext();
 
@@ -31,23 +33,13 @@ export function SocialProviders({
 
   const handleSignIn = async ({ provider }: { provider: string }) => {
     if (provider === 'clerk') {
-      setLoading(true);
-      try {
-        const result = await authClient.signIn.oauth2({
-          providerId: 'clerk',
-          callbackURL: destination,
-          errorCallbackURL: safeAuthCallback(
-            `/sign-in?error=oauth&callbackUrl=${encodeURIComponent(destination)}`,
-            locale
-          ),
-        });
-        if (result.error) toast.error(t('social_failed'));
-        else setIsShowSignModal(false);
-      } catch {
-        toast.error(t('social_failed'));
-      } finally {
-        setLoading(false);
-      }
+      setIsShowSignModal(false);
+      router.push(
+        safeAuthCallback(
+          `/auth/google?callbackUrl=${encodeURIComponent(destination)}`,
+          locale
+        )
+      );
       return;
     }
     await signIn.social(

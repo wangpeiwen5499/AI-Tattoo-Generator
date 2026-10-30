@@ -14,7 +14,8 @@ import { getUuid } from '@/shared/lib/hash';
 import { getClientIp } from '@/shared/lib/ip';
 import { grantRoleForNewUser } from '@/shared/services/rbac';
 
-import { getClerkOAuthConfig } from './clerk';
+import { getClerkNativeConfig, getClerkOAuthConfig } from './clerk';
+import { clerkSessionBridge } from './clerk-bridge';
 import { createAuthDatabase } from './trial-adapter';
 
 // Static auth options - NO database connection
@@ -244,7 +245,11 @@ async function getAuthPlugins(configs: Record<string, string>) {
     | ReturnType<typeof oneTap>
     | ReturnType<typeof emailOTP>
     | ReturnType<typeof genericOAuth>
+    | ReturnType<typeof clerkSessionBridge>
   > = [];
+
+  const nativeClerk = getClerkNativeConfig();
+  if (nativeClerk) plugins.push(clerkSessionBridge(nativeClerk));
 
   const clerk = getClerkOAuthConfig();
   if (clerk) plugins.push(genericOAuth({ config: [clerk] }));

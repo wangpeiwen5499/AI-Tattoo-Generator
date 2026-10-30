@@ -29,6 +29,8 @@
     "reset_failed": "暂时无法重置密码，请稍后重试。",
     "back_to_sign_in": "返回登录",
     "social_failed": "Google 登录未成功，请重试或使用邮箱和密码登录。",
+    "google_connecting": "正在连接 Google…",
+    "google_link_required": "请先使用邮箱和密码登录并验证邮箱，然后再使用 Google 登录。已有积分和记录会保留在原账户中。",
     "or": "或",
     "continue": "继续",
     "no_account": "还没有账户？",

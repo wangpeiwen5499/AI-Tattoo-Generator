@@ -1,4 +1,25 @@
+import { parsePublishableKey } from '@clerk/shared/keys';
 import type { GenericOAuthConfig } from 'better-auth/plugins/generic-oauth';
+
+export function getClerkNativeConfig(
+  env: Record<string, string | undefined> = process.env
+) {
+  const publishableKey = env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.trim();
+  const secretKey = env.CLERK_SECRET_KEY?.trim();
+  if (
+    !publishableKey ||
+    !secretKey ||
+    !/^pk_(live|test)_/.test(publishableKey) ||
+    !/^sk_(live|test)_/.test(secretKey)
+  )
+    return null;
+  if (
+    publishableKey.startsWith('pk_live_') !== secretKey.startsWith('sk_live_')
+  )
+    return null;
+  if (!parsePublishableKey(publishableKey)) return null;
+  return { publishableKey, secretKey };
+}
 
 // Server-side OAuth application credentials, distinct from Clerk SDK API keys.
 export function getClerkOAuthConfig(

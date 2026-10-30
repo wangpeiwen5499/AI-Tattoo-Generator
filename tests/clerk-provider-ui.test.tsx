@@ -18,7 +18,9 @@ const mocks = vi.hoisted(() => ({
   close: vi.fn(),
   toast: vi.fn(),
   loading: vi.fn(),
+  push: vi.fn(),
 }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: mocks.push }) }));
 vi.mock('@/core/auth/client', () => ({
   authClient: { signIn: { oauth2: mocks.oauth } },
   signIn: { social: mocks.native },
@@ -36,10 +38,7 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-it('uses Clerk for the Google button and sanitizes the post-login destination', async () => {
-  mocks.oauth.mockResolvedValue({
-    data: { url: 'https://clerk.example.com/oauth/authorize' },
-  });
+it('opens the native Google flow with a safe destination instead of requesting Clerk OAuth consent', async () => {
   render(
     <SocialProviders
       configs={{ clerk_google_auth_enabled: 'true' }}
@@ -50,29 +49,26 @@ it('uses Clerk for the Google button and sanitizes the post-login destination', 
   );
   fireEvent.click(screen.getByRole('button', { name: 'Sign in with Google' }));
   await waitFor(() => expect(mocks.close).toHaveBeenCalledWith(false));
-  expect(mocks.oauth).toHaveBeenCalledWith({
-    providerId: 'clerk',
-    callbackURL: '/generate',
-    errorCallbackURL: '/sign-in?error=oauth&callbackUrl=%2Fgenerate',
-  });
+  expect(mocks.push).toHaveBeenCalledWith(
+    '/auth/google?callbackUrl=%2Fgenerate'
+  );
+  expect(mocks.oauth).not.toHaveBeenCalled();
   expect(mocks.native).not.toHaveBeenCalled();
 });
 
-it('keeps the dialog open and reports a failed Clerk request', async () => {
-  mocks.oauth.mockResolvedValue({ error: { message: 'Provider unavailable' } });
+it('preserves a local post-login destination when entering the native flow', async () => {
   render(
     <SocialProviders
       configs={{ clerk_google_auth_enabled: 'true' }}
-      callbackUrl="/generate"
+      callbackUrl="/history"
       loading={false}
       setLoading={mocks.loading}
     />
   );
   fireEvent.click(screen.getByRole('button', { name: 'Sign in with Google' }));
-  await waitFor(() =>
-    expect(mocks.toast).toHaveBeenCalledWith(messages.sign.social_failed)
+  expect(mocks.push).toHaveBeenCalledWith(
+    '/auth/google?callbackUrl=%2Fhistory'
   );
-  expect(mocks.close).not.toHaveBeenCalled();
 });
 
 it('hides Google when no provider has been configured', () => {

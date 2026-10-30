@@ -13,8 +13,12 @@ import { createTestDatabase } from './database';
 const state = vi.hoisted(() => ({
   database: null as any,
   mail: [] as Array<{ to: string; code: string; text?: string }>,
+  identity: vi.fn(),
 }));
 vi.mock('@/core/db', () => ({ db: () => state.database }));
+vi.mock('@/core/auth/clerk-identity', () => ({
+  verifyClerkIdentity: state.identity,
+}));
 vi.mock('@/shared/models/user', () => ({
   appendUserToResult: (x: unknown) => x,
 }));
@@ -422,5 +426,117 @@ it('completes the Clerk code flow with PKCE and links a verified existing accoun
   } finally {
     vi.unstubAllEnvs();
     vi.unstubAllGlobals();
+  }
+});
+
+it('bridges only verified native Clerk sessions into website cookies and preserves users and credits', async () => {
+  vi.stubEnv(
+    'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY',
+    `pk_test_${Buffer.from('clerk.example.test$').toString('base64')}`
+  );
+  vi.stubEnv('CLERK_SECRET_KEY', 'sk_test_native-test');
+  try {
+    const options = await getAuthOptions({
+      resend_api_key: 'test-only',
+      resend_sender_email: 'test@example.com',
+    });
+    const auth = betterAuth({
+      ...options,
+      baseURL: 'http://localhost:3000',
+      secret: 'local-test-only-secret-not-for-production-12345',
+      database: createAuthDatabase(state.database, 'pg'),
+      rateLimit: { enabled: false },
+    });
+    const submit = (origin = 'http://localhost:3000', body = {}) =>
+      auth.handler(
+        new Request('http://localhost:3000/api/auth/clerk/sign-in', {
+          method: 'POST',
+          headers: {
+            origin,
+            authorization: 'Bearer verified-by-clerk-sdk',
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify(body),
+        })
+      );
+    state.identity.mockRejectedValue(new Error('Invalid signature'));
+    const invalid = await submit();
+    expect(invalid.status).toBe(401);
+    expect(invalid.headers.getSetCookie()).toHaveLength(0);
+    state.identity.mockClear();
+    expect((await submit('https://attacker.example')).status).toBe(403);
+    expect(state.identity).not.toHaveBeenCalled();
+    expect(
+      (await submit('http://localhost:3000', { email: 'forged@example.com' }))
+        .status
+    ).toBe(400);
+    expect(state.identity).not.toHaveBeenCalled();
+
+    state.identity.mockResolvedValue({
+      id: 'clerk-native-new',
+      email: 'native-new@example.com',
+      name: 'Native Google member',
+      image: '',
+    });
+    const first = await submit();
+    expect(first.status).toBe(200);
+    const cookie = first.headers
+      .getSetCookie()
+      .map((value) => value.split(';')[0])
+      .join('; ');
+    const session = await auth.api.getSession({
+      headers: new Headers({ cookie }),
+    });
+    expect(session?.user.email).toBe('native-new@example.com');
+    const id = session!.user.id;
+    expect(await getRemainingCredits(id)).toBe(3);
+    expect((await submit()).status).toBe(200);
+    expect(await getRemainingCredits(id)).toBe(3);
+    expect(
+      await state.database
+        .select()
+        .from(schema.credit)
+        .where(eq(schema.credit.userId, id))
+    ).toHaveLength(1);
+
+    const signup = await auth.api.signUpEmail({
+      body: {
+        email: 'native-existing@example.com',
+        password: 'Example-password-123!',
+        name: 'Existing email user',
+      },
+      headers: new Headers({ origin: 'http://localhost:3000' }),
+      asResponse: true,
+    });
+    const existingId = (await signup.json()).user.id;
+    state.identity.mockResolvedValue({
+      id: 'clerk-native-existing',
+      email: 'native-existing@example.com',
+      name: 'Existing Google member',
+      image: '',
+    });
+    const unverified = await submit();
+    expect(unverified.status).toBe(403);
+    expect((await unverified.json()).code).toBe('ACCOUNT_LINK_REQUIRED');
+    await state.database
+      .update(schema.user)
+      .set({ emailVerified: true })
+      .where(eq(schema.user.id, existingId));
+    const linked = await submit();
+    expect(linked.status).toBe(200);
+    const [existing] = await state.database
+      .select()
+      .from(schema.user)
+      .where(eq(schema.user.email, 'native-existing@example.com'));
+    expect(existing.id).toBe(existingId);
+    expect(await getRemainingCredits(existingId)).toBe(3);
+    expect(
+      await state.database
+        .select()
+        .from(schema.credit)
+        .where(eq(schema.credit.userId, existingId))
+    ).toHaveLength(1);
+  } finally {
+    vi.unstubAllEnvs();
   }
 });

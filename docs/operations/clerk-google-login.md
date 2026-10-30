@@ -1,49 +1,45 @@
-# TattooVis 的 Clerk Google 登录配置
+# TattooVis 的 Clerk 原生 Google 登录配置
 
-网站通过 Clerk 的 OAuth / OIDC 接入 Google，继续使用现有用户 ID、邮箱密码、积分、付款记录和会话，不需要迁移用户数据库。未配置时隐藏新增按钮；三项环境变量齐全且 Discovery URL 使用 HTTPS 时显示 Google 登录。
+当前流程：网站 Google 按钮 → Google 选择账号 → Clerk 验证身份 → 返回网站。网站不再调用 Clerk OAuth application 的授权入口，因此不会出现先前那张「TattooVis wants to access…」确认页。
 
-## 1. 配置 Google → Clerk
+Clerk 仅在专用登录页面加载。服务器使用 Clerk 官方后端 SDK 验证会话，并从 Clerk 获取已验证的邮箱和 Google 关联身份，再建立网站自己的登录会话。原有邮箱密码、用户 ID、积分和付款记录继续使用；重复登录不重复赠送积分。
 
-在你的 Clerk **Production** 实例启用 Google 社交连接，并允许注册和登录。正式环境需要自己的 Google OAuth Client ID / Client Secret，填在 Clerk 中。Google 的回调地址使用 **Clerk 控制台展示的 Authorized Redirect URI**。Google OAuth 应用应发布为 In production，避免仅测试用户可用。
+## 必须保留的配置
 
-如果 Clerk 实例只用于本网站的 Google 登录，可在 Clerk 中只保留 Google 登录选项；网站自己的邮箱登录不受影响。若 Clerk 实例另有用途，请保留所需方式，用户进入 Clerk 后选择 Google。
+- Google Cloud 中已有的 OAuth 应用、Client ID、Client Secret。
+- Google Cloud 的 Authorized Redirect URIs：保持 Clerk 的 Google 连接页展示的 Google 回调地址，不要改成网站 `/auth/google/callback`。
+- Google OAuth 应用面向真实用户时应使用 In production 发布状态。
+- Clerk Production 中的 Google 连接，允许注册和登录，继续使用上面的 Google Client ID / Secret。
+- Clerk 生产域名及 DNS，包括已配置的 `clerk.tattoovis.ink`。
 
-先访问 Clerk Account Portal，确认 Google 登录本身可用。
+## Vercel Production 环境变量
 
-## 2. 配置 Clerk → TattooVis
+| 名称                                | 获取位置                                 |
+| ----------------------------------- | ---------------------------------------- |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk Production → API keys，`pk_live_…` |
+| `CLERK_SECRET_KEY`                  | 同一实例的 API keys，`sk_live_…`         |
 
-在 Clerk **OAuth applications** 创建名为 TattooVis 的 OAuth 应用：
+这是原生 API keys，不是旧 OAuth application 的 Client ID / Secret。Secret 不应带 `NEXT_PUBLIC_` 前缀，也不应提交到仓库或聊天。保存后重新部署最新的 `shipany-two` 分支。
 
-- Scopes：`openid`、`email`、`profile`。
-- 允许回调：`https://tattoovis.ink/api/auth/oauth2/callback/clerk`。
-- 复制该 OAuth 应用的 **Client ID**、**Client Secret**、**Discovery URL**。Secret 通常只显示一次，直接保存到 Vercel。
-- 使用 Clerk 托管的 Account Portal 作为登录入口，不要将 Clerk 的登录入口设为本站 `/sign-in`，否则会形成循环。
+Clerk SDK 的站内回调由代码设置为 `/auth/google/callback`，会话完成页为 `/auth/google/complete`。这两个是本网站内部页面；不需要填入 Google Cloud 的 Authorized Redirect URIs。若 Clerk 对应用来源/返回地址设有限制，请允许 `https://tattoovis.ink` 及这两个站内地址。
 
-这里的回调路径已根据项目锁定的 Better Auth 1.6.26 实际实现测试。不要替换成新版文档中的 `/api/auth/callback/clerk`。
+Google 按钮明确请求 `prompt=select_account`。页面的具体语言、头像和已登录账号由 Google 根据浏览器及账号状态显示。首次 Google 授权、账户的 MFA、Clerk 必填信息或安全验证仍可能需要额外步骤；这些由官方登录组件处理。
 
-## 3. Vercel 环境变量
+## 验收后可删除的旧配置
 
-| 名称                        | 值                                                 |
-| --------------------------- | -------------------------------------------------- |
-| `CLERK_OAUTH_CLIENT_ID`     | Clerk OAuth 应用的 Client ID                       |
-| `CLERK_OAUTH_CLIENT_SECRET` | Clerk OAuth 应用的 Client Secret                   |
-| `CLERK_OAUTH_DISCOVERY_URL` | Clerk OAuth 应用页面提供的 Discovery URL，原样复制 |
+确认新版 Google 登录成功后，可移除：
 
-选择 **Production**，保存后重新部署最新的 `shipany-two` 分支。无需填写 `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` 或 `CLERK_SECRET_KEY`；本次使用 OAuth 应用接入，不使用 Clerk React SDK。不要把 Client Secret 加上 `NEXT_PUBLIC_` 前缀。
+- Vercel：`CLERK_OAUTH_CLIENT_ID`、`CLERK_OAUTH_CLIENT_SECRET`、`CLERK_OAUTH_DISCOVERY_URL`。
+- 先前专为这次旧方案创建的 Clerk OAuth application「TattooVis」及其 `/api/auth/oauth2/callback/clerk` 回调登记。若该 OAuth application 还被其他系统使用，请保留。
 
-本地测试应使用独立的开发 OAuth 应用，并允许本地回调，例如 `http://localhost:3106/api/auth/oauth2/callback/clerk`；对应 `AUTH_URL` 与站点地址也必须一致。不要把本地地址加入正式 OAuth 应用。
+不要删除整个 Clerk 项目、Google 连接、Google Cloud 应用或网站的历史用户。代码暂保留旧回调处理，仅用于兼容已经开始的旧登录；新按钮不会进入旧流程。
 
-## 4. 验收
+## 验收清单
 
-1. 登录页、注册页和登录弹窗出现 Google 按钮。
-2. 点击后进入 Clerk，经 Google 授权后返回网站的原目标页面。
-3. 首次创建网站账号仅赠送一次 3 积分。再次登录不会追加积分。
-4. 以已验证邮箱的老账号登录 Google，应复用原用户 ID、余额和记录。未验证的老邮箱先使用邮箱密码登录并验证，再使用 Google；系统不会直接将未验证的老账号自动合并。
-5. 退出网站会清除本网站登录；不会强制退出用户的整个 Google / Clerk 账号。
+1. 在网站点击 Google，进入 `accounts.google.com` 的账号选择/登录页面。
+2. Google 授权后返回网站，生成页显示已登录。
+3. 新用户仅收到一次 3 积分；再次登录不追加。
+4. 已验证邮箱的老用户复用原用户 ID、余额与记录。未验证老邮箱先使用邮箱密码完成邮箱验证，再关联 Google。
+5. 退出网站后，首页不因 Clerk 的已有 Cookie 自动登录；再次点 Google 才启动登录。
 
-如果 Google 授权尚未成功，请先检查 Clerk 的 Google 连接、Google 发布状态、Clerk 应用回调地址及 Vercel 的生产环境变量。代码测试使用模拟 Clerk 服务，真实授权仍需配置后的人工验收。
-
-参考：
-
-- [Clerk Google 社交连接](https://clerk.com/docs/guides/configure/auth-strategies/social-connections/google)
-- [Clerk 作为 OAuth / OIDC 服务](https://clerk.com/docs/guides/configure/auth-strategies/oauth/single-sign-on)
+参考：[Clerk Google 连接](https://clerk.com/docs/guides/configure/auth-strategies/social-connections/google)、[Clerk 原生 SSO 流程](https://clerk.com/docs/guides/development/custom-flows/authentication/oauth-connections)、[后端身份验证](https://clerk.com/docs/reference/backend/authenticate-request)。
