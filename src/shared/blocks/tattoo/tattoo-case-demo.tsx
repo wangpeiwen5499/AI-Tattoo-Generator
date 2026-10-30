@@ -242,7 +242,7 @@ export function TattooCaseDemo() {
         </div>
 
         <div ref={previewRef} className="min-w-0 scroll-mt-24">
-          <div className="bg-background/95 sticky top-20 z-10 pt-2 pb-3 backdrop-blur-sm lg:top-24">
+          <div className="pt-2 pb-3">
             <p id={`${id}-placements`} className="mb-4 text-lg font-medium">
               {t('placementTitle')}
             </p>
