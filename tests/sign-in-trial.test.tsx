@@ -32,7 +32,7 @@ vi.mock('@/shared/contexts/app', () => ({
   useAppContext: () => ({
     configs: {
       email_auth_enabled: 'true',
-      clerk_google_auth_enabled: mocks.google ? 'true' : 'false',
+      google_auth_enabled: mocks.google ? 'true' : 'false',
     },
     setIsShowSignModal: mocks.close,
   }),

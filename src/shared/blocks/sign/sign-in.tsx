@@ -42,9 +42,7 @@ export function SignIn({
   const [loading, setLoading] = useState(false);
   const [showEmail, setShowEmail] = useState(false);
 
-  const isGoogleAuthEnabled =
-    configs.google_auth_enabled === 'true' ||
-    configs.clerk_google_auth_enabled === 'true';
+  const isGoogleAuthEnabled = configs.google_auth_enabled === 'true';
   const isGithubAuthEnabled = configs.github_auth_enabled === 'true';
   const hasSocial = isGoogleAuthEnabled || isGithubAuthEnabled;
   const isEmailAuthEnabled =

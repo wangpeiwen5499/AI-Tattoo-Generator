@@ -540,3 +540,193 @@ it('bridges only verified native Clerk sessions into website cookies and preserv
     vi.unstubAllEnvs();
   }
 });
+
+it('uses the direct Google code callback with PKCE, reuses verified Clerk users and grants new users only one gift', async () => {
+  const googleDb = await createTestDatabase();
+  const previousDb = state.database;
+  state.database = googleDb.database;
+  let profile = {
+    sub: 'direct-google-new',
+    name: 'Google member',
+    email: 'direct-new@example.com',
+    email_verified: true,
+  };
+  const exchanges: URLSearchParams[] = [];
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      if (String(input) !== 'https://oauth2.googleapis.com/token')
+        throw new Error('Unexpected Google test request');
+      exchanges.push(new URLSearchParams(String(init?.body)));
+      // The only mocked boundary is Google's HTTPS token response. The actual
+      // Better Auth state/PKCE callback, adapter, cookie and gift code run below.
+      const payload = Buffer.from(JSON.stringify(profile)).toString(
+        'base64url'
+      );
+      return new Response(
+        JSON.stringify({
+          access_token: 'test-access',
+          token_type: 'Bearer',
+          expires_in: 3600,
+          id_token: `eyJhbGciOiJSUzI1NiJ9.${payload}.test`,
+        }),
+        { headers: { 'content-type': 'application/json' } }
+      );
+    })
+  );
+  try {
+    const options = await getAuthOptions({
+      google_auth_enabled: 'true',
+      google_client_id: 'test-google-id',
+      google_client_secret: 'test-google-secret',
+    });
+    const auth = betterAuth({
+      ...options,
+      baseURL: 'http://localhost:3000',
+      secret: 'local-test-only-secret-not-for-production-12345',
+      database: createAuthDatabase(state.database, 'pg'),
+      rateLimit: { enabled: false },
+    });
+    async function begin() {
+      const start = await auth.handler(
+        new Request('http://localhost:3000/api/auth/sign-in/social', {
+          method: 'POST',
+          headers: {
+            origin: 'http://localhost:3000',
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            provider: 'google',
+            callbackURL: '/history',
+            errorCallbackURL: '/sign-in',
+          }),
+        })
+      );
+      expect(start.status).toBe(200);
+      const target = new URL((await start.json()).url);
+      expect(target.origin).toBe('https://accounts.google.com');
+      expect(target.searchParams.get('redirect_uri')).toBe(
+        'http://localhost:3000/api/auth/callback/google'
+      );
+      expect(target.searchParams.get('prompt')).toBe('select_account');
+      expect(target.searchParams.get('code_challenge_method')).toBe('S256');
+      const cookie = start.headers
+        .getSetCookie()
+        .map((v) => v.split(';')[0])
+        .join('; ');
+      return { target, cookie };
+    }
+    async function finish(
+      start: Awaited<ReturnType<typeof begin>>,
+      replacementState?: string
+    ) {
+      return auth.handler(
+        new Request(
+          `http://localhost:3000/api/auth/callback/google?code=test-code&state=${replacementState ?? start.target.searchParams.get('state')}`,
+          { headers: { cookie: start.cookie } }
+        )
+      );
+    }
+    const initial = await begin();
+    const invalid = await finish(initial, 'wrong-state');
+    expect(invalid.headers.get('location')).not.toBe('/history');
+    expect(exchanges).toHaveLength(0);
+    const completedStart = await begin();
+    const first = await finish(completedStart);
+    expect(first.status).toBe(302);
+    expect(first.headers.get('location')).toBe('/history');
+    expect(exchanges.at(-1)?.get('code_verifier')).toBeTruthy();
+    expect(exchanges.at(-1)?.get('redirect_uri')).toBe(
+      'http://localhost:3000/api/auth/callback/google'
+    );
+    const sessionCookie = first.headers
+      .getSetCookie()
+      .map((v) => v.split(';')[0])
+      .join('; ');
+    const session = await auth.api.getSession({
+      headers: new Headers({ cookie: sessionCookie }),
+    });
+    expect(session?.user.email).toBe(profile.email);
+    const userId = session!.user.id;
+    expect(await getRemainingCredits(userId)).toBe(3);
+    expect((await finish(await begin())).headers.get('location')).toBe(
+      '/history'
+    );
+    expect(await getRemainingCredits(userId)).toBe(3);
+    expect(
+      await state.database
+        .select()
+        .from(schema.credit)
+        .where(eq(schema.credit.userId, userId))
+    ).toHaveLength(1);
+    // Existing Clerk provider users link by verified email, keeping the same ID.
+    const ctx = await auth.$context;
+    const oldUser = await ctx.internalAdapter.createUser({
+      name: 'Existing Clerk user',
+      email: 'direct-old@example.com',
+      emailVerified: true,
+    });
+    await ctx.internalAdapter.createAccount({
+      userId: oldUser.id,
+      providerId: 'clerk',
+      accountId: 'old-clerk-user',
+    });
+    profile = { ...profile, sub: 'direct-google-old', email: oldUser.email };
+    const linked = await finish(await begin());
+    const linkedSession = await auth.api.getSession({
+      headers: new Headers({
+        cookie: linked.headers
+          .getSetCookie()
+          .map((v) => v.split(';')[0])
+          .join('; '),
+      }),
+    });
+    expect(linkedSession?.user.id).toBe(oldUser.id);
+    expect(await getRemainingCredits(oldUser.id)).toBe(3);
+    expect(
+      await state.database
+        .select()
+        .from(schema.credit)
+        .where(eq(schema.credit.userId, oldUser.id))
+    ).toHaveLength(1);
+    const unverified = await ctx.internalAdapter.createUser({
+      name: 'Unverified email user',
+      email: 'direct-unverified@example.com',
+      emailVerified: false,
+    });
+    profile = {
+      ...profile,
+      sub: 'direct-google-unverified',
+      email: unverified.email,
+    };
+    const rejected = await finish(await begin());
+    expect(rejected.headers.get('location')).toContain('account_not_linked');
+    expect(
+      rejected.headers
+        .getSetCookie()
+        .some((v) => v.startsWith('better-auth.session_token='))
+    ).toBe(false);
+    const cancelledStart = await begin();
+    const cancelled = await auth.handler(
+      new Request(
+        `http://localhost:3000/api/auth/callback/google?error=access_denied&state=${cancelledStart.target.searchParams.get('state')}`,
+        { headers: { cookie: cancelledStart.cookie } }
+      )
+    );
+    expect(cancelled.headers.get('location')).toContain(
+      '/sign-in?error=access_denied'
+    );
+    expect(
+      cancelled.headers
+        .getSetCookie()
+        .some((v) => v.startsWith('better-auth.session_token='))
+    ).toBe(false);
+    const oldExchanges = exchanges.length;
+    await finish(completedStart);
+    expect(exchanges.length).toBe(oldExchanges);
+  } finally {
+    vi.unstubAllGlobals();
+    state.database = previousDb;
+    await googleDb.client.close();
+  }
+});

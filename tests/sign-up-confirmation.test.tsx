@@ -44,7 +44,7 @@ it('hides disabled email registration when Clerk is the only enabled provider', 
     <SignUp
       configs={{
         email_auth_enabled: 'false',
-        clerk_google_auth_enabled: 'true',
+        google_auth_enabled: 'true',
       }}
       callbackUrl="/generate"
     />

@@ -16,6 +16,7 @@ import { grantRoleForNewUser } from '@/shared/services/rbac';
 
 import { getClerkNativeConfig, getClerkOAuthConfig } from './clerk';
 import { clerkSessionBridge } from './clerk-bridge';
+import { getGoogleProviderConfig } from './google';
 import { createAuthDatabase } from './trial-adapter';
 
 // Static auth options - NO database connection
@@ -193,6 +194,13 @@ export async function getAuthOptions(configs: Record<string, string>) {
         '/reset-password': { window: 60, max: 5 },
       },
     },
+    account: {
+      accountLinking: {
+        enabled: true,
+        requireLocalEmailVerified: true,
+        allowDifferentEmails: false,
+      },
+    },
     socialProviders: await getSocialProviders(configs),
     plugins: await getAuthPlugins(configs),
   };
@@ -203,12 +211,8 @@ export async function getSocialProviders(configs: Record<string, string>) {
   const providers: any = {};
 
   // google auth
-  if (configs.google_client_id && configs.google_client_secret) {
-    providers.google = {
-      clientId: configs.google_client_id,
-      clientSecret: configs.google_client_secret,
-    };
-  }
+  const google = getGoogleProviderConfig(configs);
+  if (google) providers.google = google;
 
   // github auth
   if (configs.github_client_id && configs.github_client_secret) {

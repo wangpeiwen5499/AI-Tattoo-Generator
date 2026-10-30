@@ -1,6 +1,6 @@
 import { revalidateTag, unstable_cache } from 'next/cache';
 
-import { getClerkNativeConfig } from '@/core/auth/clerk';
+import { getGoogleProviderConfig } from '@/core/auth/google';
 import { db } from '@/core/db';
 import { envConfigs } from '@/config';
 import { config } from '@/config/db/schema';
@@ -120,11 +120,11 @@ export async function getPublicConfigs(): Promise<Configs> {
     }
   }
 
-  const clerk = getClerkNativeConfig();
+  const google = getGoogleProviderConfig(allConfigs);
   const configs = {
     ...publicConfigs,
-    clerk_google_auth_enabled: clerk ? 'true' : 'false',
-    clerk_publishable_key: clerk?.publishableKey || '',
+    google_auth_enabled: google ? 'true' : 'false',
+    clerk_google_auth_enabled: 'false',
   };
 
   return configs;

@@ -1,4 +1,6 @@
-# TattooVis 的 Clerk 原生 Google 登录配置
+# TattooVis 的 Clerk 原生 Google 登录配置（历史兼容）
+
+新登录已经改为 Google 直接接入 Better Auth，配置见 [Google 直接登录](./google-login.md)。以下内容仅用于维护旧的在途回调。
 
 当前流程：网站 Google 按钮 → Google 选择账号 → Clerk 验证身份 → 返回网站。网站不再调用 Clerk OAuth application 的授权入口，因此不会出现先前那张「TattooVis wants to access…」确认页。
 

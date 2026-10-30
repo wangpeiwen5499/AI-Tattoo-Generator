@@ -1,8 +1,5 @@
 'use client';
 
-import { useState } from 'react';
-import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { FcGoogle } from 'react-icons/fc';
@@ -11,18 +8,9 @@ import { toast } from 'sonner';
 
 import { signIn } from '@/core/auth/client';
 import { Button } from '@/shared/components/ui/button';
-import { useAppContext } from '@/shared/contexts/app';
 import { safeAuthCallback } from '@/shared/lib/auth-callback';
 import { cn } from '@/shared/lib/utils';
 import { Button as ButtonType } from '@/shared/types/blocks/common';
-
-const NativeGoogleController = dynamic(
-  () =>
-    import('./clerk-google-controller').then(
-      (module) => module.NativeGoogleController
-    ),
-  { ssr: false }
-);
 
 export function SocialProviders({
   configs,
@@ -36,68 +24,38 @@ export function SocialProviders({
   setLoading: (loading: boolean) => void;
 }) {
   const t = useTranslations('common.sign');
-  const router = useRouter();
-  const [nativeRequested, setNativeRequested] = useState(false);
-  const publishableKey = configs.clerk_publishable_key;
-
-  const { setIsShowSignModal } = useAppContext();
 
   const locale = useLocale();
   const destination = safeAuthCallback(callbackUrl, locale);
 
   const handleSignIn = async ({ provider }: { provider: string }) => {
-    if (provider === 'clerk') {
-      if (publishableKey) {
-        setLoading(true);
-        setNativeRequested(true);
-        return;
-      }
-      setIsShowSignModal(false);
-      router.push(
-        safeAuthCallback(
-          `/auth/google?callbackUrl=${encodeURIComponent(destination)}`,
-          locale
-        )
-      );
-      return;
-    }
-    await signIn.social(
-      {
-        provider: provider,
+    setLoading(true);
+    try {
+      const result = await signIn.social({
+        provider,
         callbackURL: destination,
-      },
-      {
-        onRequest: (ctx) => {
-          setLoading(true);
-        },
-        onResponse: (ctx) => {
-          setLoading(false);
-          setIsShowSignModal(false);
-        },
-        onSuccess: (ctx) => {},
-        onError: (e: any) => {
-          toast.error(e?.error?.message || 'sign in failed');
-          setLoading(false);
-        },
-      }
-    );
+        errorCallbackURL: safeAuthCallback(
+          `/sign-in?callbackUrl=${encodeURIComponent(destination)}`,
+          locale
+        ),
+      });
+      if (result.error)
+        throw new Error(result.error.message || t('social_failed'));
+      // Keep the form mounted and busy until Better Auth navigates to Google.
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t('social_failed'));
+      setLoading(false);
+    }
   };
 
   const providers: ButtonType[] = [];
 
-  if (
-    configs.clerk_google_auth_enabled === 'true' ||
-    configs.google_auth_enabled === 'true'
-  ) {
+  if (configs.google_auth_enabled === 'true') {
     providers.push({
       name: 'google',
       title: t('google_sign_in_title'),
       icon: <FcGoogle aria-hidden className="size-5" />,
-      onClick: () =>
-        handleSignIn({
-          provider:
-            configs.clerk_google_auth_enabled === 'true' ? 'clerk' : 'google',
-        }),
+      onClick: () => handleSignIn({ provider: 'google' }),
     });
   }
 
@@ -119,19 +77,6 @@ export function SocialProviders({
         'flex-col justify-between'
       )}
     >
-      {configs.clerk_google_auth_enabled === 'true' && publishableKey && (
-        <NativeGoogleController
-          publishableKey={publishableKey}
-          requested={nativeRequested}
-          destination={destination}
-          locale={locale}
-          onFailure={() => {
-            setNativeRequested(false);
-            setLoading(false);
-            toast.error(t('social_failed'));
-          }}
-        />
-      )}
       {providers.map((provider) => (
         <Button
           key={provider.name}
@@ -145,7 +90,7 @@ export function SocialProviders({
           onClick={provider.onClick}
         >
           <span className={provider.name === 'google' ? 'absolute left-4' : ''}>
-            {provider.name === 'google' && nativeRequested && loading ? (
+            {loading ? (
               <Loader2 aria-hidden className="size-5 animate-spin" />
             ) : (
               provider.icon
