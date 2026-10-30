@@ -49,7 +49,7 @@ function signedIn() {
         verification: { status: 'verified' },
       },
     ],
-    externalAccounts: [{ provider: 'oauth_google' }],
+    externalAccounts: [{ provider: 'google' }],
     firstName: 'Google',
     lastName: 'Member',
     imageUrl: 'https://example.com/avatar.png',
@@ -93,6 +93,17 @@ it('rejects invalid sessions before reading any profile', async () => {
     verifyClerkIdentity(request(), config, 'https://tattoovis.ink')
   ).rejects.toThrow();
   expect(mocks.user).not.toHaveBeenCalled();
+});
+it('also accepts the legacy oauth_google provider spelling', async () => {
+  signedIn();
+  const user = await mocks.user();
+  mocks.user.mockResolvedValue({
+    ...user,
+    externalAccounts: [{ provider: 'oauth_google' }],
+  });
+  expect(
+    await verifyClerkIdentity(request(), config, 'https://tattoovis.ink')
+  ).toMatchObject({ email: 'member@example.com' });
 });
 it('rejects unverified email and missing Google linkage', async () => {
   signedIn();

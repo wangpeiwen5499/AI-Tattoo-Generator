@@ -62,7 +62,7 @@ const fetchMock = vi.fn(async (input: string | URL | Request) => {
         {
           object: 'google_account',
           id: 'external_fixture',
-          provider: 'oauth_google',
+          provider: 'google',
           verification: { status: 'verified' },
         },
       ],
@@ -104,6 +104,64 @@ it('authenticates even after the website endpoint has parsed the request body', 
   expect(
     await verifyClerkIdentity(incoming, config, 'https://tattoovis.ink')
   ).toMatchObject({ email: 'verified@example.com' });
+});
+
+it('completes real SDK verification, website account creation, session cookie and a single signup gift', async () => {
+  const [
+    { betterAuth },
+    { clerkSessionBridge },
+    { createAuthDatabase },
+    { createTestDatabase },
+    schema,
+  ] = await Promise.all([
+    import('better-auth'),
+    import('@/core/auth/clerk-bridge'),
+    import('@/core/auth/trial-adapter'),
+    import('./database'),
+    import('@/config/db/schema'),
+  ]);
+  const test = await createTestDatabase();
+  try {
+    const auth = betterAuth({
+      baseURL: 'https://tattoovis.ink',
+      secret: 'test-fixture-only-not-a-production-secret-12345',
+      database: createAuthDatabase(test.database, 'pg'),
+      plugins: [clerkSessionBridge(config)],
+      rateLimit: { enabled: false },
+    });
+    const login = () =>
+      auth.handler(
+        new Request('https://tattoovis.ink/api/auth/clerk/sign-in', {
+          method: 'POST',
+          headers: {
+            origin: 'https://tattoovis.ink',
+            authorization: `Bearer ${token()}`,
+            'content-type': 'application/json',
+          },
+          body: '{}',
+        })
+      );
+    const response = await login();
+    expect(response.status).toBe(200);
+    const cookie = response.headers
+      .getSetCookie()
+      .map((value) => value.split(';')[0])
+      .join('; ');
+    const session = await auth.api.getSession({
+      headers: new Headers({ cookie }),
+    });
+    expect(session?.user.email).toBe('verified@example.com');
+    expect(session?.user.emailVerified).toBe(true);
+    expect((await login()).status).toBe(200);
+    const users = await test.database.select().from(schema.user);
+    const credits = await test.database.select().from(schema.credit);
+    expect(users).toHaveLength(1);
+    expect(users[0].id).toBe(session!.user.id);
+    expect(credits).toHaveLength(1);
+    expect(credits[0].remainingCredits).toBe(3);
+  } finally {
+    await test.client.close();
+  }
 });
 it.each([
   ['expired', { exp: Math.floor(Date.now() / 1000) - 60 }],

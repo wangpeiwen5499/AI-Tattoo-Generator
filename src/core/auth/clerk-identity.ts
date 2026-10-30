@@ -29,7 +29,10 @@ export async function verifyClerkIdentity(
     user.id !== auth.userId ||
     !email ||
     email.verification?.status !== 'verified' ||
-    !user.externalAccounts.some((value) => value.provider === 'oauth_google')
+    !user.externalAccounts.some(
+      (value) =>
+        value.provider === 'google' || value.provider === 'oauth_google'
+    )
   )
     throw new Error('CLERK_GOOGLE_IDENTITY_REQUIRED');
   return {

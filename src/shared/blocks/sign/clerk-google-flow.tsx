@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from 'react';
 import {
   ClerkFailed,
   ClerkLoaded,
-  ClerkLoading,
   ClerkProvider,
   HandleSSOCallback,
   RedirectToTasks,
@@ -12,9 +11,9 @@ import {
   SignUp,
   useAuth,
   useClerk,
+  useSession,
   useSignIn,
 } from '@clerk/react';
-import { Loader2 } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 
 import { Link } from '@/core/i18n/navigation';
@@ -33,7 +32,6 @@ export function ClerkGoogleFlow({
   signup?: boolean;
 }) {
   const locale = useLocale();
-  const t = useTranslations('common.sign');
   const destination = safeAuthCallback(callbackUrl, locale);
   const route = (stage: string, isSignup = false) =>
     safeAuthCallback(
@@ -51,11 +49,8 @@ export function ClerkGoogleFlow({
       signUpFallbackRedirectUrl={complete}
     >
       <div className="mx-auto flex w-full max-w-md flex-col items-center gap-5 text-center">
-        <ClerkLoading>
-          <Working />
-        </ClerkLoading>
         <ClerkFailed>
-          <p role="alert">{t('social_failed')}</p>
+          <LoginError destination={destination} />
         </ClerkFailed>
         <ClerkLoaded>
           {step === 'start' && (
@@ -66,7 +61,6 @@ export function ClerkGoogleFlow({
           )}
           {step === 'callback' && (
             <>
-              <Working />
               <HandleSSOCallback
                 navigateToApp={({ session }) =>
                   window.location.replace(
@@ -80,7 +74,6 @@ export function ClerkGoogleFlow({
               />
             </>
           )}
-          {step === 'tasks' && <RedirectToTasks redirectUrl={complete} />}
           {step === 'continue' &&
             (signup ? (
               <SignUp
@@ -95,25 +88,37 @@ export function ClerkGoogleFlow({
                 forceRedirectUrl={complete}
               />
             ))}
-          {step === 'complete' && <CompleteGoogle destination={destination} />}
+          {(step === 'tasks' || step === 'complete') && (
+            <CompleteGoogle
+              destination={destination}
+              completeRoute={complete}
+            />
+          )}
         </ClerkLoaded>
-        <Link
-          className="text-muted-foreground text-sm underline"
-          href={`/sign-in?callbackUrl=${encodeURIComponent(destination)}`}
-        >
-          {t('back_to_sign_in')}
-        </Link>
       </div>
     </ClerkProvider>
   );
 }
 
-function Working() {
+function LoginError({
+  destination,
+  message,
+}: {
+  destination: string;
+  message?: string;
+}) {
   const t = useTranslations('common.sign');
   return (
-    <div role="status" className="flex items-center justify-center gap-3 py-8">
-      <Loader2 aria-hidden className="size-5 animate-spin" />
-      <span>{t('google_connecting')}</span>
+    <div className="space-y-4">
+      <p role="alert" className="text-sm leading-relaxed">
+        {message || t('social_failed')}
+      </p>
+      <Link
+        className="text-muted-foreground text-sm underline"
+        href={`/sign-in?callbackUrl=${encodeURIComponent(destination)}`}
+      >
+        {t('back_to_sign_in')}
+      </Link>
     </div>
   );
 }
@@ -161,18 +166,24 @@ function StartGoogle({
       <p role="alert">{t('social_failed')}</p>
       <Button onClick={begin}>{t('google_sign_in_title')}</Button>
     </div>
-  ) : (
-    <Working />
-  );
+  ) : null;
 }
 
-function CompleteGoogle({ destination }: { destination: string }) {
+function CompleteGoogle({
+  destination,
+  completeRoute,
+}: {
+  destination: string;
+  completeRoute: string;
+}) {
   const { isLoaded, isSignedIn, getToken } = useAuth();
+  const { isLoaded: sessionLoaded, session } = useSession();
+  const currentTask = session?.currentTask;
   const t = useTranslations('common.sign');
   const started = useRef(false);
   const [error, setError] = useState('');
   useEffect(() => {
-    if (!isLoaded || started.current) return;
+    if (!isLoaded || !sessionLoaded || currentTask || started.current) return;
     started.current = true;
     void (async () => {
       try {
@@ -205,12 +216,18 @@ function CompleteGoogle({ destination }: { destination: string }) {
         setError(t('social_failed'));
       }
     })();
-  }, [isLoaded, isSignedIn, getToken, destination, t]);
+  }, [
+    isLoaded,
+    sessionLoaded,
+    currentTask,
+    isSignedIn,
+    getToken,
+    destination,
+    t,
+  ]);
+  if (sessionLoaded && currentTask)
+    return <RedirectToTasks redirectUrl={completeRoute} />;
   return error ? (
-    <p role="alert" className="text-sm leading-relaxed">
-      {error}
-    </p>
-  ) : (
-    <Working />
-  );
+    <LoginError destination={destination} message={error} />
+  ) : null;
 }

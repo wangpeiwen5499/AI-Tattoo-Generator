@@ -19,6 +19,9 @@ const mocks = vi.hoisted(() => ({
   signOut: vi.fn(),
   session: null as { id: string } | null,
   tasks: vi.fn(),
+  authSession: { currentTask: null } as {
+    currentTask: { key: string } | null;
+  } | null,
 }));
 vi.mock('@clerk/react', () => ({
   ClerkProvider: ({ children }: any) => children,
@@ -35,6 +38,7 @@ vi.mock('@clerk/react', () => ({
   useSignIn: () => ({ signIn: { sso: mocks.sso } }),
   useClerk: () => ({ session: mocks.session, signOut: mocks.signOut }),
   useAuth: () => ({ isLoaded: true, isSignedIn: true, getToken: mocks.token }),
+  useSession: () => ({ isLoaded: true, session: mocks.authSession }),
 }));
 vi.mock('next-intl', () => ({
   useLocale: () => 'en',
@@ -49,6 +53,7 @@ afterEach(() => {
   vi.clearAllMocks();
   vi.unstubAllGlobals();
   mocks.session = null;
+  mocks.authSession = { currentTask: null };
 });
 
 it('starts Google directly with account selection and local SDK callback paths', async () => {
@@ -67,6 +72,8 @@ it('starts Google directly with account selection and local SDK callback paths',
     redirectCallbackUrl: '/auth/google/callback?callbackUrl=%2Fgenerate',
     redirectUrl: '/auth/google/tasks?callbackUrl=%2Fgenerate',
   });
+  expect(screen.queryByText('Connecting to Google…')).toBeNull();
+  expect(screen.queryByRole('link', { name: 'Back to sign in' })).toBeNull();
 });
 
 it('supports another Google account selection after website logout leaves a Clerk session', async () => {
@@ -92,11 +99,56 @@ it('supports another Google account selection after website logout leaves a Cler
   expect(mocks.sso.mock.calls[1][0].oidcPrompt).toBe('select_account');
 });
 
-it('routes session requirements through Clerk tasks before completing website login', () => {
+it('routes real pending session requirements through Clerk tasks before completing website login', () => {
+  mocks.authSession = { currentTask: { key: 'choose-organization' } };
   render(<ClerkGoogleFlow publishableKey="pk_test_example" step="tasks" />);
   expect(mocks.tasks).toHaveBeenCalledWith({
     redirectUrl: '/auth/google/complete?callbackUrl=%2Fgenerate',
   });
+  expect(mocks.fetch).not.toHaveBeenCalled();
+});
+
+it('completes website login directly on the tasks URL when no task is pending', async () => {
+  mocks.token.mockResolvedValue('test-session-token');
+  mocks.fetch.mockResolvedValue(
+    new Response(JSON.stringify({ code: 'ACCOUNT_LINK_REQUIRED' }), {
+      status: 403,
+    })
+  );
+  vi.stubGlobal('fetch', mocks.fetch);
+  render(
+    <ClerkGoogleFlow
+      publishableKey="pk_test_example"
+      step="tasks"
+      callbackUrl="/"
+    />
+  );
+  await waitFor(() => expect(mocks.fetch).toHaveBeenCalledOnce());
+  expect(mocks.tasks).not.toHaveBeenCalled();
+  expect(await screen.findByRole('alert')).toHaveProperty(
+    'textContent',
+    messages.sign.google_link_required
+  );
+});
+
+it('continues automatically when a pending Clerk task is completed', async () => {
+  mocks.authSession = { currentTask: { key: 'choose-organization' } };
+  mocks.token.mockResolvedValue('test-session-token');
+  mocks.fetch.mockResolvedValue(
+    new Response(JSON.stringify({ code: 'ACCOUNT_LINK_REQUIRED' }), {
+      status: 403,
+    })
+  );
+  vi.stubGlobal('fetch', mocks.fetch);
+  const view = render(
+    <ClerkGoogleFlow publishableKey="pk_test_example" step="tasks" />
+  );
+  expect(mocks.fetch).not.toHaveBeenCalled();
+  mocks.authSession = { currentTask: null };
+  view.rerender(
+    <ClerkGoogleFlow publishableKey="pk_test_example" step="tasks" />
+  );
+  await waitFor(() => expect(mocks.fetch).toHaveBeenCalledOnce());
 });
 
 it('shows a retry when Clerk cannot start Google', async () => {
