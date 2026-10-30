@@ -1,8 +1,5 @@
 import { after } from 'next/server';
-import {
-  advanceTattooJob,
-  recoverSubmittedTattooJob,
-} from '@/server/ai/tattoo-jobs';
+import { recoverSubmittedTattooJob } from '@/server/ai/tattoo-jobs';
 import { ensureTattooWorkflow } from '@/server/ai/tattoo-scheduler';
 import { requireGenerationUser } from '@/server/auth/generation-access';
 import { z } from 'zod';
@@ -38,7 +35,6 @@ export async function POST(req: Request) {
     } catch {
       console.error('[tattoo-recovery] scheduling failed', body.data.projectId);
     }
-    await advanceTattooJob(body.data.projectId);
   });
   return Response.json(
     { projectId: body.data.projectId },

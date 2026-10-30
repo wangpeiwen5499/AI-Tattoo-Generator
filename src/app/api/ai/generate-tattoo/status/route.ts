@@ -12,11 +12,7 @@
 import { after, NextResponse } from 'next/server';
 import { BODY_PARTS, type BodyPart } from '@/lib/constants';
 import { getPublicUrl } from '@/lib/r2';
-import {
-  advanceTattooJob,
-  getActiveTattooJob,
-  getTattooJob,
-} from '@/server/ai/tattoo-jobs';
+import { getActiveTattooJob, getTattooJob } from '@/server/ai/tattoo-jobs';
 import { ensureTattooWorkflow } from '@/server/ai/tattoo-scheduler';
 import { getActor } from '@/server/auth/actor';
 import { getProjectWithGenerations } from '@/server/db/tattoo-queries';
@@ -82,7 +78,6 @@ export async function GET(req: Request): Promise<Response> {
       } catch {
         console.error('[tattoo-job] background scheduling failed', id);
       }
-      await advanceTattooJob(id);
     });
 
   return NextResponse.json(
