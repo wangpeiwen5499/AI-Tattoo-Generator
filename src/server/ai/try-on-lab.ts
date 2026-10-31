@@ -20,6 +20,13 @@ export function labAvailable() {
     (process.env.KIE_LAB_ACCESS_TOKEN?.length ?? 0) >= 24
   );
 }
+export function missingLabSettings(): string[] {
+  const missing: string[] = [];
+  if (!process.env.KIE_LAB_API_KEY) missing.push('KIE_LAB_API_KEY');
+  if ((process.env.KIE_LAB_ACCESS_TOKEN?.length ?? 0) < 24)
+    missing.push('KIE_LAB_ACCESS_TOKEN（至少 24 个字符）');
+  return missing;
+}
 export function authorizeLab(req: Request) {
   if (!labAvailable()) return false;
   const actual = Buffer.from(req.headers.get('authorization') || '');

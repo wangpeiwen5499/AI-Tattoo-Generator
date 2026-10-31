@@ -23,6 +23,7 @@ const state = {
   py: 0.5,
   busy: false,
   configured: false,
+  checking: false,
   photoAsset: null,
   designAsset: null,
   gesture: null,
@@ -74,6 +75,21 @@ function update() {
   $('generate-design').disabled =
     !access || state.busy || $('prompt').value.trim().length < 3;
   $('render').disabled = !placed || !access || state.busy;
+  const missing = [];
+  if (!state.photo) missing.push('上传部位照片');
+  if (!state.region) missing.push('圈选纹身区域');
+  if (!state.design) missing.push('选择纹身图案');
+  if (!state.configured) missing.push('完成 Preview 测试服务配置');
+  if ($('access-token').value.length < 24)
+    missing.push('在本页输入至少 24 个字符的测试访问口令');
+  if (!$('consent').checked) missing.push('勾选同意调用 KIE');
+  $('render-requirements').textContent = state.busy
+    ? '正在处理测试任务，请勿重复提交。'
+    : missing.length
+      ? `还需完成：${missing.join('；')}。`
+      : '已准备好。点击后将调用一次 KIE 单张试戴生成，不扣网站积分。';
+  $('check-configuration').disabled = state.busy || state.checking;
+
   $('download').hidden = !(state.photo || state.raw);
   $('empty').hidden = !!(state.photo || state.raw);
   $('scale-value').textContent = `${Math.round(state.scale * 100)}%`;
@@ -701,17 +717,38 @@ $('reset').onclick = () => {
   location.reload();
 };
 window.addEventListener('resize', update);
-try {
-  const response = await fetch(api, { cache: 'no-store' });
-  const config = await response.json();
-  state.configured = !!config.configured;
-  $('configuration').dataset.ready = String(state.configured);
-  $('configuration').textContent = state.configured
-    ? 'Preview 测试服务已配置。使用测试口令解锁 AI 操作。'
-    : '尚未配置 Preview 测试 Key 或口令。圈选和摆放可用，真实生成暂不可用。';
-} catch {
-  $('configuration').dataset.ready = 'false';
-  $('configuration').textContent = '未连接测试服务。圈选和摆放仍可使用。';
+async function checkConfiguration() {
+  state.checking = true;
+  $('configuration').textContent = '正在检查预览环境配置…';
+  state.configured = false;
+  update();
+  try {
+    const response = await fetch(api, { cache: 'no-store' });
+    if (
+      response.redirected ||
+      !response.headers.get('content-type')?.includes('application/json')
+    )
+      throw new Error(
+        '测试接口返回了登录页面。请先完成 Vercel 访问验证，再重新检查。'
+      );
+    const config = await response.json();
+    if (!response.ok)
+      throw new Error('此部署未启用测试接口，请使用最新 Preview 地址。');
+    state.configured = config.configured === true;
+    $('configuration').dataset.ready = String(state.configured);
+    $('configuration').textContent = state.configured
+      ? 'Preview 测试服务已配置。请在上方输入对应的测试访问口令。'
+      : `当前部署配置不完整：${Array.isArray(config.missing) && config.missing.length ? config.missing.join('、') : 'KIE_LAB_API_KEY 或 KIE_LAB_ACCESS_TOKEN（至少 24 个字符）'}。请在 Vercel Preview 环境配置后重新部署，旧部署不会自动读取新增变量。`;
+  } catch (error) {
+    $('configuration').dataset.ready = 'false';
+    $('configuration').textContent =
+      error.message || '未连接测试服务。请稍后重新检查。';
+  } finally {
+    state.checking = false;
+    update();
+  }
 }
+$('check-configuration').onclick = checkConfiguration;
+await checkConfiguration();
 $('resume-task').hidden = !sessionStorage.getItem('try-on-lab-task');
 draw();

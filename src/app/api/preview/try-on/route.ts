@@ -5,6 +5,7 @@ import {
   kieLabRequest,
   labAvailable,
   labEnvironment,
+  missingLabSettings,
   readLabAsset,
   readLabTask,
   signLabAsset,
@@ -33,7 +34,12 @@ const json = (data: unknown, status = 200) =>
 export async function GET(req: Request) {
   if (!labEnvironment()) return json({ error: 'Not found' }, 404);
   const asset = new URL(req.url).searchParams.get('asset');
-  if (!asset) return json({ configured: labAvailable(), resolution: '1K' });
+  if (!asset)
+    return json({
+      configured: labAvailable(),
+      missing: missingLabSettings(),
+      resolution: '1K',
+    });
   if (!authorizeLab(req)) return json({ error: 'Test access required' }, 403);
   try {
     const response = await fetch(readLabAsset(asset), {

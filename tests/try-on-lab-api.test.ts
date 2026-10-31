@@ -95,3 +95,14 @@ it('rejects out-of-bounds placement before any billable call', async () => {
   expect(response.status).toBe(400);
   expect(mocks.fetch).not.toHaveBeenCalled();
 });
+
+it('reports missing preview configuration names without exposing values', async () => {
+  configure();
+  vi.stubEnv('KIE_LAB_ACCESS_TOKEN', 'too-short-test-value');
+  const response = await GET(new Request('https://local/api/preview/try-on'));
+  const data = await response.json();
+  expect(data.configured).toBe(false);
+  expect(data.missing).toEqual(['KIE_LAB_ACCESS_TOKEN（至少 24 个字符）']);
+  expect(JSON.stringify(data)).not.toContain('too-short-test-value');
+  expect(JSON.stringify(data)).not.toContain('test-only');
+});
