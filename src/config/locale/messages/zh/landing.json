@@ -13,6 +13,11 @@
           "icon": "Sparkles"
         },
         {
+          "title": "设计灵感",
+          "url": "/tattoo-ideas",
+          "icon": "BookOpen"
+        },
+        {
           "title": "定价",
           "url": "/pricing",
           "icon": "DollarSign"
@@ -89,6 +94,11 @@
         {
           "title": "资源",
           "children": [
+            {
+              "title": "纹身设计指南",
+              "url": "/tattoo-ideas",
+              "target": "_self"
+            },
             {
               "title": "可接受使用政策",
               "url": "/acceptable-use",

@@ -4,7 +4,9 @@ import {
   LocaleSelector,
   ThemeToggler,
 } from '@/shared/blocks/common';
+import { getMetadata } from '@/shared/lib/seo';
 
+export const generateMetadata = getMetadata({ noIndex: true });
 export default function AuthLayout({
   children,
 }: {

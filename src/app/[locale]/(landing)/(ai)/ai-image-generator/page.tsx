@@ -8,6 +8,7 @@ import { DynamicPage } from '@/shared/types/blocks/landing';
 export const revalidate = 3600;
 
 export const generateMetadata = getMetadata({
+  noIndex: true,
   metadataKey: 'ai.image.metadata',
   canonicalUrl: '/ai-image-generator',
 });

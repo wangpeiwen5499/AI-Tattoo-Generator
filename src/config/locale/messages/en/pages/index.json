@@ -4,16 +4,15 @@
       "hero",
       "usage",
       "features",
-      "testimonials",
       "faq",
       "cta"
     ],
     "sections": {
       "hero": {
         "id": "hero",
-        "title": "See Your Tattoo Before You Ink",
+        "title": "AI Tattoo Generator: See It Before You Ink",
         "highlight_text": "Before You Ink",
-        "description": "Upload your photo, describe your idea, and AI generates realistic tattoo previews on your body.<br/>Try it free — no artist appointment needed.",
+        "description": "Turn your idea into a custom tattoo design, then preview it on your photo with our AI tattoo simulator.<br/>Explore the saved example free. Sign up and verify your email for 3 welcome credits.",
         "tip": "🎁 Sign up and verify your email for 3 free credits · One-time welcome gift",
         "buttons": [
           {
@@ -32,7 +31,7 @@
             "variant": "outline"
           }
         ],
-        "show_avatars": true,
+        "show_avatars": false,
         "avatars_tip": "Trusted by tattoo enthusiasts worldwide",
         "tattoo_demo": true,
         "demo": {
@@ -78,7 +77,7 @@
       "usage": {
         "block": "features-step",
         "id": "usage",
-        "title": "How It Works",
+        "title": "How to Design and Preview a Tattoo with AI",
         "description": "Get your tattoo preview in four simple steps:",
         "text_align": "center",
         "items": [
@@ -103,8 +102,8 @@
       },
       "features": {
         "id": "features",
-        "title": "Why AI Tattoo Generator",
-        "description": "The smartest way to preview your next tattoo.",
+        "title": "Create a Tattoo Design and Compare It on Your Photo",
+        "description": "Explore the design and placement together before discussing your idea with a tattoo artist.",
         "items": [
           {
             "title": "4 Body Parts",
@@ -122,8 +121,8 @@
             "icon": "RiMagicLine"
           },
           {
-            "title": "Instant Preview",
-            "description": "No appointments, no drawing skills needed. Get your preview in minutes, not days.",
+            "title": "Explore Before an Appointment",
+            "description": "Start from a written idea. Processing time depends on resolution and provider demand; follow your task in History.",
             "icon": "RiTimerFlashLine"
           },
           {
@@ -178,7 +177,7 @@
         "description": "Have questions? We have answers.",
         "items": [
           {
-            "question": "How does AI Tattoo Generator work?",
+            "question": "How does an AI tattoo generator work?",
             "answer": "Upload a photo of the body part you want tattooed, describe your tattoo idea, and our AI generates a custom design then places it realistically on your photo. You'll see previews on all 4 body positions (left arm, right arm, shoulder, calf)."
           },
           {
@@ -187,11 +186,11 @@
           },
           {
             "question": "How realistic are the previews?",
-            "answer": "Our AI uses advanced image-to-image technology to blend the tattoo design naturally onto your skin, accounting for lighting, skin texture, and body contours. While not 100% perfect, users tell us the results are remarkably accurate."
+            "answer": "A tattoo simulator gives you a visual approximation of a design on your photo. AI may also change pose, skin or background details. Compare the output with your original, and ask a tattoo artist to assess the design and placement."
           },
           {
             "question": "How long does generation take?",
-            "answer": "Typically 3-5 minutes for a full set of 4 previews. The AI works in two steps: first designing the tattoo, then placing it on each body part."
+            "answer": "Processing time varies with resolution and provider demand. The current workflow generates a standalone design and four body-placement previews. You can return to History to check progress."
           },
           {
             "question": "What photo should I upload?",
@@ -199,7 +198,11 @@
           },
           {
             "question": "Can I use the generated design at a tattoo shop?",
-            "answer": "Absolutely! Many users take their AI-generated preview to their tattoo artist as a reference. It helps the artist understand exactly what you're looking for."
+            "answer": "Use the design and photo preview as references for a conversation with a tattoo artist. The artist should check linework, size and placement and adapt the concept before tattooing."
+          },
+          {
+            "question": "Can I generate minimalist or geometric tattoo designs?",
+            "answer": "Yes. Describe the subject, style and composition in your prompt, such as a minimalist botanical line drawing or a black-and-grey geometric wolf. AI output varies; check the details before using it as a reference."
           }
         ]
       },

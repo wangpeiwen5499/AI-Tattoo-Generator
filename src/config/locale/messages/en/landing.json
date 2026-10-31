@@ -13,6 +13,11 @@
           "icon": "Sparkles"
         },
         {
+          "title": "Tattoo Ideas",
+          "url": "/tattoo-ideas",
+          "icon": "BookOpen"
+        },
+        {
           "title": "Pricing",
           "url": "/pricing",
           "icon": "DollarSign"
@@ -89,6 +94,11 @@
         {
           "title": "Resources",
           "children": [
+            {
+              "title": "Tattoo Design Ideas",
+              "url": "/tattoo-ideas",
+              "target": "_self"
+            },
             {
               "title": "Acceptable Use",
               "url": "/acceptable-use",
