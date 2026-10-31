@@ -172,15 +172,21 @@ canvas.moving {
   gap: 8px;
 }
 #detail-dialog {
-  width: min(1400px, 96vw);
-  max-width: 96vw;
-  height: 92dvh;
-  max-height: 92dvh;
-  padding: 22px;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: #fbfaf7;
-  color: #20202a;
+  position: fixed;
+  inset: 0;
+  margin: 0;
+  width: 100vw;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  padding: max(12px, env(safe-area-inset-top))
+    max(18px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom))
+    max(18px, env(safe-area-inset-left));
+  border: 0;
+  border-radius: 0;
+  background: #17171c;
+  color: #f2f0f6;
+  overflow: hidden;
 }
 #detail-dialog::backdrop {
   background: rgb(12 10 25 / 75%);
@@ -188,7 +194,7 @@ canvas.moving {
 #detail-dialog[open] {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
 }
 .detail-header,
 .detail-toolbar {
@@ -212,14 +218,18 @@ canvas.moving {
 }
 #detail-hint {
   margin: 0;
+  order: 4;
+  color: #aaa6b4;
+  text-align: center;
 }
 #detail-viewport {
   flex: 1;
   min-height: 0;
   overflow: auto;
   touch-action: none;
-  background: #e6e2dc;
-  border-radius: 10px;
+  background: #111114;
+  border-radius: 4px;
+  order: 3;
   cursor: grab;
   overscroll-behavior: contain;
 }
@@ -244,7 +254,9 @@ canvas.moving {
 }
 @media (max-width: 600px) {
   #detail-dialog {
-    padding: 10px;
+    padding: max(10px, env(safe-area-inset-top))
+      max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom))
+      max(8px, env(safe-area-inset-left));
     gap: 8px;
   }
   .detail-toolbar .tabs {
@@ -708,11 +720,11 @@ footer {
   font-size: 12px;
 }
 .detail-header h2 small {
-  display: block;
+  display: inline;
   font-size: 11px;
-  color: var(--muted);
+  color: #aaa6b4;
   font-weight: 400;
-  margin-top: 3px;
+  margin-left: 10px;
 }
 .detail-toolbar {
   justify-content: flex-start;
@@ -720,13 +732,13 @@ footer {
 .detail-toolbar .tabs {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  width: 100%;
-  background: #ece9e3;
-  padding: 5px;
-  border-radius: 11px;
+  width: min(48%, 500px);
+  background: #28272f;
+  padding: 4px;
+  border-radius: 9px;
 }
 .detail-toolbar .tabs button {
-  min-height: 44px;
+  min-height: 38px;
   font-size: 13px;
 }
 .detail-toolbar .tabs button[aria-pressed='true'] {
@@ -737,6 +749,63 @@ footer {
 .detail-toolbar label {
   flex: 1;
   font-size: 12px;
+}
+#detail-dialog .tabs button {
+  background: transparent;
+  color: #c2becd;
+}
+#detail-dialog .tabs button[aria-pressed='true'] {
+  background: var(--accent);
+  color: white;
+  border-color: transparent;
+}
+#detail-dialog .secondary {
+  background: #2c2b34;
+  color: #f2f0f6;
+  border-color: #46434f;
+}
+#detail-dialog output {
+  color: #d7d3e1;
+}
+#detail-dialog input {
+  accent-color: #a798f0;
+}
+@media (max-width: 760px) {
+  #detail-dialog .detail-toolbar .tabs {
+    width: 100%;
+  }
+  #detail-dialog .detail-header h2 small {
+    display: none;
+  }
+  #detail-dialog .detail-toolbar label {
+    width: auto;
+    flex: 1;
+  }
+  #detail-dialog .detail-toolbar input {
+    min-width: 50px;
+    width: 70px;
+  }
+  #detail-dialog .detail-toolbar {
+    gap: 8px;
+  }
+  #detail-dialog .detail-fit-actions {
+    gap: 5px;
+  }
+  #detail-dialog .detail-fit-actions .button {
+    padding: 7px 9px;
+    min-height: 32px;
+  }
+  #detail-hint {
+    font-size: 10px;
+  }
+}
+@media (max-height: 500px) {
+  #detail-hint {
+    display: none;
+  }
+  #detail-dialog .detail-header h2 small {
+    display: none;
+  }
 }
 .test-config {
   margin: 16px 0 8px;

@@ -381,6 +381,31 @@ it('shows native image pixels even when they exceed five times the fitted size',
   expect(element('detail-image').style.width).toBe('800px');
   expect(element('detail-image').style.height).toBe('1200px');
 });
+it('refits the open comparison when its full-window viewport changes size', async () => {
+  await renderResult();
+  const viewport = element('detail-viewport');
+  Object.defineProperty(viewport, 'clientWidth', {
+    configurable: true,
+    value: 200,
+  });
+  Object.defineProperty(viewport, 'clientHeight', {
+    configurable: true,
+    value: 300,
+  });
+  element('inspect-result').click();
+  expect(parseFloat(element('detail-image').style.width)).toBeCloseTo(200);
+  Object.defineProperty(viewport, 'clientWidth', {
+    configurable: true,
+    value: 400,
+  });
+  Object.defineProperty(viewport, 'clientHeight', {
+    configurable: true,
+    value: 600,
+  });
+  window.dispatchEvent(new Event('resize'));
+  expect(parseFloat(element('detail-image').style.width)).toBeCloseTo(400);
+  expect(element('detail-dialog').style.width).toBe('');
+});
 it('keeps the photo point under the fingers when pinching a centered portrait comparison', async () => {
   await renderResult();
   const viewport = element('detail-viewport');

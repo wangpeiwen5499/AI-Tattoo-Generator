@@ -165,6 +165,35 @@ export function createDetailViewer(getSources) {
     image.removeAttribute('src');
     sources = {};
   });
+  function fitViewport() {
+    const original = sources.original || sources.raw;
+    if (!original) return;
+    const tallestAspect = Math.max(
+      ...Object.values(sources).map((source) => source.height / source.width)
+    );
+    const ratio = Math.min(
+      (viewport.clientWidth || 800) / original.width,
+      (viewport.clientHeight || 600) / (original.width * tallestAspect),
+      1
+    );
+    baseWidth = original.width * ratio;
+    baseHeight = original.height * ratio;
+    maxZoom = Math.max(
+      5,
+      ...Object.values(sources).map((source) => source.width / baseWidth)
+    );
+    $('detail-zoom').max = String(Math.ceil(maxZoom * 100));
+    zoom = 1;
+    size();
+    viewport.scrollLeft = 0;
+    viewport.scrollTop = 0;
+  }
+  window.addEventListener('resize', () => {
+    if (!dialog.open || !dialog.isConnected) return;
+    points.clear();
+    gesture = null;
+    fitViewport();
+  });
   return {
     open(view = 'raw') {
       if (dialog.open) return;
@@ -186,29 +215,10 @@ export function createDetailViewer(getSources) {
       previousOverflow = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
       const original = sources.original || sources.raw;
-      // Portrait photos deserve a focused viewer, not a full-width empty stage.
-      const availableHeight = Math.max(240, window.innerHeight * 0.92 - 210);
-      dialog.style.width = `${Math.min(window.innerWidth * 0.96, Math.max(740, (availableHeight * original.width) / original.height + 48))}px`;
       dialog.showModal();
       for (const button of document.querySelectorAll('[data-detail-view]'))
         button.disabled = !sources[button.dataset.detailView];
-      const tallestAspect = Math.max(
-        ...Object.values(sources).map((source) => source.height / source.width)
-      );
-      const ratio = Math.min(
-        (viewport.clientWidth || 800) / original.width,
-        (viewport.clientHeight || 600) / (original.width * tallestAspect),
-        1
-      );
-      baseWidth = original.width * ratio;
-      baseHeight = original.height * ratio;
-      maxZoom = Math.max(
-        5,
-        ...Object.values(sources).map((source) => source.width / baseWidth)
-      );
-      $('detail-zoom').max = String(Math.ceil(maxZoom * 100));
-      zoom = 1;
-      size();
+      fitViewport();
       select(sources[view] ? view : 'raw');
       viewport.scrollLeft = 0;
       viewport.scrollTop = 0;
