@@ -9,28 +9,23 @@
       "items": [
         {
           "title": "Features",
-          "url": "/#features",
-          "icon": "Sparkles"
+          "url": "/#features"
         },
         {
-          "title": "Tattoo Ideas",
-          "url": "/tattoo-ideas",
-          "icon": "BookOpen"
+          "title": "Blog",
+          "url": "/blog"
         },
         {
           "title": "Pricing",
-          "url": "/pricing",
-          "icon": "DollarSign"
+          "url": "/pricing"
         },
         {
           "title": "Generate",
-          "url": "/generate",
-          "icon": "Wand"
+          "url": "/generate"
         },
         {
           "title": "History",
-          "url": "/history",
-          "icon": "History"
+          "url": "/history"
         }
       ]
     },
@@ -95,8 +90,8 @@
           "title": "Resources",
           "children": [
             {
-              "title": "Tattoo Design Ideas",
-              "url": "/tattoo-ideas",
+              "title": "Blog",
+              "url": "/blog",
               "target": "_self"
             },
             {

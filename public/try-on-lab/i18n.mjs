@@ -1,5 +1,15 @@
 const EN = new Map(
   Object.entries({
+    主导航: 'Main navigation',
+    功能: 'Features',
+    博客: 'Blog',
+    价格: 'Pricing',
+    工作室: 'Studio',
+    历史记录: 'History',
+    我的设计: 'My Designs',
+    菜单: 'Menu',
+    关闭: 'Close',
+    语言: 'Language',
     试戴工作室: 'Try-on Studio',
     处理无任务编号的测试预留: 'Recover an untracked test reservation',
     'AI 结果改变了画面比例，已完整显示且未拉伸；与原图无法严格逐点对齐。':

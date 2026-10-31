@@ -4,6 +4,8 @@
       "hero",
       "usage",
       "features",
+      "blog",
+      "testimonials",
       "faq",
       "cta"
     ],
@@ -32,7 +34,7 @@
           }
         ],
         "show_avatars": false,
-        "avatars_tip": "全球纹身爱好者的信赖之选",
+        "avatars_tip": "",
         "tattoo_demo": true,
         "demo": {
           "eyebrow": "交互案例",
@@ -140,7 +142,7 @@
       "testimonials": {
         "id": "testimonials",
         "title": "用户评价",
-        "description": "加入成千上万找到完美纹身设计的用户。",
+        "description": "版式示例：评价文案待真实用户反馈核实。",
         "items": [
           {
             "name": "Alex M.",

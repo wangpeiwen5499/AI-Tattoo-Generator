@@ -1,5 +1,8 @@
 import { ReactNode } from 'react';
+import { getLocale } from 'next-intl/server';
 
+import { isProductPreview } from '@/config/preview/product';
+import { PreviewSiteNavigation } from '@/shared/blocks/tattoo/preview-site-navigation';
 import {
   Footer as FooterType,
   Header as HeaderType,
@@ -17,7 +20,11 @@ export default async function LandingLayout({
 }) {
   return (
     <div className="h-screen w-screen">
-      <Header header={header} />
+      {isProductPreview() ? (
+        <PreviewSiteNavigation locale={await getLocale()} />
+      ) : (
+        <Header header={header} />
+      )}
       {children}
       <Footer footer={footer} />
     </div>

@@ -9,28 +9,23 @@
       "items": [
         {
           "title": "功能",
-          "url": "/#features",
-          "icon": "Sparkles"
+          "url": "/#features"
         },
         {
-          "title": "设计灵感",
-          "url": "/tattoo-ideas",
-          "icon": "BookOpen"
+          "title": "博客",
+          "url": "/blog"
         },
         {
           "title": "定价",
-          "url": "/pricing",
-          "icon": "DollarSign"
+          "url": "/pricing"
         },
         {
           "title": "生成",
-          "url": "/generate",
-          "icon": "Wand"
+          "url": "/generate"
         },
         {
           "title": "历史",
-          "url": "/history",
-          "icon": "History"
+          "url": "/history"
         }
       ]
     },
@@ -95,8 +90,8 @@
           "title": "资源",
           "children": [
             {
-              "title": "纹身设计指南",
-              "url": "/tattoo-ideas",
+              "title": "博客",
+              "url": "/blog",
               "target": "_self"
             },
             {

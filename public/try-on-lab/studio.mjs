@@ -9,6 +9,7 @@ import {
 } from './geometry.mjs';
 import { createStudioI18n } from './i18n.mjs';
 import { createStudioLibrary } from './library.mjs';
+import { initStudioNavigation } from './navigation.mjs';
 import { createPreviewWallet, previewCreditCost } from './wallet.mjs';
 
 const $ = (id) => document.getElementById(id);
@@ -16,12 +17,7 @@ const studioLocale =
   new URLSearchParams(location.search).get('lang') === 'en' ? 'en' : 'zh';
 const i18n = createStudioI18n(studioLocale);
 i18n.apply();
-document
-  .querySelector('header .brand')
-  .setAttribute('href', studioLocale === 'zh' ? '/zh' : '/');
-document
-  .querySelector('.studio-nav a')
-  .setAttribute('href', studioLocale === 'zh' ? '/zh/pricing' : '/pricing');
+initStudioNavigation({ locale: studioLocale, t: i18n.t });
 const canvas = $('stage'),
   ctx = canvas.getContext('2d');
 const api = '/api/preview/try-on';

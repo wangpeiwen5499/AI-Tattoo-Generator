@@ -3,8 +3,11 @@ import {
   previewPacks,
   studioUrl,
 } from '@/config/preview/product';
+import { Section } from '@/shared/types/blocks/landing';
+import { Testimonials } from '@/themes/default/blocks/testimonials';
 
 import { PreviewWorkflowCase } from './preview-workflow-case';
+import { TattooGuideLinks } from './tattoo-guide-links';
 
 const linkClass =
   'bg-primary text-primary-foreground inline-flex rounded-full px-7 py-3 text-sm font-medium';
@@ -21,7 +24,13 @@ export function PreviewBanner({ locale }: { locale: string }) {
   );
 }
 
-export function PreviewHome({ locale }: { locale: string }) {
+export function PreviewHome({
+  locale,
+  reviews,
+}: {
+  locale: string;
+  reviews?: Section;
+}) {
   const zh = locale === 'zh';
   const steps = zh
     ? [
@@ -110,6 +119,8 @@ export function PreviewHome({ locale }: { locale: string }) {
       <div className="px-5 pb-20">
         <PreviewWorkflowCase locale={locale} />
       </div>
+      <TattooGuideLinks locale={locale} />
+      {reviews && <Testimonials section={reviews} />}
       <section className="mx-auto max-w-3xl px-5 pb-20">
         <h2 className="mb-8 text-2xl">
           {zh ? '测试前需要了解' : 'Before you try it'}

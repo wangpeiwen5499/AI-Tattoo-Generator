@@ -1,93 +1,60 @@
 'use client';
 
-import { useRef, useState, type PointerEvent } from 'react';
+import { useRef, useState } from 'react';
 import Image from 'next/image';
 
 import { studioUrl } from '@/config/preview/product';
 
 import { CASE_ASSET_ROOT, CASE_PROMPT } from './case-study-data';
+import { Lightbox } from './lightbox';
 
-const PRESET = { x: 41, y: 78, width: 11, rotation: 0 };
-const clamp = (n: number, low: number, high: number) =>
-  Math.min(high, Math.max(low, n));
 const buttonClass =
-  'rounded-full border px-5 py-2.5 text-sm disabled:opacity-40';
+  'mt-4 inline-flex min-h-11 items-center justify-center rounded-full border px-5 py-2.5 text-sm transition-colors enabled:hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-40';
 
+/** A saved, button-only example. Editing belongs to the separate studio. */
 export function PreviewWorkflowCase({ locale }: { locale: string }) {
   const zh = locale === 'zh';
-  const [stage, setStage] = useState<
-    'photo' | 'design' | 'placement' | 'result'
-  >('photo');
-  const [position, setPosition] = useState(PRESET);
-  const photoRef = useRef<HTMLDivElement>(null);
-  const gesture = useRef<{
-    mode: 'move' | 'resize' | 'rotate';
-    clientX: number;
-    clientY: number;
-    position: typeof PRESET;
-    width: number;
-    height: number;
-    centerX: number;
-    centerY: number;
-    angle: number;
-  } | null>(null);
-  const ready = stage === 'placement' || stage === 'result';
-
-  function start(
-    event: PointerEvent<HTMLButtonElement>,
-    mode: 'move' | 'resize' | 'rotate'
-  ) {
-    const rect = photoRef.current?.getBoundingClientRect();
-    if (!rect?.width || !rect.height) return;
-    event.preventDefault();
-    event.currentTarget.setPointerCapture?.(event.pointerId);
-    const centerX = rect.left + (rect.width * position.x) / 100;
-    const centerY = rect.top + (rect.height * position.y) / 100;
-    gesture.current = {
-      mode,
-      clientX: event.clientX,
-      clientY: event.clientY,
-      position,
-      width: rect.width,
-      height: rect.height,
-      centerX,
-      centerY,
-      angle:
-        (Math.atan2(event.clientY - centerY, event.clientX - centerX) * 180) /
-        Math.PI,
-    };
-  }
-  function move(event: PointerEvent<HTMLButtonElement>) {
-    const g = gesture.current;
-    if (!g) return;
-    const dx = ((event.clientX - g.clientX) / g.width) * 100;
-    const dy = ((event.clientY - g.clientY) / g.height) * 100;
-    if (g.mode === 'move')
-      setPosition({
-        ...g.position,
-        x: clamp(g.position.x + dx, 5, 95),
-        y: clamp(g.position.y + dy, 8, 92),
-      });
-    else if (g.mode === 'rotate') {
-      const angle =
-        (Math.atan2(event.clientY - g.centerY, event.clientX - g.centerX) *
-          180) /
-        Math.PI;
-      setPosition({
-        ...g.position,
-        rotation: ((g.position.rotation + angle - g.angle + 540) % 360) - 180,
-      });
-    } else
-      setPosition({
-        ...g.position,
-        width: clamp(g.position.width + dx, 5, 30),
-      });
-  }
-  function reset() {
-    setPosition({ ...PRESET });
-    setStage('placement');
-  }
-
+  const [step, setStep] = useState(0);
+  const [lightbox, setLightbox] = useState<number | null>(null);
+  const opener = useRef<HTMLButtonElement>(null);
+  const finished = step === 4;
+  const placed = step >= 3 && !finished;
+  const instructions = zh
+    ? [
+        '点击“选择这张照片”，从清晰可见的皮肤开始。',
+        '照片已选好。点击“查看已生成图案”，阅读示例提示词与设计。',
+        '图案已准备好。点击“套用示例位置”，查看固定的小腿摆放。',
+        '摆放已确认。点击“查看真实 AI 结果”，对比保存的单张试戴效果。',
+        '四步已完成。可以对比原图，也可以进入工作室用自己的照片试戴。',
+      ]
+    : [
+        'Choose the sample photo to begin with clearly visible skin.',
+        'Photo selected. Reveal the saved design and read its example prompt.',
+        'Design ready. Apply the preset placement to see it on the calf.',
+        'Placement confirmed. View the real saved AI result for this example.',
+        'You have finished all four steps. Compare the original or try your own photo in the studio.',
+      ];
+  const labels = zh
+    ? ['选择照片', '查看图案', '确认位置', '真实效果']
+    : ['Choose photo', 'View design', 'Confirm placement', 'Real result'];
+  const images = [
+    {
+      url: `${CASE_ASSET_ROOT}/before.webp`,
+      alt: zh
+        ? '案例原图：没有纹身的男性全身照'
+        : 'Original sample photo without tattoos',
+    },
+    {
+      url: `${CASE_ASSET_ROOT}/design.webp`,
+      alt: zh
+        ? '已保存的几何狼头纹身设计'
+        : 'Saved geometric wolf tattoo design',
+    },
+    {
+      url: `${CASE_ASSET_ROOT}/calf.webp`,
+      alt: zh ? '保存的 AI 小腿试戴结果' : 'Saved AI calf example result',
+    },
+  ];
   return (
     <section
       id="tattoo-case"
@@ -97,375 +64,239 @@ export function PreviewWorkflowCase({ locale }: { locale: string }) {
       <header className="mb-8">
         <p className="text-primary mb-3 text-xs tracking-widest">
           {zh
-            ? '免费互动案例 / 无 AI 请求'
-            : 'FREE INTERACTIVE EXAMPLE / NO AI REQUESTS'}
+            ? '免费互动案例 · 点击体验'
+            : 'FREE INTERACTIVE EXAMPLE · CLICK TO EXPLORE'}
         </p>
         <h2
           id="preview-case-title"
           className="text-2xl font-medium sm:text-3xl"
         >
           {zh
-            ? '从设计到自由定位，体验单张试戴流程'
-            : 'From design to placement. Explore one try-on.'}
+            ? '四次点击，走完一次纹身试戴'
+            : 'Four clicks. One complete tattoo try-on.'}
         </h2>
-        <p className="text-muted-foreground mt-4 text-sm leading-7">
+        <p className="text-muted-foreground mt-4 max-w-3xl leading-7">
           {zh
-            ? '选择示例照片、查看真实设计，在照片上拖动和缩放，再浏览一张已保存的固定 AI 结果。此案例不使用积分，不调用 AI。'
-            : 'Choose the sample, reveal its real design, move and resize it, then explore one saved fixed AI result. This example uses no credits and makes no AI requests.'}
+            ? '跟随固定案例，了解照片、图案、位置和单张真实效果如何衔接。只需点击按钮，无需拖动，不消耗积分或调用 AI。'
+            : 'Follow a saved example from photo to design, placement and one realistic result. Just click the buttons—no dragging, credits or AI requests.'}
         </p>
       </header>
-      <div className="grid items-start gap-8 lg:grid-cols-[1fr_1.1fr]">
-        <div className="space-y-7">
-          <article className="rounded-xl border p-5">
-            <h3 className="mb-4 font-medium">
-              {zh ? '1 / 选择示例原图' : '1 / Choose the original photo'}
-            </h3>
-            <div className="flex items-center gap-5">
+      <ol
+        className="mb-5 grid grid-cols-4 gap-2"
+        aria-label={zh ? '案例步骤' : 'Example steps'}
+      >
+        {labels.map((label, i) => (
+          <li
+            key={label}
+            aria-current={Math.min(step, 3) === i ? 'step' : undefined}
+            className={`border-t-2 pt-3 text-xs sm:text-sm ${step > i ? 'border-primary text-primary' : Math.min(step, 3) === i ? 'border-primary font-medium' : 'text-muted-foreground border-border'}`}
+          >
+            <span className="mr-2">0{i + 1}</span>
+            {label}
+          </li>
+        ))}
+      </ol>
+      <p
+        className="bg-primary/5 mb-6 rounded-xl border px-5 py-4 text-sm leading-6"
+        role="status"
+        aria-live="polite"
+      >
+        {instructions[step]}
+      </p>
+      <div className="grid gap-8 lg:grid-cols-[1fr_0.85fr]">
+        <div>
+          <button
+            type="button"
+            ref={opener}
+            onClick={() => setLightbox(finished ? 2 : 0)}
+            className="bg-muted relative mx-auto block w-full max-w-md overflow-hidden rounded-2xl"
+            aria-label={zh ? '放大案例照片' : 'Enlarge example photo'}
+          >
+            <Image
+              unoptimized
+              src={images[finished ? 2 : 0].url}
+              alt={images[finished ? 2 : 0].alt}
+              width={1086}
+              height={1448}
+              draggable={false}
+              className="pointer-events-none h-auto w-full"
+            />
+            {placed && (
               <Image
                 unoptimized
-                src={`${CASE_ASSET_ROOT}/before.webp`}
+                src={images[1].url}
                 alt={
                   zh
-                    ? '未加纹身的示例原图'
-                    : 'Original sample photo without tattoos'
+                    ? '固定示例位置的手动叠放'
+                    : 'Manual overlay at the fixed example position'
                 }
-                width={75}
-                height={100}
-                className="rounded-lg"
+                width={640}
+                height={640}
+                draggable={false}
+                className="pointer-events-none absolute mix-blend-multiply"
+                style={{
+                  left: '35.5%',
+                  top: '71%',
+                  width: '11%',
+                  height: '14%',
+                }}
               />
-              <div>
-                <p className="text-muted-foreground mb-3 text-sm">
-                  {zh
-                    ? '光线均匀，目标部位清晰可见。'
-                    : 'Even light, with the intended area visible.'}
-                </p>
-                <button
-                  type="button"
-                  className={buttonClass}
-                  onClick={() => {
-                    setStage('design');
-                    setPosition({ ...PRESET });
-                  }}
-                >
-                  {zh ? '使用此示例照片' : 'Use this sample photo'}
-                </button>
-              </div>
-            </div>
-          </article>
+            )}
+            <span className="absolute top-4 right-4 rounded-full bg-white/90 px-3 py-1 text-xs text-slate-800">
+              {zh ? '点击放大' : 'Click to enlarge'}
+            </span>
+          </button>
+          <p className="text-muted-foreground mx-auto mt-4 max-w-md text-xs leading-6">
+            {finished
+              ? zh
+                ? '这是真实保存的小腿 AI 结果。实际生成效果可能不同。'
+                : 'This is the real saved calf AI result. New generations may differ.'
+              : placed
+                ? zh
+                  ? '这里是固定位置的手动叠放，下一步才是 AI 真实渲染。'
+                  : 'This is a fixed manual overlay. The next step shows realistic AI rendering.'
+                : zh
+                  ? '示例照片只用于演示。工作室支持你自己的局部或侧面照片。'
+                  : 'This sample demonstrates the workflow. The studio also accepts your own close-up or side-view photos.'}
+          </p>
+        </div>
+        <div className="space-y-4">
           <article className="rounded-xl border p-5">
-            <h3 className="mb-4 font-medium">
+            <h3 className="font-medium">1 / {labels[0]}</h3>
+            <p className="text-muted-foreground mt-2 text-sm">
               {zh
-                ? '2 / 查看提示词与已保存设计'
-                : '2 / Reveal the prompt and saved design'}
-            </h3>
+                ? '先选择没有纹身的原始照片。'
+                : 'Start with the original photo before the tattoo.'}
+            </p>
             <button
               type="button"
               className={buttonClass}
-              disabled={stage === 'photo'}
-              onClick={() => setStage('placement')}
+              disabled={step !== 0}
+              onClick={() => setStep(1)}
             >
-              {zh ? '展示已保存设计' : 'Reveal saved design'}
+              {step > 0
+                ? zh
+                  ? '照片已选好'
+                  : 'Photo selected'
+                : zh
+                  ? '选择这张照片'
+                  : 'Use this sample photo'}
             </button>
-            {ready && (
-              <div className="mt-5">
+          </article>
+          <article className="rounded-xl border p-5">
+            <h3 className="font-medium">2 / {labels[1]}</h3>
+            <p className="text-muted-foreground mt-2 text-sm">
+              {zh
+                ? '这段提示词已通过网站生成几何狼头。'
+                : 'This prompt was used to create the saved geometric wolf.'}
+            </p>
+            <blockquote
+              className="text-muted-foreground mt-3 text-sm leading-6"
+              lang="en"
+            >
+              {CASE_PROMPT}
+            </blockquote>
+            <button
+              type="button"
+              className={buttonClass}
+              disabled={step !== 1}
+              onClick={() => setStep(2)}
+            >
+              {step >= 2
+                ? zh
+                  ? '图案已展示'
+                  : 'Design revealed'
+                : zh
+                  ? '查看已生成图案'
+                  : 'Reveal saved design'}
+            </button>
+            {step >= 2 && (
+              <button
+                type="button"
+                className="mt-4 block"
+                onClick={() => setLightbox(1)}
+                aria-label={zh ? '放大纹身图案' : 'Enlarge tattoo design'}
+              >
                 <Image
                   unoptimized
-                  src={`${CASE_ASSET_ROOT}/design.webp`}
-                  alt={
-                    zh
-                      ? '已保存的几何狼头纹身设计'
-                      : 'Saved geometric wolf tattoo design'
-                  }
-                  width={144}
-                  height={144}
-                  className="mx-auto rounded-lg"
+                  src={images[1].url}
+                  alt={images[1].alt}
+                  width={100}
+                  height={100}
+                  className="rounded-lg border bg-white"
                 />
-                <details className="mt-4">
-                  <summary className="cursor-pointer text-sm">
-                    {zh ? '查看真实案例提示词' : 'Read the real example prompt'}
-                  </summary>
-                  <p
-                    lang="en"
-                    className="text-muted-foreground mt-3 text-xs leading-6"
-                  >
-                    {CASE_PROMPT}
-                  </p>
-                </details>
-              </div>
+              </button>
             )}
           </article>
           <article className="rounded-xl border p-5">
-            <h3 className="mb-4 font-medium">
-              {zh ? '3 / 自由拖动和缩放图案' : '3 / Move and resize the design'}
-            </h3>
-            <p className="text-muted-foreground text-sm leading-7">
+            <h3 className="font-medium">3 / {labels[2]}</h3>
+            <p className="text-muted-foreground mt-2 text-sm leading-6">
               {zh
-                ? '拖动图案移动，右下角圆点缩放，上方圆点旋转。键盘方向键移动，+ / − 缩放，R 旋转。初始位置为小腿。'
-                : 'Drag the design to move it, the bottom-right handle to resize, and the top handle to rotate. Keyboard: arrows to move, + / − to resize, R to rotate. The initial preset is on the calf.'}
+                ? '案例使用固定的小腿位置，点击即可确认。真实自由移动、缩放和旋转在工作室中体验。'
+                : 'This guided example uses a fixed calf placement. Free movement, resizing and rotation are available in the studio.'}
             </p>
-            <div className="sr-only">
-              {(
-                [
-                  ['x', zh ? '水平位置' : 'Horizontal position', 5, 95],
-                  ['y', zh ? '垂直位置' : 'Vertical position', 8, 92],
-                  ['width', zh ? '图案大小' : 'Design size', 5, 30],
-                  ['rotation', zh ? '旋转角度' : 'Rotation', -180, 180],
-                ] as const
-              ).map(([key, label, min, max]) => (
-                <label key={key} className="text-xs">
-                  {label}
-                  <input
-                    aria-label={label}
-                    type="range"
-                    min={min}
-                    max={max}
-                    value={position[key]}
-                    disabled={!ready}
-                    onChange={(event) =>
-                      setPosition({
-                        ...position,
-                        [key]: Number(event.target.value),
-                      })
-                    }
-                    className="mt-3 block w-full"
-                  />
-                </label>
-              ))}
-            </div>
             <button
               type="button"
-              disabled={!ready}
-              className={`${buttonClass} mt-5`}
-              onClick={reset}
+              className={buttonClass}
+              disabled={step !== 2}
+              onClick={() => setStep(3)}
             >
-              {zh ? '恢复小腿预设' : 'Reset calf preset'}
+              {step >= 3
+                ? zh
+                  ? '示例位置已确认'
+                  : 'Placement confirmed'
+                : zh
+                  ? '套用示例位置'
+                  : 'Apply preset placement'}
             </button>
           </article>
           <article className="rounded-xl border p-5">
-            <h3 className="mb-4 font-medium">
+            <h3 className="font-medium">4 / {labels[3]}</h3>
+            <p className="text-muted-foreground mt-2 text-sm leading-6">
               {zh
-                ? '4 / 查看固定示例 AI 结果'
-                : '4 / View the fixed example AI result'}
-            </h3>
-            <p className="text-muted-foreground mb-4 text-sm leading-7">
-              {zh
-                ? '这张已保存的 AI 图片对应案例原来的小腿预设，不对应你刚才编辑的位置。自定义位置的真实生成，请进入工作室。'
-                : 'This saved AI image matches the original calf preset. It does not reflect your edited placement. Open the studio to render your own placement.'}
+                ? '查看该设计在相同示例位置上的一张已保存 AI 图片。'
+                : 'View one saved AI image of this design at the same preset location.'}
             </p>
             <button
               type="button"
-              disabled={!ready}
-              className={buttonClass}
-              onClick={() => setStage('result')}
+              className={`${buttonClass} bg-primary text-primary-foreground enabled:hover:bg-primary/90`}
+              disabled={step !== 3}
+              onClick={() => setStep(4)}
             >
-              {zh ? '查看固定示例AI结果' : 'View fixed example AI result'}
+              {zh ? '查看真实 AI 结果' : 'View saved AI result'}
             </button>
           </article>
         </div>
-        <div className="lg:sticky lg:top-24">
-          <p
-            role="status"
-            className="bg-muted mb-3 rounded-lg px-4 py-3 text-xs leading-6"
-          >
-            {stage === 'result'
-              ? zh
-                ? '已保存的固定 AI 结果 · 原始小腿位置，并非你编辑后的布局'
-                : 'Saved fixed AI result · Original calf placement, not your edited layout'
-              : zh
-                ? '仅布局叠图 · 自由移动不会运行 AI，也不是最终皮肤融合效果'
-                : 'Layout overlay only · Moving does not run AI or show the final skin blend'}
-          </p>
-          {stage === 'result' ? (
-            <Image
-              unoptimized
-              src={`${CASE_ASSET_ROOT}/calf.webp`}
-              alt={
-                zh ? '已保存的小腿 AI 示例结果' : 'Saved AI calf example result'
-              }
-              width={900}
-              height={1200}
-              className="max-h-[720px] w-full rounded-xl object-contain"
-            />
-          ) : (
-            <div
-              ref={photoRef}
-              data-testid="workflow-placement-photo"
-              className="relative mx-auto w-full max-w-[540px] overflow-hidden rounded-xl"
-            >
-              <Image
-                unoptimized
-                src={`${CASE_ASSET_ROOT}/before.webp`}
-                alt={
-                  zh ? '自由定位示例照片' : 'Sample photo for free placement'
-                }
-                width={900}
-                height={1200}
-                className="block h-auto w-full"
-                draggable={false}
-              />
-              {ready && (
-                <>
-                  <button
-                    type="button"
-                    aria-label={zh ? '移动纹身图案' : 'Move tattoo design'}
-                    onPointerDown={(e) => start(e, 'move')}
-                    onPointerMove={move}
-                    onPointerUp={() => {
-                      gesture.current = null;
-                    }}
-                    onPointerCancel={() => {
-                      gesture.current = null;
-                    }}
-                    onKeyDown={(event) => {
-                      const delta = (
-                        {
-                          ArrowLeft: [-1, 0],
-                          ArrowRight: [1, 0],
-                          ArrowUp: [0, -1],
-                          ArrowDown: [0, 1],
-                        } as Record<string, number[]>
-                      )[event.key];
-                      if (delta) {
-                        event.preventDefault();
-                        setPosition({
-                          ...position,
-                          x: clamp(position.x + delta[0], 5, 95),
-                          y: clamp(position.y + delta[1], 8, 92),
-                        });
-                      } else if (
-                        ['+', '=', '-', 'r', 'R'].includes(event.key)
-                      ) {
-                        event.preventDefault();
-                        if (event.key.toLowerCase() === 'r')
-                          setPosition({
-                            ...position,
-                            rotation: ((position.rotation + 195) % 360) - 180,
-                          });
-                        else
-                          setPosition({
-                            ...position,
-                            width: clamp(
-                              position.width + (event.key === '-' ? -1 : 1),
-                              5,
-                              30
-                            ),
-                          });
-                      }
-                    }}
-                    className="absolute cursor-move touch-none border border-dashed border-emerald-500 bg-transparent focus-visible:outline-2 focus-visible:outline-emerald-500"
-                    style={{
-                      left: `${position.x}%`,
-                      top: `${position.y}%`,
-                      width: `${position.width}%`,
-                      height: `${(position.width * 14) / 11}%`,
-                      transform: `translate(-50%, -50%) rotate(${position.rotation}deg)`,
-                    }}
-                  >
-                    <Image
-                      unoptimized
-                      src={`${CASE_ASSET_ROOT}/design.webp`}
-                      alt=""
-                      width={640}
-                      height={640}
-                      draggable={false}
-                      className="pointer-events-none h-full w-full mix-blend-multiply"
-                    />
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={zh ? '缩放纹身图案' : 'Resize tattoo design'}
-                    onPointerDown={(e) => start(e, 'resize')}
-                    onPointerMove={move}
-                    onPointerUp={() => {
-                      gesture.current = null;
-                    }}
-                    onPointerCancel={() => {
-                      gesture.current = null;
-                    }}
-                    className="absolute size-7 cursor-nwse-resize touch-none rounded-full border-2 border-white bg-emerald-600 shadow-md"
-                    style={{
-                      left: `${position.x + position.width / 2}%`,
-                      top: `${position.y + (position.width * 7) / 11}%`,
-                      transform: 'translate(-50%, -50%)',
-                    }}
-                    onKeyDown={(event) => {
-                      if (
-                        event.key === 'ArrowLeft' ||
-                        event.key === 'ArrowRight'
-                      ) {
-                        event.preventDefault();
-                        setPosition({
-                          ...position,
-                          width: clamp(
-                            position.width +
-                              (event.key === 'ArrowRight' ? 1 : -1),
-                            5,
-                            30
-                          ),
-                        });
-                      }
-                    }}
-                  />
-                  <button
-                    type="button"
-                    aria-label={zh ? '旋转纹身图案' : 'Rotate tattoo design'}
-                    onPointerDown={(e) => start(e, 'rotate')}
-                    onPointerMove={move}
-                    onPointerUp={() => {
-                      gesture.current = null;
-                    }}
-                    onPointerCancel={() => {
-                      gesture.current = null;
-                    }}
-                    onKeyDown={(event) => {
-                      if (
-                        event.key === 'ArrowRight' ||
-                        event.key === 'ArrowLeft'
-                      ) {
-                        event.preventDefault();
-                        setPosition({
-                          ...position,
-                          rotation:
-                            ((position.rotation +
-                              (event.key === 'ArrowRight' ? 15 : -15) +
-                              540) %
-                              360) -
-                            180,
-                        });
-                      }
-                    }}
-                    className="absolute size-7 cursor-grab touch-none rounded-full border-2 border-white bg-emerald-600 text-xs text-white shadow-md"
-                    style={{
-                      left: `${position.x}%`,
-                      top: `${position.y - (position.width * 7) / 11 - 3}%`,
-                      transform: 'translate(-50%, -50%)',
-                    }}
-                  >
-                    ↻
-                  </button>
-                </>
-              )}
-            </div>
-          )}
-          {stage === 'result' && (
-            <button
-              type="button"
-              className={`${buttonClass} mt-4`}
-              onClick={() => setStage('placement')}
-            >
-              {zh ? '返回编辑布局' : 'Return to your layout'}
-            </button>
-          )}
-          <a
-            href={studioUrl(undefined, locale)}
-            className="bg-primary text-primary-foreground mt-5 inline-flex rounded-full px-6 py-3 text-sm font-medium"
-          >
-            {zh
-              ? '进入工作室生成你的位置效果'
-              : 'Render your placement in the studio'}
-          </a>
-        </div>
       </div>
+      <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+        <button
+          type="button"
+          className={buttonClass}
+          onClick={() => setStep(0)}
+        >
+          {zh ? '重新体验案例' : 'Restart example'}
+        </button>
+        <a
+          href={studioUrl(undefined, locale)}
+          className={`${buttonClass} bg-primary text-primary-foreground`}
+        >
+          {zh ? '用自己的照片进入工作室' : 'Try your own photo in the studio'}
+        </a>
+      </div>
+      <Lightbox
+        images={images}
+        index={lightbox}
+        onClose={() => setLightbox(null)}
+        onIndexChange={setLightbox}
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          opener.current?.focus();
+        }}
+        labels={{
+          close: zh ? '关闭' : 'Close',
+          description: zh ? '保存的真实案例图片' : 'Saved real example images',
+        }}
+      />
     </section>
   );
 }

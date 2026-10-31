@@ -22,13 +22,24 @@ export default async function LandingPage({
   if (isProductPreview())
     return (
       <>
-        <PreviewHome locale={locale} />
-        <TattooGuideLinks locale={locale} />
+        <PreviewHome
+          locale={locale}
+          reviews={t.raw('page.sections.testimonials')}
+        />
       </>
     );
 
   // get page data
-  const page: DynamicPage = t.raw('page');
+  const page: DynamicPage = structuredClone(t.raw('page'));
+  const sections = {
+    ...page.sections,
+    blog: { id: 'blog', component: <TattooGuideLinks locale={locale} /> },
+  };
+  page.sections = Object.fromEntries(
+    (page.show_sections || Object.keys(sections))
+      .filter((key) => key in sections)
+      .map((key) => [key, sections[key as keyof typeof sections]])
+  );
 
   // load page component
   const Page = await getThemePage('dynamic-page');
@@ -36,7 +47,6 @@ export default async function LandingPage({
   return (
     <>
       <Page locale={locale} page={page} />
-      <TattooGuideLinks locale={locale} />
     </>
   );
 }

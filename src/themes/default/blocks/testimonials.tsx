@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { Pause, Play, Quote } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
-import { LazyImage } from '@/shared/blocks/common';
 import { cn } from '@/shared/lib/utils';
 import { Section, SectionItem } from '@/shared/types/blocks/landing';
 
@@ -21,11 +20,13 @@ function ReviewCard({ item }: { item: SectionItem }) {
         {item.quote || item.description}
       </blockquote>
       <figcaption className="mt-8 flex items-center gap-3 border-t pt-5">
-        <LazyImage
-          src={item.image?.src || item.avatar?.src || ''}
-          alt=""
-          className="size-11 shrink-0 rounded-full object-cover grayscale"
-        />
+        <span
+          className="bg-primary/10 text-primary flex size-11 shrink-0 items-center justify-center rounded-full text-base font-medium"
+          aria-hidden="true"
+        >
+          {Array.from(String(item.name || '').trim())[0]?.toLocaleUpperCase() ||
+            '?'}
+        </span>
         <div>
           <p className="text-sm font-semibold">{item.name}</p>
           <p className="text-muted-foreground mt-1 text-xs">

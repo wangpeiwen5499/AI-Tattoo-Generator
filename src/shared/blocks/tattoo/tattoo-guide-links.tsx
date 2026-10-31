@@ -11,13 +11,14 @@ export function TattooGuideLinks({
   const zh = locale === 'zh';
   return (
     <section
+      id="blog"
       className={`mx-auto max-w-6xl px-5 ${compact ? 'py-12' : 'py-20'}`}
       aria-labelledby="tattoo-guides-heading"
     >
       <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-primary mb-2 text-xs tracking-widest">
-            TATTOO IDEAS
+            FROM THE BLOG
           </p>
           <h2
             id="tattoo-guides-heading"
@@ -29,10 +30,10 @@ export function TattooGuideLinks({
           </h2>
         </div>
         <Link
-          href="/tattoo-ideas"
+          href="/blog"
           className="text-primary text-sm underline underline-offset-4"
         >
-          {zh ? '浏览设计指南' : 'Explore tattoo design ideas'}
+          {zh ? '阅读全部文章' : 'Read the blog'}
         </Link>
       </div>
       <div className="grid gap-5 md:grid-cols-3">

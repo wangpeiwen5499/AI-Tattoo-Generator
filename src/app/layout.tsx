@@ -79,6 +79,7 @@ export default async function RootLayout({
       <head>
         <link rel="icon" href={envConfigs.app_favicon} />
         <link rel="alternate icon" href="/favicon.ico" />
+        <link rel="stylesheet" href="/site-navigation.css" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
         {/* inject ads meta tags */}

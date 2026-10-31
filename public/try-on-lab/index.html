@@ -6,27 +6,27 @@
     <meta name="robots" content="noindex,nofollow" />
     <title>TattooVis · 定点试戴预览</title>
     <link rel="stylesheet" href="./studio.css" />
+    <link rel="stylesheet" href="/site-navigation.css" />
   </head>
   <body>
-    <header>
-      <a class="brand" href="/"
-        ><img src="/favicon.ico" alt="" />TattooVis
-        <span data-i18n="试戴工作室">试戴工作室</span></a
-      >
-      <nav
-        class="studio-nav"
-        aria-label="工作室导航"
-        data-i18n-aria-label="工作室导航"
-      >
-        <button id="nav-designs" class="quiet" data-i18n="我的图案">
-          我的图案</button
-        ><button id="nav-history" class="quiet" data-i18n="试戴历史">
-          试戴历史</button
-        ><a href="/pricing" data-i18n="积分说明">积分说明</a>
-      </nav>
-      <span class="preview-tag" data-i18n="Preview · 本地保存 / 测试积分"
-        >Preview · 本地保存 / 测试积分</span
-      >
+    <header class="site-navigation" data-menu-open="false">
+      <div class="site-navigation-inner">
+        <a class="site-brand brand" href="/zh" aria-label="TattooVis">
+          <img src="/favicon.ico" alt="" width="28" height="28" /><span>TattooVis</span>
+        </a>
+        <button id="site-menu-toggle" class="site-menu-toggle" type="button" aria-controls="site-navigation-links" aria-expanded="false" data-i18n="菜单">菜单</button>
+        <nav id="site-navigation-links" class="site-navigation-links studio-nav" aria-label="主导航" data-i18n-aria-label="主导航">
+          <a class="site-nav-link" href="/zh#features" data-site-path="#features" data-i18n="功能">功能</a>
+          <a class="site-nav-link" href="/zh/blog" data-site-path="/blog" data-i18n="博客">博客</a>
+          <a id="nav-pricing" class="site-nav-link" href="/zh/pricing" data-site-path="/pricing" data-i18n="价格">价格</a>
+          <a id="nav-studio" class="site-nav-link" href="./index.html" aria-current="page" data-i18n="工作室">工作室</a>
+          <button id="nav-history" class="site-nav-link" type="button" data-i18n="历史记录">历史记录</button>
+          <button id="nav-designs" class="site-nav-link" type="button" data-i18n="我的设计">我的设计</button>
+          <div class="site-language" aria-label="语言" data-i18n-aria-label="语言">
+            <a id="nav-language-en" href="?lang=en" lang="en">EN</a><span aria-hidden="true">/</span><a id="nav-language-zh" href="?lang=zh" lang="zh">中文</a>
+          </div>
+        </nav>
+      </div>
     </header>
     <main>
       <div class="intro">

@@ -4,6 +4,8 @@
       "hero",
       "usage",
       "features",
+      "blog",
+      "testimonials",
       "faq",
       "cta"
     ],
@@ -32,7 +34,7 @@
           }
         ],
         "show_avatars": false,
-        "avatars_tip": "Trusted by tattoo enthusiasts worldwide",
+        "avatars_tip": "",
         "tattoo_demo": true,
         "demo": {
           "eyebrow": "Interactive example",
@@ -140,7 +142,7 @@
       "testimonials": {
         "id": "testimonials",
         "title": "What Our Users Say",
-        "description": "Join thousands who found their perfect tattoo design.",
+        "description": "Layout preview: sample feedback awaiting verification.",
         "items": [
           {
             "name": "Alex M.",

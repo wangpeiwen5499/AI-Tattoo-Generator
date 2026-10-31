@@ -20,9 +20,7 @@ it('uses Chinese by default and English only when requested', () => {
   i18n.apply();
   expect(document.documentElement.lang).toBe('en');
   expect(document.title).toBe('TattooVis · Try-on Studio Preview');
-  expect(document.getElementById('nav-history')?.textContent).toBe(
-    'Try-on history'
-  );
+  expect(document.getElementById('nav-history')?.textContent).toBe('History');
 });
 
 it('translates explicit labels and attributes while preserving input and saved names', () => {
@@ -81,7 +79,7 @@ it('can restore static Chinese labels without overwriting user input', () => {
   createStudioI18n('en').apply();
   createStudioI18n('zh').apply();
   expect(document.documentElement.lang).toBe('zh-CN');
-  expect(document.getElementById('nav-designs')?.textContent).toBe('我的图案');
+  expect(document.getElementById('nav-designs')?.textContent).toBe('我的设计');
   expect(input.value).toBe('dragon');
 });
 
