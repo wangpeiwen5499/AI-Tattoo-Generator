@@ -17,7 +17,7 @@
       <div class="intro">
         <div>
           <h1>就纹在这里。</h1>
-          <p>上传你想纹身的部位，选好位置，再看真实效果。</p>
+          <p>上传照片，直接摆放纹身，再看真实效果。</p>
         </div>
         <button id="reset" class="quiet">重新开始</button>
       </div>
@@ -25,12 +25,13 @@
         <section class="photo-workspace" aria-label="照片工作区">
           <div class="surface-bar">
             <div class="tabs" role="group" aria-label="显示模式">
-              <button data-view="draft" aria-pressed="true">摆放预览</button
-              ><button data-view="original" aria-pressed="false">原图</button
+              <button data-view="draft" aria-pressed="true">原图编辑</button
+              ><button data-view="original" aria-pressed="false">
+                查看原图</button
               ><button data-view="raw" hidden aria-pressed="false">
                 AI 原始结果</button
               ><button data-view="composite" hidden aria-pressed="false">
-                选区内合成
+                局部融合结果
               </button>
             </div>
             <span id="view-caption">本地叠图，尚未进行 AI 渲染</span>
@@ -38,7 +39,7 @@
           <div class="canvas-shell" id="canvas-shell">
             <canvas
               id="stage"
-              aria-label="在照片上按住并拖动，圈出希望纹身的区域"
+              aria-label="在原图上拖动纹身，使用控制柄或双指缩放和旋转"
               tabindex="0"
             ></canvas>
             <div class="empty" id="empty">
@@ -53,14 +54,18 @@
           </div>
           <div class="canvas-footer">
             <p id="photo-hint">照片在点击真实生成前只留在本机浏览器中。</p>
-            <button id="download" class="quiet" hidden>下载当前图</button>
+            <div class="photo-actions">
+              <button id="inspect-result" class="quiet" hidden>
+                放大查看 / 三图对比</button
+              ><button id="download" class="quiet" hidden>下载当前图</button>
+            </div>
           </div>
           <div id="result-info" class="result-info" hidden></div>
         </section>
         <aside class="controls">
           <section>
             <div class="section-heading">
-              <h2>照片与位置</h2>
+              <h2>身体照片</h2>
               <label for="photo" class="text-button">更换照片</label>
             </div>
             <input
@@ -70,47 +75,8 @@
               hidden
             />
             <p class="hint">
-              在照片上拖出一个椭圆，告诉我们纹在哪里。也可以用下面的滑块调整。
+              上传照片后选择图案，直接在照片上调整。无需圈选区域。
             </p>
-            <button id="select-region" class="button secondary" disabled>
-              圈选纹身区域
-            </button>
-            <div id="region-summary" class="small">还没有选择位置</div>
-            <div class="range-grid">
-              <label
-                >区域横向位置<input
-                  id="region-x"
-                  type="range"
-                  min="0"
-                  max="100"
-                  value="50"
-                  disabled /></label
-              ><label
-                >区域纵向位置<input
-                  id="region-y"
-                  type="range"
-                  min="0"
-                  max="100"
-                  value="50"
-                  disabled /></label
-              ><label
-                >区域宽度<input
-                  id="region-width"
-                  type="range"
-                  min="5"
-                  max="90"
-                  value="30"
-                  disabled /></label
-              ><label
-                >区域高度<input
-                  id="region-height"
-                  type="range"
-                  min="5"
-                  max="90"
-                  value="35"
-                  disabled
-              /></label>
-            </div>
           </section>
           <section>
             <div class="section-heading">
@@ -146,11 +112,11 @@
           </section>
           <section>
             <div class="section-heading">
-              <h2>摆放预览</h2>
+              <h2>调整纹身</h2>
               <span class="free">免费调整</span>
             </div>
             <p class="hint">
-              拖动图案改变位置，或使用滑块微调。白底会在预览中去除。
+              拖动图案移动；右下角控制柄缩放，上方圆点旋转。手机可双指缩放和旋转，也可用滑块微调。白底会自动淡化。
             </p>
             <div class="range-grid">
               <label
@@ -159,7 +125,7 @@
                   id="scale"
                   type="range"
                   min="20"
-                  max="180"
+                  max="300"
                   value="100"
                   disabled /></label
               ><label
@@ -199,8 +165,17 @@
               /></label>
             </div>
             <button id="fit-design" class="quiet" disabled>
-              让图案重新居中
+              重置位置和角度
             </button>
+            <button
+              id="flip-design"
+              class="quiet"
+              disabled
+              aria-pressed="false"
+            >
+              水平翻转
+            </button>
+            <button id="remove-design" class="quiet" disabled>移除图案</button>
           </section>
           <section class="render-section">
             <h2>生成一张真实效果</h2>
@@ -243,11 +218,51 @@
         </aside>
       </div>
       <footer>
-        这是交互与出图验证页。摆放预览属于普通叠图；AI
-        原始结果和选区内合成结果会分别展示。上传到 KIE
+        这是交互与出图验证页。手动叠放属于普通叠图；AI
+        原始结果和局部融合结果结果会分别展示。上传到 KIE
         的测试文件是临时文件，请及时保存结果。
       </footer>
     </main>
+    <dialog id="detail-dialog" aria-labelledby="detail-title">
+      <div class="detail-header">
+        <h2 id="detail-title">放大查看 · 同位置对比</h2>
+        <button id="detail-close" class="quiet" autofocus>关闭</button>
+      </div>
+      <div class="detail-toolbar">
+        <div class="tabs" role="group" aria-label="对比图片">
+          <button data-detail-view="original" aria-pressed="false">原图</button>
+          <button data-detail-view="draft" aria-pressed="false">
+            手动叠放
+          </button>
+          <button data-detail-view="raw" aria-pressed="true">
+            AI 生成结果
+          </button>
+        </div>
+        <label
+          >缩放
+          <input
+            id="detail-zoom"
+            type="range"
+            min="100"
+            max="500"
+            value="100"
+            step="10"
+          /><output id="detail-zoom-value">100%</output></label
+        >
+        <button id="detail-fit" class="quiet">适应窗口</button>
+        <button id="detail-native" class="quiet">实际像素</button>
+      </div>
+      <p id="detail-hint" class="small">
+        拖动查看局部，滚轮或双指缩放；切换图片会保留查看位置。
+      </p>
+      <div
+        id="detail-viewport"
+        tabindex="0"
+        aria-label="大图细节，可滚动或拖动查看"
+      >
+        <img id="detail-image" alt="纹身对比大图" draggable="false" />
+      </div>
+    </dialog>
     <script type="module" src="./studio.mjs"></script>
   </body>
 </html>

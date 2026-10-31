@@ -1,9 +1,17 @@
-import { fitPlacement, pointInPhoto, regionFromDrag } from './geometry.mjs';
+import { createDetailViewer } from './detail-viewer.mjs';
+import {
+  hitPlacement,
+  placementGeometry,
+  placementRegion,
+  pointInPhoto,
+  transformGesture,
+} from './geometry.mjs';
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('stage'),
   ctx = canvas.getContext('2d');
 const api = '/api/preview/try-on';
+const editorSession = crypto.randomUUID();
 const state = {
   photo: null,
   design: null,
@@ -11,8 +19,7 @@ const state = {
   raw: null,
   composite: null,
   region: null,
-  tempRegion: null,
-  mode: 'select',
+  flipped: false,
   view: 'draft',
   width: 1200,
   height: 900,
@@ -28,14 +35,11 @@ const state = {
   designAsset: null,
   gesture: null,
   polling: false,
+  revision: 0,
+  resultMatches: false,
 };
+const editingContext = () => `${editorSession}:${state.revision}`;
 const controls = ['scale', 'rotation', 'opacity', 'placement-x', 'placement-y'];
-const regionControls = [
-  'region-x',
-  'region-y',
-  'region-width',
-  'region-height',
-];
 function status(message, error = false) {
   $('status').textContent = message;
   $('status').dataset.error = String(error);
@@ -63,10 +67,13 @@ function update() {
     'prompt',
   ])
     $(id).disabled = state.busy;
-  const placed = !!(state.photo && state.design && state.region);
+  const placed = !!(state.photo && state.design);
   for (const id of controls) $(id).disabled = !placed || state.busy;
-  for (const id of regionControls) $(id).disabled = !state.region || state.busy;
-  $('select-region').disabled = !state.photo || state.busy;
+  for (const id of ['flip-design', 'remove-design'])
+    $(id).disabled = !placed || state.busy;
+  $('flip-design').setAttribute('aria-pressed', String(state.flipped));
+  $('inspect-result').hidden = !state.raw;
+  $('inspect-result').disabled = state.busy;
   $('fit-design').disabled = !placed || state.busy;
   const access =
     state.configured &&
@@ -77,7 +84,6 @@ function update() {
   $('render').disabled = !placed || !access || state.busy;
   const missing = [];
   if (!state.photo) missing.push('上传部位照片');
-  if (!state.region) missing.push('圈选纹身区域');
   if (!state.design) missing.push('选择纹身图案');
   if (!state.configured) missing.push('完成 Preview 测试服务配置');
   if ($('access-token').value.length < 24)
@@ -100,15 +106,6 @@ function update() {
   $('opacity').value = String(state.opacity * 100);
   $('placement-x').value = String(state.px * 100);
   $('placement-y').value = String(state.py * 100);
-  if (state.region) {
-    const r = state.region;
-    $('region-summary').textContent =
-      `已选区域：照片宽度的 ${Math.round(r.width * 100)}%，高度的 ${Math.round(r.height * 100)}%`;
-    $('region-x').value = String((r.x + r.width / 2) * 100);
-    $('region-y').value = String((r.y + r.height / 2) * 100);
-    $('region-width').value = String(r.width * 100);
-    $('region-height').value = String(r.height * 100);
-  } else $('region-summary').textContent = '还没有选择位置';
   for (const button of document.querySelectorAll('[data-view]')) {
     button.setAttribute(
       'aria-pressed',
@@ -121,53 +118,96 @@ function update() {
     state.view === 'raw'
       ? 'KIE 返回的原始图片'
       : state.view === 'composite'
-        ? '将 AI 结果合成在选区内，选区外使用原图'
+        ? 'AI 结果在纹身附近局部融合，其他位置保留原图'
         : state.view === 'original'
-          ? '你上传的照片'
+          ? '你上传的照片（不显示纹身）'
           : '本地叠图，尚未进行 AI 渲染';
-  canvas.className = state.mode === 'select' ? 'selecting' : 'moving';
+  canvas.className = state.view === 'draft' && state.design ? 'moving' : '';
   const dimensions = viewDimensions();
   canvas.style.maxWidth = `${((innerWidth < 760 ? 560 : 760) * dimensions.width) / dimensions.height}px`;
 }
-function regionPath(context, r) {
-  context.beginPath();
-  context.ellipse(
-    (r.x + r.width / 2) * state.width,
-    (r.y + r.height / 2) * state.height,
-    (r.width * state.width) / 2,
-    (r.height * state.height) / 2,
-    0,
-    0,
-    Math.PI * 2
-  );
-}
-function draft(context) {
-  if (!state.design || !state.region) return;
-  const r = state.region;
-  const fit = fitPlacement(
-    r,
+function geometry() {
+  return placementGeometry(
+    state,
     state.design.width / state.design.height,
     state.width,
     state.height
   );
+}
+function draft(context) {
+  if (!state.design || !state.photo) return;
+  const g = geometry();
   context.save();
-  regionPath(context, r);
-  context.clip();
-  context.translate(
-    (r.x + r.width * state.px) * state.width,
-    (r.y + r.height * state.py) * state.height
-  );
-  context.rotate((state.rotation * Math.PI) / 180);
+  context.translate(g.cx, g.cy);
+  context.rotate((g.rotation * Math.PI) / 180);
+  if (state.flipped) context.scale(-1, 1);
   context.globalAlpha = state.opacity;
   context.globalCompositeOperation = 'multiply';
   context.drawImage(
     state.design,
-    (-fit.width * state.scale) / 2,
-    (-fit.height * state.scale) / 2,
-    fit.width * state.scale,
-    fit.height * state.scale
+    -g.width / 2,
+    -g.height / 2,
+    g.width,
+    g.height
   );
   context.restore();
+}
+function handles() {
+  if (!state.design) return;
+  const g = geometry();
+  const unit = state.width / Math.max(canvas.getBoundingClientRect().width, 1);
+  const angle = (g.rotation * Math.PI) / 180;
+  const project = (x, y) => ({
+    x: g.cx + x * Math.cos(angle) - y * Math.sin(angle),
+    y: g.cy + x * Math.sin(angle) + y * Math.cos(angle),
+  });
+  return {
+    g,
+    unit,
+    resize: project(g.width / 2, g.height / 2),
+    rotate: project(0, -g.height / 2 - 30 * unit),
+  };
+}
+function drawHandles() {
+  const h = handles();
+  if (!h) return;
+  ctx.save();
+  ctx.translate(h.g.cx, h.g.cy);
+  ctx.rotate((h.g.rotation * Math.PI) / 180);
+  ctx.strokeStyle = '#7160ed';
+  ctx.lineWidth = 2 * h.unit;
+  ctx.strokeRect(-h.g.width / 2, -h.g.height / 2, h.g.width, h.g.height);
+  ctx.beginPath();
+  ctx.moveTo(0, -h.g.height / 2);
+  ctx.lineTo(0, -h.g.height / 2 - 30 * h.unit);
+  ctx.stroke();
+  ctx.restore();
+  for (const point of [h.resize, h.rotate]) {
+    ctx.beginPath();
+    ctx.arc(point.x, point.y, 8 * h.unit, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    ctx.strokeStyle = '#7160ed';
+    ctx.lineWidth = 2 * h.unit;
+    ctx.stroke();
+  }
+}
+function invalidateResult() {
+  state.revision += 1;
+  state.resultMatches = false;
+  state.raw = null;
+  state.composite = null;
+  state.region = null;
+  $('result-info').hidden = true;
+  state.view = 'draft';
+}
+function edited() {
+  state.scale = constrain(state.scale, 0.2, 3);
+  state.rotation = ((((state.rotation + 180) % 360) + 360) % 360) - 180;
+  state.px = constrain(state.px, 0, 1);
+  state.py = constrain(state.py, 0, 1);
+  invalidateResult();
+  draw();
 }
 function makeCanvas(width = state.width, height = state.height) {
   const element = document.createElement('canvas');
@@ -206,19 +246,7 @@ function draw() {
   if (image) ctx.drawImage(image, 0, 0, dimensions.width, dimensions.height);
   if (state.view === 'draft' && state.photo) {
     draft(ctx);
-    const r = state.tempRegion || state.region;
-    if (r) {
-      ctx.save();
-      regionPath(ctx, r);
-      ctx.strokeStyle = '#7160ed';
-      ctx.lineWidth = (2 * state.width) / Math.max(canvas.clientWidth, 1);
-      ctx.setLineDash([
-        (7 * state.width) / Math.max(canvas.clientWidth, 1),
-        (5 * state.width) / Math.max(canvas.clientWidth, 1),
-      ]);
-      ctx.stroke();
-      ctx.restore();
-    }
+    drawHandles();
   }
   update();
 }
@@ -233,11 +261,13 @@ function fitDesign() {
   state.rotation = 0;
   state.px = 0.5;
   state.py = 0.5;
-  state.mode = state.region ? 'move' : 'select';
+  state.flipped = false;
+  invalidateResult();
   state.view = 'draft';
   draw();
 }
 async function setPhoto(image, sample = false) {
+  invalidateResult();
   const working = makeCanvas();
   let sw = image.naturalWidth || image.width,
     sh = image.naturalHeight || image.height,
@@ -262,11 +292,18 @@ async function setPhoto(image, sample = false) {
   state.raw = null;
   state.composite = null;
   state.photoAsset = null;
-  state.mode = 'select';
+  state.scale = 1;
+  state.rotation = 0;
+  state.px = 0.5;
+  state.py = 0.5;
+  state.flipped = false;
+  pointers.clear();
+  state.gesture = null;
   state.view = 'draft';
   $('result-info').hidden = true;
-  $('photo-hint').textContent = '在照片上拖动，圈出希望纹身的皮肤区域。';
-  status('照片已准备好。先圈选位置，也可以使用滑块调整。');
+  $('photo-hint').textContent =
+    '直接拖动纹身调整位置，控制柄或双指可缩放和旋转。';
+  status('照片已准备好。选择纹身图案，即可直接在原图上调整。');
   draw();
 }
 async function setDesign(image, name, asset = null) {
@@ -350,130 +387,156 @@ $('sample-design').onclick = async () => {
     status(error.message, true);
   }
 };
-$('select-region').onclick = () => {
-  if (!state.region)
-    state.region = { x: 0.35, y: 0.3, width: 0.3, height: 0.35 };
-  state.mode = 'select';
-  state.view = 'draft';
-  status('在照片上按住并拖动，圈出希望纹身的区域。');
+$('fit-design').onclick = () => {
+  if (!state.busy) fitDesign();
+};
+$('flip-design').onclick = () => {
+  if (state.busy) return;
+  state.flipped = !state.flipped;
+  edited();
+};
+$('remove-design').onclick = () => {
+  if (state.busy) return;
+  state.design = null;
+  state.designSource = null;
+  state.designAsset = null;
+  pointers.clear();
+  state.gesture = null;
+  $('design-thumb').hidden = true;
+  $('design-thumb').removeAttribute('src');
+  $('design-name').textContent = '还没有选择图案';
+  invalidateResult();
   draw();
 };
-$('fit-design').onclick = fitDesign;
 for (const button of document.querySelectorAll('[data-view]'))
-  button.onclick = () => setView(button.dataset.view);
+  button.onclick = () => {
+    if (!state.busy) setView(button.dataset.view);
+  };
 for (const id of controls)
   $(id).oninput = () => {
+    if (state.busy) return;
     state.scale = Number($('scale').value) / 100;
     state.rotation = Number($('rotation').value);
     state.opacity = Number($('opacity').value) / 100;
     state.px = Number($('placement-x').value) / 100;
     state.py = Number($('placement-y').value) / 100;
-    state.view = 'draft';
-    state.raw = null;
-    state.composite = null;
-    $('result-info').hidden = true;
-    draw();
+    edited();
   };
-for (const id of regionControls)
-  $(id).oninput = () => {
-    if (!state.region) return;
-    const width = Number($('region-width').value) / 100,
-      height = Number($('region-height').value) / 100;
-    const x = constrain(
-        Number($('region-x').value) / 100 - width / 2,
-        0,
-        1 - width
-      ),
-      y = constrain(
-        Number($('region-y').value) / 100 - height / 2,
-        0,
-        1 - height
-      );
-    state.region = { x, y, width, height };
-    state.raw = null;
-    state.composite = null;
-    $('result-info').hidden = true;
-    state.view = 'draft';
-    draw();
-  };
-canvas.onpointerdown = (event) => {
-  if (!state.photo || state.busy || state.view !== 'draft') return;
-  event.preventDefault();
-  canvas.setPointerCapture(event.pointerId);
-  const bounds = canvas.getBoundingClientRect();
-  const point = pointInPhoto(
-    { x: event.clientX, y: event.clientY },
-    {
-      x: bounds.left,
-      y: bounds.top,
-      width: bounds.width,
-      height: bounds.height,
-    }
-  );
-  state.gesture = {
-    start: point,
-    px: state.px,
-    py: state.py,
-    mode: state.mode,
-  };
-};
-canvas.onpointermove = (event) => {
-  if (!state.gesture) return;
-  event.preventDefault();
+const pointers = new Map();
+function photoPoint(event) {
   const b = canvas.getBoundingClientRect();
-  const point = pointInPhoto(
+  return pointInPhoto(
     { x: event.clientX, y: event.clientY },
     { x: b.left, y: b.top, width: b.width, height: b.height }
   );
-  if (state.gesture.mode === 'select')
-    state.tempRegion = regionFromDrag(state.gesture.start, point);
-  else if (state.region) {
-    state.px = constrain(
-      state.gesture.px + (point.x - state.gesture.start.x) / state.region.width,
-      0,
-      1
-    );
-    state.py = constrain(
-      state.gesture.py +
-        (point.y - state.gesture.start.y) / state.region.height,
-      0,
-      1
-    );
-  }
-  draw();
+}
+function beginGesture(mode = 'move') {
+  const points = [...pointers.values()];
+  state.gesture = {
+    mode: points.length >= 2 ? 'pinch' : mode,
+    points: points.slice(0, 2),
+    placement: {
+      px: state.px,
+      py: state.py,
+      scale: state.scale,
+      rotation: state.rotation,
+    },
+  };
+}
+canvas.onpointerdown = (event) => {
+  if (
+    !state.photo ||
+    !state.design ||
+    state.busy ||
+    state.view !== 'draft' ||
+    pointers.size >= 2
+  )
+    return;
+  const point = photoPoint(event),
+    h = handles();
+  const near = (p) =>
+    Math.hypot(point.x * state.width - p.x, point.y * state.height - p.y) <=
+    22 * h.unit;
+  const mode = near(h.rotate) ? 'rotate' : near(h.resize) ? 'resize' : 'move';
+  if (
+    !pointers.size &&
+    mode === 'move' &&
+    !hitPlacement(point, h.g, state.width, state.height)
+  )
+    return;
+  event.preventDefault();
+  canvas.focus({ preventScroll: true });
+  canvas.setPointerCapture(event.pointerId);
+  pointers.set(event.pointerId, point);
+  beginGesture(mode);
 };
-function endGesture() {
-  if (!state.gesture) return;
-  if (state.gesture.mode === 'select' && state.tempRegion) {
-    state.region = state.tempRegion;
-    state.tempRegion = null;
-    state.mode = 'move';
-    fitDesign();
-    status('区域已选好。选择图案后，可以直接拖动或用滑块调整。');
+canvas.onpointermove = (event) => {
+  if (!state.gesture || !pointers.has(event.pointerId) || state.busy) return;
+  event.preventDefault();
+  const point = photoPoint(event);
+  pointers.set(event.pointerId, point);
+  const gesture = state.gesture,
+    start = gesture.points[0],
+    initial = gesture.placement;
+  if (gesture.mode === 'pinch') {
+    Object.assign(
+      state,
+      transformGesture(
+        gesture.points,
+        [...pointers.values()],
+        initial,
+        state.width,
+        state.height
+      )
+    );
+  } else if (gesture.mode === 'move') {
+    state.px = initial.px + point.x - start.x;
+    state.py = initial.py + point.y - start.y;
+  } else {
+    const vector = (p) => ({
+      x: (p.x - initial.px) * state.width,
+      y: (p.y - initial.py) * state.height,
+    });
+    const a = vector(start),
+      b = vector(point);
+    if (gesture.mode === 'resize')
+      state.scale =
+        (initial.scale * Math.hypot(b.x, b.y)) /
+        Math.max(1, Math.hypot(a.x, a.y));
+    else
+      state.rotation =
+        initial.rotation +
+        ((Math.atan2(b.y, b.x) - Math.atan2(a.y, a.x)) * 180) / Math.PI;
   }
+  edited();
+};
+function endGesture(event) {
+  pointers.delete(event.pointerId);
   state.gesture = null;
+  if (pointers.size) beginGesture();
   draw();
 }
 canvas.onpointerup = endGesture;
 canvas.onpointercancel = () => {
-  state.tempRegion = null;
+  pointers.clear();
   state.gesture = null;
   draw();
 };
+canvas.onlostpointercapture = (event) => {
+  if (pointers.has(event.pointerId)) endGesture(event);
+};
 canvas.onkeydown = (event) => {
-  if (!state.region || state.busy) return;
+  if (!state.design || state.busy || state.view !== 'draft') return;
   const delta = event.shiftKey ? 0.05 : 0.01;
-  if (event.key === 'ArrowLeft') state.px = constrain(state.px - delta, 0, 1);
-  else if (event.key === 'ArrowRight')
-    state.px = constrain(state.px + delta, 0, 1);
-  else if (event.key === 'ArrowUp')
-    state.py = constrain(state.py - delta, 0, 1);
-  else if (event.key === 'ArrowDown')
-    state.py = constrain(state.py + delta, 0, 1);
+  if (event.key === 'ArrowLeft') state.px -= delta;
+  else if (event.key === 'ArrowRight') state.px += delta;
+  else if (event.key === 'ArrowUp') state.py -= delta;
+  else if (event.key === 'ArrowDown') state.py += delta;
+  else if (event.key === '+' || event.key === '=') state.scale += 0.05;
+  else if (event.key === '-') state.scale -= 0.05;
   else return;
   event.preventDefault();
-  state.view = 'draft';
-  draw();
+  edited();
 };
 for (const id of ['access-token', 'prompt', 'consent'])
   $(id).addEventListener('input', update);
@@ -541,7 +604,7 @@ async function assetImage(asset) {
     URL.revokeObjectURL(url);
   }
 }
-async function waitForTask(task, kind) {
+async function waitForTask(task, kind, context = null) {
   state.polling = true;
   const started = Date.now();
   try {
@@ -562,7 +625,7 @@ async function waitForTask(task, kind) {
           await setDesign(image, 'AI 生成的纹身设计', result.asset);
           status('设计已生成。确认摆放位置后，再生成一张真实效果。');
         } else {
-          await showResult(image);
+          await showResult(image, context === editingContext());
         }
         return;
       }
@@ -575,16 +638,20 @@ async function waitForTask(task, kind) {
     state.polling = false;
   }
 }
-async function showResult(image) {
+async function showResult(image, matches = false) {
+  state.resultMatches = matches && !!state.photo && !!state.design;
   state.composite = null;
   state.raw = image;
   state.view = 'raw';
   $('result-info').hidden = false;
-  if (!state.photo || !state.region) {
+  if (!state.photo) {
     state.width = image.naturalWidth;
     state.height = image.naturalHeight;
     $('result-info').textContent =
       '已找回 AI 原始结果。刷新后需重新上传原图才能重新验证局部合成。';
+  } else if (!state.resultMatches || !state.region) {
+    $('result-info').textContent =
+      '已找回 AI 原始结果，可放大查看。原照片或摆放状态已改变，无法与当前编辑状态对比，未创建局部融合结果。';
   } else if (
     Math.abs(
       image.naturalWidth / image.naturalHeight - state.width / state.height
@@ -599,18 +666,18 @@ async function showResult(image) {
     const mask = makeCanvas(),
       mc = mask.getContext('2d'),
       r = state.region;
-    mc.save();
-    mc.translate(
-      (r.x + r.width / 2) * state.width,
-      (r.y + r.height / 2) * state.height
+    const padding = Math.max(
+      2,
+      Math.min(r.width * state.width, r.height * state.height) * 0.08
     );
-    mc.scale((r.width * state.width) / 2, (r.height * state.height) / 2);
-    const gradient = mc.createRadialGradient(0, 0, 0.88, 0, 0, 1);
-    gradient.addColorStop(0, 'rgba(255,255,255,1)');
-    gradient.addColorStop(1, 'rgba(255,255,255,0)');
-    mc.fillStyle = gradient;
-    mc.fillRect(-1, -1, 2, 2);
-    mc.restore();
+    mc.filter = `blur(${padding}px)`;
+    mc.fillStyle = '#ffffff';
+    mc.fillRect(
+      r.x * state.width - padding,
+      r.y * state.height - padding,
+      r.width * state.width + 2 * padding,
+      r.height * state.height + 2 * padding
+    );
     lc.globalCompositeOperation = 'destination-in';
     lc.drawImage(mask, 0, 0);
     state.composite = makeCanvas();
@@ -618,7 +685,7 @@ async function showResult(image) {
     cc.drawImage(state.photo, 0, 0);
     cc.drawImage(layer, 0, 0);
     $('result-info').textContent =
-      `已生成一张 ${image.naturalWidth} × ${image.naturalHeight} 的 AI 结果。“AI 原始结果”用于检查模型表现；“选区内合成”把选区外换回原图，不代表模型本身没有改动原图。`;
+      `已生成一张 ${image.naturalWidth} × ${image.naturalHeight} 的 AI 结果。“AI 原始结果”用于检查模型表现；“局部融合结果”把纹身范围外换回原图，不代表模型本身没有改动原图。`;
   }
   status('真实试戴结果已返回。请检查图案位置、皮肤融合和照片是否保持。');
   draw();
@@ -627,7 +694,7 @@ async function billable(kind, action) {
   if (state.busy) return;
   state.busy = true;
   state.gesture = null;
-  state.tempRegion = null;
+  pointers.clear();
   update();
   try {
     await action();
@@ -653,6 +720,16 @@ $('generate-design').onclick = () =>
   });
 $('render').onclick = () =>
   billable('render', async () => {
+    const context = editingContext();
+    if (
+      !state.photo ||
+      !state.design ||
+      !state.configured ||
+      !$('consent').checked ||
+      $('access-token').value.length < 24
+    )
+      throw new Error('请先上传照片、选择图案并完成测试授权。');
+    state.region = placementRegion(geometry(), state.width, state.height);
     status('正在上传测试参考图片到 KIE…');
     const snapshot = referenceCanvas();
     if (!state.photoAsset) state.photoAsset = await upload(state.photo);
@@ -668,10 +745,10 @@ $('render').onclick = () =>
     });
     sessionStorage.setItem(
       'try-on-lab-task',
-      JSON.stringify({ task: result.task, kind: 'render' })
+      JSON.stringify({ task: result.task, kind: 'render', context })
     );
     $('resume-task').hidden = false;
-    await waitForTask(result.task, 'render');
+    await waitForTask(result.task, 'render', context);
   });
 $('resume-task').onclick = () =>
   billable('resume', async () => {
@@ -681,7 +758,7 @@ $('resume-task').onclick = () =>
       sessionStorage.getItem('try-on-lab-task') || 'null'
     );
     if (!saved) throw new Error('当前没有保存的测试任务。');
-    await waitForTask(saved.task, saved.kind);
+    await waitForTask(saved.task, saved.kind, saved.context);
   });
 $('download').onclick = async () => {
   try {
@@ -708,6 +785,25 @@ $('download').onclick = async () => {
   } catch (error) {
     status(error.message, true);
   }
+};
+const detailViewer = createDetailViewer(() => ({
+  original: state.resultMatches ? state.photo : null,
+  draft: state.resultMatches ? referenceCanvas() : null,
+  raw: state.raw,
+}));
+$('inspect-result').onclick = () => {
+  if (!state.busy)
+    detailViewer.open(
+      state.view === 'original'
+        ? 'original'
+        : state.view === 'draft'
+          ? 'draft'
+          : 'raw'
+    );
+};
+canvas.ondblclick = () => {
+  if (state.raw && !state.busy && state.view !== 'draft')
+    detailViewer.open(state.view === 'original' ? 'original' : 'raw');
 };
 $('reset').onclick = () => {
   if (state.busy) {

@@ -170,6 +170,91 @@ canvas.selecting {
 canvas.moving {
   cursor: grab;
 }
+.photo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+#detail-dialog {
+  width: min(1400px, 96vw);
+  max-width: 96vw;
+  height: 94dvh;
+  max-height: 94dvh;
+  padding: 18px;
+  border: 1px solid #dedbe9;
+  border-radius: 16px;
+  background: #fafafa;
+  color: #20202a;
+}
+#detail-dialog::backdrop {
+  background: rgb(12 10 25 / 75%);
+}
+#detail-dialog[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.detail-header,
+.detail-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.detail-header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.detail-toolbar label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.detail-toolbar input {
+  width: 120px;
+}
+#detail-hint {
+  margin: 0;
+}
+#detail-viewport {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  touch-action: none;
+  background: #e5e5ec;
+  cursor: grab;
+  overscroll-behavior: contain;
+}
+#detail-viewport:active {
+  cursor: grabbing;
+}
+#detail-image {
+  display: block;
+  max-width: none;
+  max-height: none;
+  object-fit: contain;
+  user-select: none;
+  pointer-events: none;
+}
+@media (max-width: 600px) {
+  #detail-dialog {
+    padding: 10px;
+    gap: 8px;
+  }
+  .detail-toolbar .tabs {
+    width: 100%;
+    display: flex;
+  }
+  .detail-toolbar .tabs button {
+    flex: 1;
+    padding: 8px;
+    font-size: 12px;
+  }
+  .detail-toolbar label {
+    flex: 1;
+  }
+}
 .empty {
   position: absolute;
   inset: 0;
