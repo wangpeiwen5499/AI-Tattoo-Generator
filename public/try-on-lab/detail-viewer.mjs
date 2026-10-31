@@ -1,5 +1,8 @@
 /** Read-only viewer: comparison never changes placement or calls the provider. */
-export function createDetailViewer(getSources) {
+export function createDetailViewer(
+  getSources,
+  translate = (message) => message
+) {
   const $ = (id) => document.getElementById(id);
   const dialog = $('detail-dialog'),
     viewport = $('detail-viewport'),
@@ -56,11 +59,12 @@ export function createDetailViewer(getSources) {
     if (!sources[view]) return;
     selected = view;
     image.src = sources[view].url;
-    image.alt = { original: '原图', draft: '手动叠放纹身', raw: 'AI 生成结果' }[
-      view
-    ];
-    $('detail-download').textContent =
-      `↓ 下载${{ original: '原图', draft: '手动叠放', raw: 'AI 结果' }[view]}`;
+    image.alt = translate(
+      { original: '原图', draft: '手动叠放纹身', raw: 'AI 生成结果' }[view]
+    );
+    $('detail-download').textContent = translate(
+      `↓ 下载${{ original: '原图', draft: '手动叠放', raw: 'AI 结果' }[view]}`
+    );
     size();
     for (const button of document.querySelectorAll('[data-detail-view]'))
       button.setAttribute(
@@ -227,9 +231,11 @@ export function createDetailViewer(getSources) {
           sources.raw.width / sources.raw.height -
             original.width / original.height
         ) > 0.035;
-      $('detail-hint').textContent = mismatch
-        ? 'AI 结果改变了画面比例，已完整显示且未拉伸；与原图无法严格逐点对齐。'
-        : '拖动查看局部，滚轮或双指缩放；切换图片会保留缩放和查看位置。';
+      $('detail-hint').textContent = translate(
+        mismatch
+          ? 'AI 结果改变了画面比例，已完整显示且未拉伸；与原图无法严格逐点对齐。'
+          : '拖动查看局部，滚轮或双指缩放；切换图片会保留缩放和查看位置。'
+      );
     },
   };
 }

@@ -9,45 +9,138 @@
   </head>
   <body>
     <header>
-      <a class="brand" href="./index.html"
-        ><img src="/favicon.ico" alt="" />TattooVis <span>试戴工作室</span></a
-      ><span class="preview-tag">Preview 验证版 · 不使用网站积分</span>
+      <a class="brand" href="/"
+        ><img src="/favicon.ico" alt="" />TattooVis
+        <span data-i18n="试戴工作室">试戴工作室</span></a
+      >
+      <nav
+        class="studio-nav"
+        aria-label="工作室导航"
+        data-i18n-aria-label="工作室导航"
+      >
+        <button id="nav-designs" class="quiet" data-i18n="我的图案">
+          我的图案</button
+        ><button id="nav-history" class="quiet" data-i18n="试戴历史">
+          试戴历史</button
+        ><a href="/pricing" data-i18n="积分说明">积分说明</a>
+      </nav>
+      <span class="preview-tag" data-i18n="Preview · 本地保存 / 测试积分"
+        >Preview · 本地保存 / 测试积分</span
+      >
     </header>
     <main>
       <div class="intro">
         <div>
           <p class="eyebrow">YOUR SKIN. YOUR STORY.</p>
-          <h1>先看见，再决定。</h1>
-          <p>让一个纹身想法，在你的照片上成为可能。</p>
+          <h1 data-i18n="先看见，再决定。">先看见，再决定。</h1>
+          <p data-i18n="让一个纹身想法，在你的照片上成为可能。">
+            让一个纹身想法，在你的照片上成为可能。
+          </p>
         </div>
-        <button id="reset" class="quiet">重新开始</button>
+        <button id="reset" class="quiet" data-i18n="重新开始">重新开始</button>
       </div>
-      <ol class="workflow-steps" aria-label="试戴步骤">
-        <li data-step="1">01 <span>上传照片</span></li>
-        <li data-step="2">02 <span>选择或创作图案</span></li>
-        <li data-step="3">03 <span>在照片上摆放</span></li>
-        <li data-step="4">04 <span>生成与对比</span></li>
+      <section
+        class="test-wallet"
+        aria-label="测试积分"
+        data-i18n-aria-label="测试积分"
+      >
+        <div>
+          <strong id="credit-balance" data-i18n="正在读取测试积分…"
+            >正在读取测试积分…</strong
+          >
+          <p
+            data-i18n="模拟新账户赠送 3 credits。仅当前浏览器，清理浏览器数据或更换 Preview 地址后不会保留；与正式账户无关。"
+          >
+            模拟新账户赠送 3 credits。仅当前浏览器，清理浏览器数据或更换 Preview
+            地址后不会保留；与正式账户无关。
+          </p>
+        </div>
+        <button
+          id="grant-test-credits"
+          class="button secondary"
+          type="button"
+          data-i18n="免费补充 10 测试积分"
+        >
+          免费补充 10 测试积分
+        </button>
+      </section>
+      <button
+        id="release-orphaned-credit"
+        class="text-button"
+        type="button"
+        hidden
+        data-i18n="处理无任务编号的测试预留"
+      >
+        处理无任务编号的测试预留
+      </button>
+      <ol
+        class="workflow-steps"
+        aria-label="试戴步骤"
+        data-i18n-aria-label="试戴步骤"
+      >
+        <li data-step="1">01 <span data-i18n="上传照片">上传照片</span></li>
+        <li data-step="2">
+          02 <span data-i18n="选择或创作图案">选择或创作图案</span>
+        </li>
+        <li data-step="3">
+          03 <span data-i18n="在照片上摆放">在照片上摆放</span>
+        </li>
+        <li data-step="4">04 <span data-i18n="生成与对比">生成与对比</span></li>
       </ol>
       <div class="workflow-guide" aria-live="polite">
-        <strong id="workflow-title">先上传一张部位照片</strong>
-        <span id="workflow-description"
+        <strong id="workflow-title" data-i18n="先上传一张部位照片"
+          >先上传一张部位照片</strong
+        >
+        <span
+          id="workflow-description"
+          data-i18n="让想纹身的位置清晰可见，局部和侧面照片都可以。"
           >让想纹身的位置清晰可见，局部和侧面照片都可以。</span
         >
       </div>
       <div class="workspace">
-        <section class="photo-workspace" aria-label="照片工作区">
+        <section
+          class="photo-workspace"
+          aria-label="照片工作区"
+          data-i18n-aria-label="照片工作区"
+        >
           <div class="surface-bar">
-            <div class="tabs" role="group" aria-label="显示模式">
-              <button data-view="draft" aria-pressed="true">原图编辑</button
-              ><button data-view="original" aria-pressed="false">
+            <div
+              class="tabs"
+              role="group"
+              aria-label="显示模式"
+              data-i18n-aria-label="显示模式"
+            >
+              <button
+                data-view="draft"
+                aria-pressed="true"
+                data-i18n="原图编辑"
+              >
+                原图编辑</button
+              ><button
+                data-view="original"
+                aria-pressed="false"
+                data-i18n="查看原图"
+              >
                 查看原图</button
-              ><button data-view="raw" hidden aria-pressed="false">
+              ><button
+                data-view="raw"
+                hidden=""
+                aria-pressed="false"
+                data-i18n="AI 原始结果"
+              >
                 AI 原始结果</button
-              ><button data-view="composite" hidden aria-pressed="false">
+              ><button
+                data-view="composite"
+                hidden=""
+                aria-pressed="false"
+                data-i18n="局部融合结果"
+              >
                 局部融合结果
               </button>
             </div>
-            <span id="view-caption">本地叠图，尚未进行 AI 渲染</span>
+            <span id="view-caption" data-i18n="本地叠图，尚未进行 AI 渲染"
+              >本地叠图，尚未进行 AI 渲染</span
+            >
           </div>
           <div class="canvas-shell" id="canvas-shell">
             <div
@@ -55,10 +148,12 @@
               class="ink-popover"
               role="group"
               aria-label="纹身深浅"
-              hidden
+              hidden=""
+              data-i18n-aria-label="纹身深浅"
             >
               <label for="ink-opacity"
-                >纹身深浅 <output id="ink-value">85%</output></label
+                ><bdi data-i18n="纹身深浅">纹身深浅 </bdi
+                ><output id="ink-value">85%</output></label
               >
               <input
                 id="ink-opacity"
@@ -68,8 +163,17 @@
                 step="1"
                 value="85"
               />
-              <span>浅淡 <span>浓黑</span></span>
-              <button id="ink-close" type="button" aria-label="收起深浅调节">
+              <span
+                ><bdi data-i18n="浅淡">浅淡 </bdi
+                ><span data-i18n="浓黑">浓黑</span></span
+              >
+              <button
+                id="ink-close"
+                type="button"
+                aria-label="收起深浅调节"
+                data-i18n-aria-label="收起深浅调节"
+                data-i18n="完成"
+              >
                 完成
               </button>
             </div>
@@ -79,13 +183,15 @@
               aria-describedby="photo-hint placement-status"
               aria-haspopup="menu"
               tabindex="0"
+              data-i18n-aria-label="在原图上拖动纹身，使用控制柄或双指缩放和旋转；长按或右键打开纹身菜单"
             ></canvas>
             <div
               id="tattoo-menu"
               class="tattoo-menu"
               role="menu"
               aria-label="纹身操作"
-              hidden
+              hidden=""
+              data-i18n-aria-label="纹身操作"
             >
               <button
                 id="flip-design"
@@ -93,48 +199,90 @@
                 role="menuitemcheckbox"
                 aria-checked="false"
               >
-                水平翻转 <kbd>F</kbd>
+                <bdi data-i18n="水平翻转"> 水平翻转 </bdi><kbd>F</kbd>
               </button>
               <button id="fit-design" type="button" role="menuitem">
-                恢复初始摆放 <kbd>0</kbd>
+                <bdi data-i18n="恢复初始摆放"> 恢复初始摆放 </bdi><kbd>0</kbd>
               </button>
               <button id="remove-design" type="button" role="menuitem">
-                移除纹身 <kbd>Delete</kbd>
+                <bdi data-i18n="移除纹身"> 移除纹身 </bdi><kbd>Delete</kbd>
               </button>
             </div>
             <div class="empty" id="empty">
               <div class="upload-symbol">＋</div>
-              <h2>你的照片，就是试戴画布</h2>
+              <h2 data-i18n="你的照片，就是试戴画布">你的照片，就是试戴画布</h2>
               <p>
-                手臂、肩背、小腿或其他清晰可见的部位。<br />正面、侧面、局部照片都可以。
+                <bdi data-i18n="手臂、肩背、小腿或其他清晰可见的部位。">
+                  手臂、肩背、小腿或其他清晰可见的部位。</bdi
+                ><br /><bdi data-i18n="正面、侧面、局部照片都可以。"
+                  >正面、侧面、局部照片都可以。
+                </bdi>
               </p>
-              <button id="upload-photo" class="button primary" type="button">
+              <button
+                id="upload-photo"
+                class="button primary"
+                type="button"
+                data-i18n="上传部位照片"
+              >
                 上传部位照片</button
-              ><button id="sample-photo" class="quiet">先用示例体验</button>
+              ><button id="sample-photo" class="quiet" data-i18n="先用示例体验">
+                先用示例体验
+              </button>
             </div>
           </div>
           <div class="canvas-footer">
-            <p id="photo-hint">照片在点击真实生成前只留在本机浏览器中。</p>
+            <p
+              id="photo-hint"
+              data-i18n="照片在点击真实生成前只留在本机浏览器中。"
+            >
+              照片在点击真实生成前只留在本机浏览器中。
+            </p>
             <output
               id="placement-status"
               class="small"
               aria-label="当前纹身状态"
+              data-i18n-aria-label="当前纹身状态"
             ></output>
             <div class="photo-actions">
-              <button id="inspect-result" class="button primary" hidden>
+              <button
+                id="inspect-result"
+                class="button primary"
+                hidden=""
+                data-i18n="⊞ 放大查看 · 三图对比"
+              >
                 ⊞ 放大查看 · 三图对比</button
-              ><button id="download" class="button secondary" hidden>
+              ><button
+                id="save-result"
+                class="button secondary"
+                hidden=""
+                data-i18n="免费保存到历史"
+              >
+                免费保存到历史</button
+              ><button
+                id="download"
+                class="button secondary"
+                hidden=""
+                data-i18n="↓ 下载当前图"
+              >
                 ↓ 下载当前图
               </button>
             </div>
           </div>
-          <div id="result-info" class="result-info" hidden></div>
+          <div id="result-info" class="result-info" hidden=""></div>
         </section>
         <aside class="controls">
           <section>
             <div class="section-heading">
-              <h2><span class="section-number">01</span> 你的照片</h2>
-              <button id="choose-photo" type="button" class="text-button">
+              <h2>
+                <span class="section-number">01</span
+                ><bdi data-i18n="你的照片"> 你的照片</bdi>
+              </h2>
+              <button
+                id="choose-photo"
+                type="button"
+                class="text-button"
+                data-i18n="选择 / 更换照片"
+              >
                 选择 / 更换照片
               </button>
             </div>
@@ -142,73 +290,190 @@
               type="file"
               id="photo"
               accept="image/jpeg,image/png,image/webp"
-              hidden
+              hidden=""
             />
-            <p class="hint">
+            <p
+              class="hint"
+              data-i18n="上传照片后选择图案，直接在照片上调整。无需圈选区域。"
+            >
               上传照片后选择图案，直接在照片上调整。无需圈选区域。
             </p>
           </section>
           <section>
             <div class="section-heading">
-              <h2><span class="section-number">02</span> 你的纹身</h2>
-              <button id="choose-design" type="button" class="text-button">
-                上传已有图案
+              <h2>
+                <span class="section-number">02</span
+                ><bdi data-i18n="你的纹身"> 你的纹身</bdi>
+              </h2>
+            </div>
+            <div
+              class="design-sources"
+              role="group"
+              aria-label="选择图案来源"
+              data-i18n-aria-label="选择图案来源"
+            >
+              <button
+                id="choose-design"
+                type="button"
+                class="button secondary"
+                data-i18n="上传图案"
+              >
+                上传图案</button
+              ><button
+                id="new-design"
+                type="button"
+                class="button secondary"
+                data-i18n="生成新图案"
+              >
+                生成新图案</button
+              ><button
+                id="open-design-library"
+                type="button"
+                class="button secondary"
+                data-i18n="我的图案"
+              >
+                我的图案
               </button>
             </div>
             <input
               type="file"
               id="design"
               accept="image/jpeg,image/png,image/webp"
-              hidden
+              hidden=""
             />
             <div id="design-preview">
-              <img id="design-thumb" alt="当前纹身图案" hidden />
+              <img
+                id="design-thumb"
+                alt="当前纹身图案"
+                hidden=""
+                data-i18n-alt="当前纹身图案"
+              />
               <div>
-                <strong id="design-name">还没有选择图案</strong>
-                <p class="small">选好即放进照片，可拖动到想纹身的位置。</p>
-                <button id="sample-design" class="text-button">
+                <strong id="design-name" data-i18n="还没有选择图案"
+                  >还没有选择图案</strong
+                >
+                <p
+                  class="small"
+                  data-i18n="选好即放进照片，可拖动到想纹身的位置。"
+                >
+                  选好即放进照片，可拖动到想纹身的位置。
+                </p>
+                <p id="design-save-status" class="small" role="status"></p>
+                <div class="design-save-actions">
+                  <button
+                    id="save-design"
+                    class="text-button"
+                    hidden=""
+                    data-i18n="免费保存图案"
+                  >
+                    免费保存图案</button
+                  ><button
+                    id="download-design"
+                    class="text-button"
+                    hidden=""
+                    data-i18n="下载图案"
+                  >
+                    下载图案
+                  </button>
+                </div>
+                <button
+                  id="sample-design"
+                  class="text-button"
+                  data-i18n="使用几何狼头示例"
+                >
                   使用几何狼头示例
                 </button>
               </div>
             </div>
-            <label class="field-label" for="prompt">或描述一个新图案</label
-            ><textarea
-              id="prompt"
-              rows="3"
-              maxlength="500"
-              placeholder="主题 + 风格 + 构图，例如：黑灰几何狼头，细线和点刺，纵向构图"
-            ></textarea
-            ><button id="generate-design" class="button secondary" disabled>
-              生成新图案
-            </button>
-            <p class="small">
-              只想体验摆放？点击上方狼头示例即可，无需生成。生成新图案需要下方的测试口令和授权。
-            </p>
+            <div id="new-design-panel">
+              <label
+                class="field-label"
+                for="prompt"
+                data-i18n="描述一个新图案 · 1 测试 credit"
+                >描述一个新图案 · 1 测试 credit</label
+              ><textarea
+                id="prompt"
+                rows="3"
+                maxlength="500"
+                placeholder="主题 + 风格 + 构图，例如：黑灰几何狼头，细线和点刺，纵向构图"
+                data-i18n-placeholder="主题 + 风格 + 构图，例如：黑灰几何狼头，细线和点刺，纵向构图"
+              ></textarea
+              ><button
+                id="generate-design"
+                class="button secondary"
+                disabled=""
+                data-i18n="生成新图案 · 1 测试 credit"
+              >
+                生成新图案 · 1 测试 credit
+              </button>
+              <p
+                class="small"
+                data-i18n="成功生成的图案会自动保存到“我的图案”，下次直接选择，不再重复扣设计积分。生成失败不扣测试积分；保存、复用和手动摆放免费。使用狼头示例也免费。"
+              >
+                成功生成的图案会自动保存到“我的图案”，下次直接选择，不再重复扣设计积分。生成失败不扣测试积分；保存、复用和手动摆放免费。使用狼头示例也免费。
+              </p>
+            </div>
           </section>
           <section class="render-section">
-            <h2><span class="section-number">03</span> 看它融入皮肤</h2>
-            <p class="hint">
-              先在照片上确认位置、大小和深浅，再生成一张 1K 试戴图。AI
+            <h2>
+              <span class="section-number">03</span
+              ><bdi data-i18n="看它融入皮肤"> 看它融入皮肤</bdi>
+            </h2>
+            <p
+              class="hint"
+              data-i18n="先在照片上确认位置、大小和深浅，再生成一张试戴图。AI 会尝试贴合皮肤，结果需检查是否改动原照片。"
+            >
+              先在照片上确认位置、大小和深浅，再生成一张试戴图。AI
               会尝试贴合皮肤，结果需检查是否改动原照片。
             </p>
+            <label
+              class="field-label"
+              for="render-resolution"
+              data-i18n="试戴分辨率与费用"
+              >试戴分辨率与费用</label
+            ><select id="render-resolution">
+              <option value="1K" data-i18n="1K · 1 测试 credit">
+                1K · 1 测试 credit
+              </option>
+              <option value="2K" data-i18n="2K · 2 测试 credits">
+                2K · 2 测试 credits
+              </option>
+              <option value="4K" data-i18n="4K · 3 测试 credits">
+                4K · 3 测试 credits
+              </option>
+            </select>
             <details class="test-config">
               <summary id="authorization-summary">
-                测试授权 <span>生成前需完成</span>
+                <bdi data-i18n="测试授权"> 测试授权 </bdi
+                ><span data-i18n="生成前需完成">生成前需完成</span>
               </summary>
-              <label for="access-token">预览测试访问口令</label
+              <label for="access-token" data-i18n="预览测试访问口令"
+                >预览测试访问口令</label
               ><input
                 type="password"
                 id="access-token"
                 autocomplete="off"
                 placeholder="仅测试口令，不是 KIE API Key"
+                data-i18n-placeholder="仅测试口令，不是 KIE API Key"
               />
-              <p id="configuration" class="small">正在检查预览环境配置…</p>
-              <button id="check-configuration" class="text-button">
+              <p
+                id="configuration"
+                class="small"
+                data-i18n="正在检查预览环境配置…"
+              >
+                正在检查预览环境配置…
+              </p>
+              <button
+                id="check-configuration"
+                class="text-button"
+                data-i18n="重新检查配置"
+              >
                 重新检查配置
               </button>
             </details>
             <label class="consent"
               ><input id="consent" type="checkbox" /><span
+                data-i18n="我同意将测试图片传给 KIE。AI 生成会消耗 KIE 测试额度，不扣网站积分。"
                 >我同意将测试图片传给 KIE。AI 生成会消耗 KIE
                 测试额度，不扣网站积分。</span
               ></label
@@ -216,51 +481,91 @@
               id="render"
               class="button primary"
               aria-describedby="render-requirements"
-              disabled
+              disabled=""
+              data-i18n="生成真实试戴效果"
             >
               生成真实试戴效果
             </button>
             <p id="render-requirements" class="small" aria-live="polite"></p>
             <p id="status" role="status" aria-live="polite"></p>
-            <button id="resume-task" class="text-button" hidden>
+            <button
+              id="resume-task"
+              class="text-button"
+              hidden=""
+              data-i18n="继续查看上次测试任务"
+            >
               继续查看上次测试任务
             </button>
           </section>
         </aside>
       </div>
-      <footer>
-        这是交互与出图验证页。手动叠放属于普通叠图；AI
+      <footer
+        data-i18n="图案和试戴历史保存在当前浏览器，不会上传至正式账户存储，也不跨设备或 Preview 地址同步。成功生成才结算测试积分，保存与复用免费。测试积分没有购买或退款交易；AI 调用仍消耗 KIE 测试额度。手动叠放属于普通叠图；AI 原始结果和局部融合结果会分别展示。上传到 KIE 的测试文件是临时文件，请及时保存结果。"
+      >
+        图案和试戴历史保存在当前浏览器，不会上传至正式账户存储，也不跨设备或
+        Preview
+        地址同步。成功生成才结算测试积分，保存与复用免费。测试积分没有购买或退款交易；AI
+        调用仍消耗 KIE 测试额度。手动叠放属于普通叠图；AI
         原始结果和局部融合结果会分别展示。上传到 KIE
         的测试文件是临时文件，请及时保存结果。
       </footer>
     </main>
     <dialog id="detail-dialog" aria-labelledby="detail-title">
       <div class="detail-header">
-        <h2 id="detail-title">三图对比 <small>同一位置，看看变化</small></h2>
+        <h2 id="detail-title">
+          <bdi data-i18n="三图对比">三图对比 </bdi
+          ><small data-i18n="同一位置，看看变化">同一位置，看看变化</small>
+        </h2>
         <div class="detail-actions">
-          <button id="detail-download" class="button primary">
+          <button
+            id="detail-download"
+            class="button primary"
+            data-i18n="↓ 下载 AI 结果"
+          >
             ↓ 下载 AI 结果
           </button>
-          <button id="detail-close" class="button secondary" autofocus>
+          <button
+            id="detail-close"
+            class="button secondary"
+            autofocus=""
+            data-i18n="关闭"
+          >
             关闭
           </button>
         </div>
       </div>
       <div class="detail-toolbar">
-        <div class="tabs" role="group" aria-label="对比图片">
-          <button data-detail-view="original" aria-pressed="false">
+        <div
+          class="tabs"
+          role="group"
+          aria-label="对比图片"
+          data-i18n-aria-label="对比图片"
+        >
+          <button
+            data-detail-view="original"
+            aria-pressed="false"
+            data-i18n="① 原图"
+          >
             ① 原图
           </button>
-          <button data-detail-view="draft" aria-pressed="false">
+          <button
+            data-detail-view="draft"
+            aria-pressed="false"
+            data-i18n="② 手动叠放"
+          >
             ② 手动叠放
           </button>
-          <button data-detail-view="raw" aria-pressed="true">
+          <button
+            data-detail-view="raw"
+            aria-pressed="true"
+            data-i18n="③ AI 生成结果"
+          >
             ③ AI 生成结果
           </button>
         </div>
         <label
-          >缩放
-          <input
+          ><bdi data-i18n="缩放">缩放 </bdi
+          ><input
             id="detail-zoom"
             type="range"
             min="100"
@@ -270,20 +575,38 @@
           /><output id="detail-zoom-value">100%</output></label
         >
         <div class="detail-fit-actions">
-          <button id="detail-fit" class="button secondary">适应窗口</button>
-          <button id="detail-native" class="button secondary">实际像素</button>
+          <button id="detail-fit" class="button secondary" data-i18n="适应窗口">
+            适应窗口
+          </button>
+          <button
+            id="detail-native"
+            class="button secondary"
+            data-i18n="实际像素"
+          >
+            实际像素
+          </button>
         </div>
       </div>
-      <p id="detail-hint" class="small">
+      <p
+        id="detail-hint"
+        class="small"
+        data-i18n="拖动查看局部，滚轮或双指缩放；切换图片会保留查看位置。"
+      >
         拖动查看局部，滚轮或双指缩放；切换图片会保留查看位置。
       </p>
       <div
         id="detail-viewport"
         tabindex="0"
         aria-label="大图细节，可滚动或拖动查看"
+        data-i18n-aria-label="大图细节，可滚动或拖动查看"
       >
         <div id="detail-plane">
-          <img id="detail-image" alt="纹身对比大图" draggable="false" />
+          <img
+            id="detail-image"
+            alt="纹身对比大图"
+            draggable="false"
+            data-i18n-alt="纹身对比大图"
+          />
         </div>
       </div>
     </dialog>

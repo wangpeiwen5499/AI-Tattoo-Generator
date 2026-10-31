@@ -1,6 +1,8 @@
+import { redirect } from 'next/navigation';
 import { setRequestLocale } from 'next-intl/server';
 
 import { Link } from '@/core/i18n/navigation';
+import { isProductPreview, studioUrl } from '@/config/preview/product';
 import { GenerationAccess } from '@/shared/blocks/tattoo/generation-access';
 import { TattooGuideLinks } from '@/shared/blocks/tattoo/tattoo-guide-links';
 import { getMetadata } from '@/shared/lib/seo';
@@ -15,8 +17,11 @@ export async function generateMetadata({ params }: Props) {
       locale === 'zh'
         ? '纹身照片模拟器：生成并预览你的设计 | TattooVis'
         : 'Tattoo Simulator: Preview Designs on Your Photo | TattooVis',
-    description:
-      locale === 'zh'
+    description: isProductPreview()
+      ? locale === 'zh'
+        ? '上传或生成纹身图案，在自己的照片上自由定位，再生成单张真实试戴。设计、试戴分阶段使用独立测试积分，保存与复用免费。'
+        : 'Upload or create a tattoo design, place it freely on your photo and generate one realistic try-on. Design and rendering use separate test credits; saving and reuse are free.'
+      : locale === 'zh'
         ? '上传清晰照片并描述纹身想法，比较左臂、右臂、肩部与小腿效果。先体验真实案例，自己的图片生成需要账户及积分。'
         : 'Upload a clear photo and describe your tattoo idea. Compare arm, shoulder and calf previews, explore the real example and check credit costs before generating.',
     canonicalUrl: '/generate',
@@ -30,6 +35,7 @@ export default async function GeneratePage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
+  if (isProductPreview()) redirect(studioUrl(undefined, locale));
 
   const zh = locale === 'zh';
   return (

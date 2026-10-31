@@ -95,6 +95,33 @@ it('rejects out-of-bounds placement before any billable call', async () => {
   expect(response.status).toBe(400);
   expect(mocks.fetch).not.toHaveBeenCalled();
 });
+it.each(['2K', '4K'])(
+  'submits the explicitly selected %s single-render resolution',
+  async (resolution) => {
+    configure();
+    mocks.fetch.mockResolvedValue(
+      Response.json({ code: 200, data: { taskId: 'lab-hd-task' } })
+    );
+    const asset = signLabAsset('https://tempfile.redpandaai.co/lab/image.png');
+    const response = await POST(
+      new Request('https://local/api/preview/try-on?mode=render', {
+        method: 'POST',
+        headers: { authorization: `Bearer ${'a'.repeat(32)}` },
+        body: JSON.stringify({
+          photo: asset,
+          design: asset,
+          guide: asset,
+          resolution,
+          region: { x: 0.2, y: 0.2, width: 0.3, height: 0.4 },
+        }),
+      })
+    );
+    expect(response.status).toBe(200);
+    expect(JSON.parse(mocks.fetch.mock.calls[0][1].body).input.resolution).toBe(
+      resolution
+    );
+  }
+);
 
 it('reports missing preview configuration names without exposing values', async () => {
   configure();

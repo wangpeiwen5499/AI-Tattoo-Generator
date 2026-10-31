@@ -1,4 +1,5 @@
 import { createDetailViewer } from './detail-viewer.mjs';
+import { createStudioGallery } from './gallery.mjs';
 import {
   hitPlacement,
   placementGeometry,
@@ -6,8 +7,21 @@ import {
   pointInPhoto,
   transformGesture,
 } from './geometry.mjs';
+import { createStudioI18n } from './i18n.mjs';
+import { createStudioLibrary } from './library.mjs';
+import { createPreviewWallet, previewCreditCost } from './wallet.mjs';
 
 const $ = (id) => document.getElementById(id);
+const studioLocale =
+  new URLSearchParams(location.search).get('lang') === 'en' ? 'en' : 'zh';
+const i18n = createStudioI18n(studioLocale);
+i18n.apply();
+document
+  .querySelector('header .brand')
+  .setAttribute('href', studioLocale === 'zh' ? '/zh' : '/');
+document
+  .querySelector('.studio-nav a')
+  .setAttribute('href', studioLocale === 'zh' ? '/zh/pricing' : '/pricing');
 const canvas = $('stage'),
   ctx = canvas.getContext('2d');
 const api = '/api/preview/try-on';
@@ -38,11 +52,118 @@ const state = {
   polling: false,
   revision: 0,
   resultMatches: false,
+  designId: null,
+  designName: '',
+  designPrompt: '',
+  designOrigin: 'upload',
+  designOperationId: null,
+  resultId: null,
+  resultSaved: false,
+  resultResolution: '1K',
+  resultOperationId: null,
+  comparisonSnapshots: null,
 };
+const library = createStudioLibrary();
+// Only signed task references and prompt metadata, never the lab access token.
+const taskStorage = {
+  getItem(key) {
+    const current = localStorage.getItem(key),
+      legacy = sessionStorage.getItem(key);
+    if (legacy) sessionStorage.removeItem(key);
+    if (current) return current;
+    if (legacy) localStorage.setItem(key, legacy);
+    return legacy;
+  },
+  setItem(key, value) {
+    localStorage.setItem(key, value);
+    sessionStorage.removeItem(key);
+  },
+  removeItem(key) {
+    localStorage.removeItem(key);
+    sessionStorage.removeItem(key);
+  },
+};
+function hasPendingTask() {
+  try {
+    return !!taskStorage.getItem('try-on-lab-task');
+  } catch {
+    return false;
+  }
+}
+
+function clearPendingTask(task) {
+  const current = JSON.parse(taskStorage.getItem('try-on-lab-task') || 'null');
+  if (current?.task === task) taskStorage.removeItem('try-on-lab-task');
+  $('resume-task').hidden = !hasPendingTask();
+}
+
+let wallet = null,
+  walletError = '',
+  historySources = null;
+try {
+  wallet = navigator.locks?.request
+    ? await navigator.locks.request('tattoovis-preview-test-wallet', () =>
+        createPreviewWallet()
+      )
+    : createPreviewWallet();
+} catch (error) {
+  walletError = error.message;
+}
+function testBalance() {
+  try {
+    return wallet?.snapshot() || null;
+  } catch (error) {
+    walletError = error.message;
+    return null;
+  }
+}
+async function imageFromBlob(blob) {
+  const url = URL.createObjectURL(blob);
+  try {
+    return await loadImage(url);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+const gallery = createStudioGallery({
+  library,
+  locale: studioLocale,
+  isBusy: () => state.busy,
+  onUseDesign: async (record) => {
+    if (state.busy) return;
+    const image = await imageFromBlob(record.image);
+    if (state.busy) return;
+    await setDesign(image, record.name, null, {
+      id: record.id,
+      prompt: record.prompt,
+      source: record.source,
+    });
+    $('prompt').value = record.prompt;
+    status('已复用保存的图案，不消耗测试积分。');
+    $('canvas-shell').scrollIntoView?.({ block: 'center', behavior: 'smooth' });
+  },
+  onReusePrompt: (prompt) => {
+    if (state.busy) return;
+    $('prompt').value = prompt;
+    $('new-design-panel').hidden = false;
+    $('prompt').focus();
+    update();
+  },
+  onOpenHistory: async (record) => {
+    if (state.busy) return;
+    const [raw, original, draft] = await Promise.all([
+      imageFromBlob(record.image),
+      record.original ? imageFromBlob(record.original) : null,
+      record.draft ? imageFromBlob(record.draft) : null,
+    ]);
+    historySources = { raw, original, draft };
+    detailViewer.open('raw');
+  },
+});
 const editingContext = () => `${editorSession}:${state.revision}`;
 
 function status(message, error = false) {
-  $('status').textContent = message;
+  $('status').textContent = i18n.t(message);
   $('status').dataset.error = String(error);
 }
 function loadImage(url) {
@@ -58,6 +179,13 @@ function constrain(v, min, max) {
   return Math.max(min, Math.min(max, v));
 }
 function update() {
+  const balance = testBalance();
+  const pending = hasPendingTask();
+  $('resume-task').hidden = !pending;
+  const renderCost = previewCreditCost('render', $('render-resolution').value);
+  $('credit-balance').textContent = balance
+    ? `可用测试积分 ${balance.available} credits${balance.reserved ? ` · 预留 ${balance.reserved}` : ''}`
+    : `测试积分不可用：${walletError}`;
   for (const id of [
     'photo',
     'design',
@@ -69,6 +197,12 @@ function update() {
     'upload-photo',
     'choose-photo',
     'choose-design',
+    'new-design',
+    'open-design-library',
+    'nav-designs',
+    'nav-history',
+    'render-resolution',
+    'grant-test-credits',
   ])
     $(id).disabled = state.busy;
   const placed = !!(state.photo && state.design);
@@ -83,14 +217,37 @@ function update() {
     $('access-token').value.length >= 24 &&
     $('consent').checked;
   $('generate-design').disabled =
-    !access || state.busy || $('prompt').value.trim().length < 3;
-  $('render').disabled = !placed || !access || state.busy;
+    !access ||
+    state.busy ||
+    $('prompt').value.trim().length < 3 ||
+    !balance ||
+    balance.available < 1 ||
+    pending ||
+    balance.reserved > 0;
+  $('render').disabled =
+    !placed ||
+    !access ||
+    state.busy ||
+    !balance ||
+    balance.available < renderCost ||
+    pending ||
+    balance.reserved > 0;
+  $('release-orphaned-credit').hidden =
+    !balance?.reserved || pending || state.busy;
   $('render').textContent =
     state.busy && state.activity === 'render'
       ? '正在生成真实效果…'
-      : '生成真实试戴效果';
+      : `生成真实试戴效果 · ${renderCost} 测试 credit${renderCost > 1 ? 's' : ''}`;
   $('generate-design').textContent =
-    state.busy && state.activity === 'design' ? '正在创作图案…' : '生成新图案';
+    state.busy && state.activity === 'design'
+      ? '正在创作图案…'
+      : '生成新图案 · 1 测试 credit';
+  $('save-design').hidden = !state.design;
+  $('save-design').disabled = state.busy || !!state.designId;
+  $('download-design').hidden = !state.design;
+  $('download-design').disabled = state.busy;
+  $('save-result').hidden = !state.raw;
+  $('save-result').disabled = state.busy || state.resultSaved;
   document
     .querySelector('.photo-workspace')
     .setAttribute('aria-busy', String(state.busy));
@@ -101,11 +258,15 @@ function update() {
   if ($('access-token').value.length < 24)
     missing.push('在本页输入至少 24 个字符的测试访问口令');
   if (!$('consent').checked) missing.push('勾选同意调用 KIE');
+  if (!balance || balance.available < renderCost) missing.push('补充测试积分');
+  if (pending) missing.push('先继续查看上次测试任务');
+  if (balance?.reserved && !pending && !state.busy)
+    missing.push('处理未确认的测试任务预留');
   $('render-requirements').textContent = state.busy
     ? '正在处理测试任务，请勿重复提交。'
     : missing.length
       ? `还需完成：${missing.join('；')}。`
-      : '已准备好。点击后将调用一次 KIE 单张试戴生成，不扣网站积分。';
+      : `已准备好。成功后结算 ${renderCost} 测试 credit${renderCost > 1 ? 's' : ''}，失败释放预留。不使用网站真实积分。`;
   $('check-configuration').disabled = state.busy || state.checking;
 
   $('download').hidden = !(state.photo || state.raw);
@@ -193,6 +354,25 @@ function update() {
         : state.view === 'original'
           ? '你上传的照片（不显示纹身）'
           : '本地叠图，尚未进行 AI 渲染';
+  for (const id of [
+    'credit-balance',
+    'render',
+    'generate-design',
+    'render-requirements',
+    'workflow-title',
+    'workflow-description',
+    'placement-status',
+    'view-caption',
+    'configuration',
+    'design-save-status',
+    'photo-hint',
+    'download',
+    'result-info',
+  ]) {
+    $(id).textContent = i18n.t($(id).textContent);
+  }
+  const authorization = $('authorization-summary').querySelector('span');
+  authorization.textContent = i18n.t(authorization.textContent);
   canvas.className = state.view === 'draft' && state.design ? 'moving' : '';
   const dimensions = viewDimensions();
   canvas.style.maxWidth = `${((innerWidth < 760 ? 560 : 760) * dimensions.width) / dimensions.height}px`;
@@ -275,13 +455,16 @@ function drawHandles() {
   ctx.fillStyle = '#6355df';
   ctx.font = `${11 * h.unit}px sans-serif`;
   ctx.textAlign = 'right';
-  ctx.fillText('深浅', h.opacity.x - 12 * h.unit, h.opacity.y);
+  ctx.fillText(i18n.t('深浅'), h.opacity.x - 12 * h.unit, h.opacity.y);
 }
 function invalidateResult() {
+  state.comparisonSnapshots = null;
   closeTattooMenu(false);
   state.revision += 1;
   state.resultMatches = false;
   state.raw = null;
+  state.resultId = null;
+  state.resultSaved = false;
   state.composite = null;
   state.region = null;
   $('result-info').hidden = true;
@@ -392,7 +575,7 @@ async function setPhoto(image, sample = false) {
   status('照片已准备好。选择纹身图案，即可直接在原图上调整。');
   draw();
 }
-async function setDesign(image, name, asset = null) {
+async function setDesign(image, name, asset = null, metadata = {}) {
   const working = makeCanvas(
     image.naturalWidth || image.width,
     image.naturalHeight || image.height
@@ -412,9 +595,23 @@ async function setDesign(image, name, asset = null) {
   state.design = working;
   state.designSource = image;
   state.designAsset = asset;
+  state.designId = metadata.id || null;
+  state.designName = name;
+  state.designPrompt = metadata.prompt || '';
+  state.designOrigin = metadata.source || 'upload';
+  state.designOperationId = metadata.operationId || null;
+  $('design-save-status').textContent = state.designId
+    ? '已保存 · 复用免费'
+    : '可免费保存到当前浏览器';
   $('design-thumb').src = working.toDataURL();
   $('design-thumb').hidden = false;
-  $('design-name').textContent = name;
+  $('design-name').textContent = [
+    'AI 生成的纹身设计',
+    '几何狼头示例',
+    '上传的纹身设计',
+  ].includes(name)
+    ? i18n.t(name)
+    : name;
   state.raw = null;
   state.composite = null;
   fitDesign();
@@ -478,7 +675,8 @@ $('sample-design').onclick = async () => {
   if (state.busy) return;
   try {
     const image = await loadImage('/imgs/cases/geometric-wolf/design.webp');
-    if (!state.busy) await setDesign(image, '几何狼头示例');
+    if (!state.busy)
+      await setDesign(image, '几何狼头示例', null, { source: 'sample' });
   } catch (error) {
     status(error.message, true);
   }
@@ -500,6 +698,7 @@ $('remove-design').onclick = () => {
   state.design = null;
   state.designSource = null;
   state.designAsset = null;
+  state.designId = null;
   pointers.clear();
   state.gesture = null;
   $('design-thumb').hidden = true;
@@ -809,6 +1008,168 @@ canvas.onkeydown = (event) => {
 };
 for (const id of ['access-token', 'prompt', 'consent'])
   $(id).addEventListener('input', update);
+$('render-resolution').addEventListener('change', update);
+$('grant-test-credits').onclick = async () => {
+  if (state.busy || !wallet) return;
+  try {
+    await walletMutation('grant', 10);
+    status('已免费补充 10 测试积分，不产生购买交易。');
+    update();
+  } catch (error) {
+    status(error.message, true);
+  }
+};
+$('release-orphaned-credit').onclick = async () => {
+  if (state.busy || hasPendingTask() || !wallet) return;
+  if (
+    !window.confirm(
+      i18n.t(
+        '这只释放没有任务编号的本地测试预留，不会取消可能已创建的 KIE 任务。请先检查 KIE 后台，避免重复付费提交。是否继续？'
+      )
+    )
+  )
+    return;
+  try {
+    for (const id of wallet.snapshot().reservations) {
+      await walletMutation('release', id);
+      await library.deletePending(id);
+    }
+    status('已释放无任务编号的测试预留。请检查 KIE 后台后再提交。');
+    update();
+  } catch (error) {
+    status(error.message, true);
+  }
+};
+$('new-design').onclick = () => {
+  $('new-design-panel').hidden = false;
+  $('prompt').focus();
+};
+$('nav-designs').onclick = $('open-design-library').onclick = () =>
+  gallery.open('designs');
+$('nav-history').onclick = () => gallery.open('history');
+$('save-design').onclick = async () => {
+  if (state.busy || !state.design || state.designId) return;
+  const design = state.designSource,
+    revision = state.revision;
+  $('save-design').disabled = true;
+  try {
+    const record = await library.saveDesign({
+      id: state.designOperationId
+        ? `design-${state.designOperationId}`
+        : crypto.randomUUID(),
+      name: state.designName,
+      prompt: state.designPrompt,
+      source: state.designOrigin,
+      image: await sourceBlob(design),
+    });
+    if (state.revision === revision) {
+      state.designId = record.id;
+      $('design-save-status').textContent = '已保存到当前浏览器 · 复用免费';
+    }
+    if (state.designOperationId)
+      await completeOperation(state.designOperationId);
+    status('图案已免费保存。');
+  } catch (error) {
+    status(`图案未保存：${error.message}。可以先下载图案。`, true);
+  }
+  update();
+};
+$('download-design').onclick = async () => {
+  if (!state.designSource) return;
+  try {
+    await downloadBlob(
+      await sourceBlob(state.designSource),
+      'tattoovis-design.png'
+    );
+  } catch (error) {
+    status(error.message, true);
+  }
+};
+async function downloadBlob(blob, name) {
+  const url = URL.createObjectURL(blob),
+    link = document.createElement('a');
+  link.href = url;
+  link.download = name;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+function sourceBlob(source) {
+  if (source instanceof HTMLCanvasElement)
+    return imageBlob(source, 'image/png');
+  const target = makeCanvas(
+    source.naturalWidth || source.width,
+    source.naturalHeight || source.height
+  );
+  target.getContext('2d').drawImage(source, 0, 0);
+  return imageBlob(target, 'image/png');
+}
+async function walletMutation(method, ...args) {
+  if (!wallet) throw new Error(walletError || '测试积分不可用。');
+  const action = () => wallet[method](...args);
+  return navigator.locks?.request
+    ? navigator.locks.request('tattoovis-preview-test-wallet', action)
+    : action();
+}
+async function completeOperation(id) {
+  if (wallet?.hasReservation(id)) await walletMutation('confirm', id);
+  await library.deletePending(id).catch(() => {});
+  const pending = JSON.parse(taskStorage.getItem('try-on-lab-task') || 'null');
+  if (pending?.operationId === id) {
+    taskStorage.removeItem('try-on-lab-task');
+    $('resume-task').hidden = true;
+  }
+}
+async function saveCurrentResult(
+  id,
+  prompt = state.designPrompt,
+  designId = state.designId,
+  pending = null
+) {
+  const raw = state.raw,
+    matches = state.resultMatches,
+    original = state.photo;
+  const draft = matches ? referenceCanvas() : null,
+    resolution = state.resultResolution;
+  return library.saveHistory({
+    id,
+    resolution,
+    prompt,
+    ...(designId ? { designId } : {}),
+    image: await sourceBlob(raw),
+    ...(pending
+      ? { original: pending.original, draft: pending.draft }
+      : state.comparisonSnapshots
+        ? {
+            original: await sourceBlob(state.comparisonSnapshots.original),
+            draft: await sourceBlob(state.comparisonSnapshots.draft),
+          }
+        : matches
+          ? {
+              original: await sourceBlob(original),
+              draft: await sourceBlob(draft),
+            }
+          : {}),
+  });
+}
+$('save-result').onclick = async () => {
+  if (state.busy || !state.raw || state.resultSaved) return;
+  const revision = state.revision;
+  try {
+    const saved = await saveCurrentResult(
+      state.resultId || crypto.randomUUID()
+    );
+    if (state.resultOperationId)
+      await completeOperation(state.resultOperationId);
+    if (state.revision === revision) {
+      state.resultId = saved.id;
+      state.resultSaved = true;
+    }
+    status('试戴结果已免费保存到当前浏览器。');
+  } catch (error) {
+    status(`试戴历史未保存：${error.message}。请先下载结果。`, true);
+  }
+  update();
+};
 function headers() {
   return { Authorization: `Bearer ${$('access-token').value}` };
 }
@@ -823,8 +1184,15 @@ async function request(mode, data, form = false) {
   });
   const result = await response.json();
   if (!response.ok)
-    throw new Error(
-      result.error || '测试请求未成功，请检查 KIE 后台，勿反复提交。'
+    throw Object.assign(
+      new Error(
+        result.error || '测试请求未成功，请检查 KIE 后台，勿反复提交。'
+      ),
+      {
+        definitelyRejected: [400, 401, 403, 404, 409, 413, 422, 429].includes(
+          response.status
+        ),
+      }
     );
   return result;
 }
@@ -873,7 +1241,7 @@ async function assetImage(asset) {
     URL.revokeObjectURL(url);
   }
 }
-async function waitForTask(task, kind, context = null) {
+async function waitForTask(task, kind, context = null, details = {}) {
   state.polling = true;
   const started = Date.now();
   try {
@@ -881,21 +1249,99 @@ async function waitForTask(task, kind, context = null) {
       status(
         `${kind === 'design' ? '正在生成独立纹身设计' : '正在生成单张真实试戴'}…\n可离开此页，回来后输入测试口令并点击继续查看。`
       );
-      const result = await request('status', { task });
-      if (result.failed)
+      let result;
+      try {
+        result = await request('status', { task });
+      } catch (error) {
+        if (error.message === 'Test reference expired') {
+          if (details.operationId)
+            await walletMutation('release', details.operationId);
+          clearPendingTask(task);
+        }
+        throw error;
+      }
+      if (result.failed) {
+        if (details.operationId)
+          await walletMutation('release', details.operationId);
+        if (details.operationId)
+          await library.deletePending(details.operationId).catch(() => {});
+        clearPendingTask(task);
         throw new Error(
-          'KIE 返回生成失败。请查看 KIE 测试记录；本页未扣网站积分。'
+          'KIE 返回生成失败，已释放测试积分预留；不扣网站真实积分。'
         );
+      }
       if (result.state === 'success') {
         const image = await assetImage(result.asset);
-        sessionStorage.removeItem('try-on-lab-task');
-        $('resume-task').hidden = true;
+        let saved = false,
+          warning = '';
         if (kind === 'design') {
-          await setDesign(image, 'AI 生成的纹身设计', result.asset);
-          status('设计已生成。确认摆放位置后，再生成一张真实效果。');
+          await setDesign(image, 'AI 生成的纹身设计', result.asset, {
+            prompt: details.prompt || '',
+            source: 'generated',
+            operationId: details.operationId || null,
+          });
+          try {
+            const record = await library.saveDesign({
+              id: details.operationId
+                ? `design-${details.operationId}`
+                : crypto.randomUUID(),
+              name: details.prompt?.slice(0, 60) || 'AI 生成的纹身设计',
+              prompt: details.prompt || '',
+              source: 'generated',
+              image: await sourceBlob(image),
+            });
+            state.designId = record.id;
+            saved = true;
+            $('design-save-status').textContent = '已自动保存 · 下次复用免费';
+          } catch (error) {
+            warning = `图案已生成，但浏览器保存失败：${error.message}。请先下载图案，稍后可免费重试保存。`;
+          }
         } else {
+          const pending = details.operationId
+            ? await library.getPending(details.operationId)
+            : null;
+          state.resultResolution = details.resolution || '1K';
           await showResult(image, context === editingContext());
+          state.resultOperationId = details.operationId || null;
+          if (pending && !state.resultMatches) {
+            state.comparisonSnapshots = {
+              raw: image,
+              original: await imageFromBlob(pending.original),
+              draft: await imageFromBlob(pending.draft),
+            };
+            $('result-info').textContent =
+              '已恢复任务及当时的原图和摆放快照，可继续三图对比。当前编辑内容没有被替换。';
+          }
+          state.resultId = details.operationId
+            ? `tryon-${details.operationId}`
+            : crypto.randomUUID();
+          try {
+            await saveCurrentResult(
+              state.resultId,
+              details.prompt,
+              details.designId,
+              pending
+            );
+            state.resultSaved = true;
+            saved = true;
+          } catch (error) {
+            warning = `效果已生成，但浏览器历史保存失败：${error.message}。请下载或重试保存。`;
+          }
         }
+        if (saved) {
+          if (details.operationId) await completeOperation(details.operationId);
+          else {
+            clearPendingTask(task);
+          }
+        }
+        status(
+          warning
+            ? `${warning} 本次未结算测试积分。`
+            : kind === 'design'
+              ? '图案已生成并自动保存，可反复免费复用。确认位置后再单独生成真实试戴效果。'
+              : '单张试戴已生成并保存到试戴历史。可放大对比、下载，或复用同一图案换个位置。',
+          !!warning
+        );
         return;
       }
       await new Promise((resolve) => setTimeout(resolve, 5000));
@@ -908,6 +1354,10 @@ async function waitForTask(task, kind, context = null) {
   }
 }
 async function showResult(image, matches = false) {
+  state.comparisonSnapshots = null;
+  state.resultSaved = false;
+  state.resultId = null;
+  state.resultOperationId = null;
   state.resultMatches = matches && !!state.photo && !!state.design;
   state.composite = null;
   state.raw = image;
@@ -980,19 +1430,47 @@ async function billable(kind, action) {
 }
 $('generate-design').onclick = () =>
   billable('design', async () => {
-    status('正在提交一次 KIE 设计生成请求…');
-    const result = await request('design', {
+    if (hasPendingTask())
+      throw new Error('请先继续查看上次测试任务，不要重复提交。');
+    if (
+      !state.configured ||
+      !$('consent').checked ||
+      $('access-token').value.length < 24 ||
+      $('prompt').value.trim().length < 3
+    )
+      throw new Error('请填写提示词并完成测试授权。');
+    if ((await library.listDesigns()).length >= 100)
+      throw new Error('图案库已满，请先下载并删除不需要的图案，再生成新图案。');
+    const details = {
+      operationId: crypto.randomUUID(),
       prompt: $('prompt').value.trim(),
-    });
-    sessionStorage.setItem(
-      'try-on-lab-task',
-      JSON.stringify({ task: result.task, kind: 'design' })
-    );
-    $('resume-task').hidden = false;
-    await waitForTask(result.task, 'design');
+    };
+    await walletMutation('reserve', details.operationId, 1);
+    update();
+    let submitted = false;
+    try {
+      status('正在提交一次 KIE 设计生成请求…');
+      submitted = true;
+      const result = await request('design', {
+        prompt: details.prompt,
+      });
+      submitted = true;
+      taskStorage.setItem(
+        'try-on-lab-task',
+        JSON.stringify({ task: result.task, kind: 'design', ...details })
+      );
+      $('resume-task').hidden = false;
+      await waitForTask(result.task, 'design', null, details);
+    } catch (error) {
+      if (!submitted || error.definitelyRejected)
+        await walletMutation('release', details.operationId);
+      throw error;
+    }
   });
 $('render').onclick = () =>
   billable('render', async () => {
+    if (hasPendingTask())
+      throw new Error('请先继续查看上次测试任务，不要重复提交。');
     const context = editingContext();
     if (
       !state.photo ||
@@ -1002,36 +1480,73 @@ $('render').onclick = () =>
       $('access-token').value.length < 24
     )
       throw new Error('请先上传照片、选择图案并完成测试授权。');
-    state.region = placementRegion(geometry(), state.width, state.height);
-    status('正在上传测试参考图片到 KIE…');
-    const snapshot = referenceCanvas();
-    if (!state.photoAsset) state.photoAsset = await upload(state.photo);
-    if (!state.designAsset)
-      state.designAsset = await upload(state.designSource);
-    const guide = await upload(snapshot);
-    status('正在提交一次 KIE 单张试戴请求…');
-    const result = await request('render', {
-      photo: state.photoAsset,
-      design: state.designAsset,
-      guide,
-      region: state.region,
-    });
-    sessionStorage.setItem(
-      'try-on-lab-task',
-      JSON.stringify({ task: result.task, kind: 'render', context })
+    if ((await library.listHistory()).length >= 100)
+      throw new Error('试戴历史已满，请先下载并删除不需要的结果，再生成。');
+    const details = {
+      operationId: crypto.randomUUID(),
+      resolution: $('render-resolution').value,
+      prompt: state.designPrompt,
+      designId: state.designId,
+    };
+    await walletMutation(
+      'reserve',
+      details.operationId,
+      previewCreditCost('render', details.resolution)
     );
-    $('resume-task').hidden = false;
-    await waitForTask(result.task, 'render', context);
+    update();
+    let submitted = false;
+    try {
+      state.region = placementRegion(geometry(), state.width, state.height);
+      status('正在上传测试参考图片到 KIE…');
+      const snapshot = referenceCanvas();
+      await library.savePending({
+        id: details.operationId,
+        resolution: details.resolution,
+        original: await sourceBlob(state.photo),
+        draft: await sourceBlob(snapshot),
+        prompt: details.prompt,
+        ...(details.designId ? { designId: details.designId } : {}),
+      });
+      if (!state.photoAsset) state.photoAsset = await upload(state.photo);
+      if (!state.designAsset)
+        state.designAsset = await upload(state.designSource);
+      const guide = await upload(snapshot);
+      status('正在提交一次 KIE 单张试戴请求…');
+      submitted = true;
+      const result = await request('render', {
+        photo: state.photoAsset,
+        design: state.designAsset,
+        guide,
+        region: state.region,
+        resolution: details.resolution,
+      });
+      submitted = true;
+      taskStorage.setItem(
+        'try-on-lab-task',
+        JSON.stringify({
+          task: result.task,
+          kind: 'render',
+          context,
+          ...details,
+        })
+      );
+      $('resume-task').hidden = false;
+      await waitForTask(result.task, 'render', context, details);
+    } catch (error) {
+      if (!submitted || error.definitelyRejected) {
+        await walletMutation('release', details.operationId);
+        await library.deletePending(details.operationId).catch(() => {});
+      }
+      throw error;
+    }
   });
 $('resume-task').onclick = () =>
   billable('resume', async () => {
     if (!state.configured || $('access-token').value.length < 24)
       throw new Error('请输入预览测试访问口令。');
-    const saved = JSON.parse(
-      sessionStorage.getItem('try-on-lab-task') || 'null'
-    );
+    const saved = JSON.parse(taskStorage.getItem('try-on-lab-task') || 'null');
     if (!saved) throw new Error('当前没有保存的测试任务。');
-    await waitForTask(saved.task, saved.kind, saved.context);
+    await waitForTask(saved.task, saved.kind, saved.context, saved);
   });
 $('download').onclick = async () => {
   try {
@@ -1059,13 +1574,19 @@ $('download').onclick = async () => {
     status(error.message, true);
   }
 };
-const detailViewer = createDetailViewer(() => ({
-  original: state.resultMatches ? state.photo : null,
-  draft: state.resultMatches ? referenceCanvas() : null,
-  raw: state.raw,
-}));
+const detailViewer = createDetailViewer(
+  () =>
+    historySources ||
+    state.comparisonSnapshots || {
+      original: state.resultMatches ? state.photo : null,
+      draft: state.resultMatches ? referenceCanvas() : null,
+      raw: state.raw,
+    },
+  i18n.t
+);
 $('inspect-result').onclick = () => {
-  if (!state.busy)
+  if (!state.busy) {
+    historySources = null;
     detailViewer.open(
       state.view === 'original'
         ? 'original'
@@ -1073,10 +1594,13 @@ $('inspect-result').onclick = () => {
           ? 'draft'
           : 'raw'
     );
+  }
 };
 canvas.ondblclick = () => {
-  if (state.raw && !state.busy && state.view !== 'draft')
+  if (state.raw && !state.busy && state.view !== 'draft') {
+    historySources = null;
     detailViewer.open(state.view === 'original' ? 'original' : 'raw');
+  }
 };
 $('reset').onclick = () => {
   if (state.busy) {
@@ -1086,6 +1610,7 @@ $('reset').onclick = () => {
   location.reload();
 };
 window.addEventListener('resize', update);
+window.addEventListener('storage', update);
 async function checkConfiguration() {
   state.checking = true;
   $('configuration').textContent = '正在检查预览环境配置…';
@@ -1118,6 +1643,8 @@ async function checkConfiguration() {
   }
 }
 $('check-configuration').onclick = checkConfiguration;
+const panel = new URLSearchParams(location.search).get('panel');
+if (panel === 'history' || panel === 'designs') gallery.open(panel);
 await checkConfiguration();
-$('resume-task').hidden = !sessionStorage.getItem('try-on-lab-task');
+$('resume-task').hidden = !hasPendingTask();
 draw();

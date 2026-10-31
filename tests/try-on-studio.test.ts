@@ -5,6 +5,43 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 const element = (id: string) => document.getElementById(id) as any;
 let requests: { mode: string | null; data: any }[];
+const saved = vi.hoisted(() => ({
+  designs: [] as any[],
+  history: [] as any[],
+  failDesign: false,
+  pending: new Map<string, any>(),
+}));
+vi.mock('../public/try-on-lab/library.mjs', () => ({
+  createStudioLibrary: () => ({
+    listDesigns: async () => saved.designs,
+    listHistory: async () => saved.history,
+    savePending: async (record: any) => {
+      saved.pending.set(record.id, record);
+      return record;
+    },
+    getPending: async (id: string) => saved.pending.get(id),
+    deletePending: async (id: string) => {
+      saved.pending.delete(id);
+    },
+    saveDesign: async (record: any) => {
+      if (saved.failDesign) throw new Error('quota');
+      saved.designs = saved.designs.filter((item) => item.id !== record.id);
+      saved.designs.push(record);
+      return record;
+    },
+    saveHistory: async (record: any) => {
+      saved.history = saved.history.filter((item) => item.id !== record.id);
+      saved.history.push(record);
+      return record;
+    },
+    deleteDesign: async (id: string) => {
+      saved.designs = saved.designs.filter((item) => item.id !== id);
+    },
+    deleteHistory: async (id: string) => {
+      saved.history = saved.history.filter((item) => item.id !== id);
+    },
+  }),
+}));
 
 beforeEach(async () => {
   vi.resetModules();
@@ -13,6 +50,11 @@ beforeEach(async () => {
     'utf8'
   );
   sessionStorage.clear();
+  localStorage.clear();
+  saved.designs = [];
+  saved.history = [];
+  saved.failDesign = false;
+  saved.pending.clear();
   const context = new Proxy(
     {},
     {
@@ -81,7 +123,7 @@ beforeEach(async () => {
         JSON.stringify(
           mode === 'upload'
             ? { asset: 'asset' }
-            : mode === 'render'
+            : mode === 'render' || mode === 'design'
               ? { task: 'task' }
               : { state: 'success', asset: 'result' }
         )
@@ -152,6 +194,139 @@ async function renderResult() {
   element('consent').dispatchEvent(new Event('input'));
   await element('render').onclick();
 }
+async function generateDesign() {
+  element('access-token').value = 'a'.repeat(32);
+  element('consent').checked = true;
+  element('prompt').value = 'A geometric wolf design';
+  element('prompt').dispatchEvent(new Event('input'));
+  await element('generate-design').onclick();
+}
+it('saves a generated design with its prompt and reuses it without another design charge', async () => {
+  await generateDesign();
+  expect(saved.designs).toHaveLength(1);
+  expect(saved.designs[0].prompt).toBe('A geometric wolf design');
+  expect(element('credit-balance').textContent).toContain('2 credits');
+  await element('open-design-library').onclick();
+  const use = [...document.querySelectorAll('.gallery-actions button')].find(
+    (button) => button.textContent === '使用图案'
+  ) as HTMLButtonElement;
+  expect(use).toBeTruthy();
+  use.click();
+  await waitFor(() =>
+    expect(element('design-name').textContent).toBe('A geometric wolf design')
+  );
+  expect(requests.filter((record) => record.mode === 'design')).toHaveLength(1);
+  expect(element('credit-balance').textContent).toContain('2 credits');
+});
+it('uses the selected resolution and saves result history with comparison snapshots', async () => {
+  element('render-resolution').value = '2K';
+  await renderResult();
+  expect(
+    requests.find((record) => record.mode === 'render')?.data.resolution
+  ).toBe('2K');
+  expect(element('credit-balance').textContent).toContain('1 credits');
+  expect(saved.history).toHaveLength(1);
+  expect(saved.history[0]).toMatchObject({
+    resolution: '2K',
+    image: expect.any(Blob),
+    original: expect.any(Blob),
+    draft: expect.any(Blob),
+  });
+});
+it('does not claim a design was saved or settle test credits when browser saving fails', async () => {
+  saved.failDesign = true;
+  await generateDesign();
+  expect(saved.designs).toHaveLength(0);
+  expect(
+    JSON.parse(localStorage.getItem('tattoovis-preview-wallet-v1')!).balance
+  ).toBe(3);
+  expect(element('credit-balance').textContent).toContain('预留 1');
+  expect(element('status').textContent).toContain('保存失败');
+  expect(element('download-design').hidden).toBe(false);
+});
+it('releases a failed provider task reservation without saving a history result', async () => {
+  const normal = vi.mocked(fetch).getMockImplementation()!;
+  vi.mocked(fetch).mockImplementation(async (url, options) =>
+    String(url).includes('mode=status')
+      ? Response.json({ state: 'fail', failed: true })
+      : normal(url, options)
+  );
+  await renderResult();
+  expect(saved.history).toHaveLength(0);
+  expect(element('credit-balance').textContent).toContain('3 credits');
+  expect(localStorage.getItem('try-on-lab-task')).toBeNull();
+});
+it('keeps an explicit untracked reservation after an ambiguous create-task response and blocks automatic resubmission', async () => {
+  const normal = vi.mocked(fetch).getMockImplementation()!;
+  vi.mocked(fetch).mockImplementation(async (url, options) => {
+    if (String(url).includes('mode=render'))
+      throw new Error('network lost after dispatch');
+    return normal(url, options);
+  });
+  await renderResult();
+  expect(element('credit-balance').textContent).toContain('预留 1');
+  expect(element('release-orphaned-credit').hidden).toBe(false);
+  expect(localStorage.getItem('try-on-lab-task')).toBeNull();
+  const count = vi.mocked(fetch).mock.calls.length;
+  await element('render').onclick();
+  expect(vi.mocked(fetch).mock.calls).toHaveLength(count);
+});
+it('does not delete a different tab task when an older pending request reports failure', async () => {
+  const normal = vi.mocked(fetch).getMockImplementation()!;
+  let release: (value: Response) => void;
+  vi.mocked(fetch).mockImplementation(async (url, options) =>
+    String(url).includes('mode=status')
+      ? new Promise((resolve) => {
+          release = resolve;
+        })
+      : normal(url, options)
+  );
+  const running = renderResult();
+  await waitFor(() => expect(release).toBeTypeOf('function'));
+  const first = JSON.parse(localStorage.getItem('try-on-lab-task')!);
+  const { createPreviewWallet } =
+    await import('../public/try-on-lab/wallet.mjs');
+  const otherTab = createPreviewWallet();
+  otherTab.confirm(first.operationId);
+  otherTab.reserve('other-tab-operation', 1);
+  const second = JSON.stringify({
+    task: 'other-tab-task',
+    kind: 'render',
+    operationId: 'other-tab-operation',
+  });
+  localStorage.setItem('try-on-lab-task', second);
+  release!(Response.json({ state: 'fail', failed: true }));
+  await running;
+  expect(localStorage.getItem('try-on-lab-task')).toBe(second);
+  expect(otherTab.snapshot().reservations).toEqual(['other-tab-operation']);
+});
+it('resumes the same task idempotently without consuming credits twice or duplicating history', async () => {
+  const normal = vi.mocked(fetch).getMockImplementation()!;
+  vi.mocked(fetch).mockImplementation(async (url, options) => {
+    if (String(url).includes('mode=status')) throw new Error('offline');
+    return normal(url, options);
+  });
+  await renderResult();
+  const task = localStorage.getItem('try-on-lab-task')!;
+  expect(element('credit-balance').textContent).toContain('预留 1');
+  const taskCount = requests.filter(
+    (record) => record.mode === 'render'
+  ).length;
+  await element('render').onclick();
+  expect(requests.filter((record) => record.mode === 'render')).toHaveLength(
+    taskCount
+  );
+  expect(localStorage.getItem('try-on-lab-task')).toBe(task);
+  sessionStorage.clear();
+  vi.mocked(fetch).mockImplementation(normal);
+  await element('resume-task').onclick();
+  sessionStorage.setItem('try-on-lab-task', task);
+  await element('resume-task').onclick();
+  expect(saved.history).toHaveLength(1);
+  expect(requests.filter((record) => record.mode === 'render')).toHaveLength(1);
+  expect(element('credit-balance').textContent).toContain('2 credits');
+  expect(element('credit-balance').textContent).not.toContain('预留');
+});
 
 it('makes uploaded designs immediately editable without selecting a region or making paid requests', () => {
   expect(document.querySelector('.controls input[type="range"]')).toBeNull();
@@ -264,12 +439,13 @@ it('locks placement and rejects duplicate renders during an in-flight upload', a
   expect(placement().px).toBe(0.5);
   expect(element('flip-design').disabled).toBe(true);
   await element('render').onclick();
+  await waitFor(() => expect(release).toBeTypeOf('function'));
   release!(new Response(JSON.stringify({ asset: 'first' })));
   await pending;
   expect(requests.filter((r) => r.mode === 'render')).toHaveLength(1);
 });
 
-it('does not compare an older resumed task with a newly edited placement', async () => {
+it('compares an older resumed task against its saved snapshots instead of the newly edited placement', async () => {
   const normalFetch = vi.mocked(fetch).getMockImplementation()!;
   vi.mocked(fetch).mockImplementation(async (url, options) => {
     if (String(url).includes('mode=status'))
@@ -277,7 +453,7 @@ it('does not compare an older resumed task with a newly edited placement', async
     return normalFetch(url, options);
   });
   await renderResult();
-  expect(sessionStorage.getItem('try-on-lab-task')).not.toBeNull();
+  expect(localStorage.getItem('try-on-lab-task')).not.toBeNull();
   adjustWithKeyboard('placement-x', 75);
   vi.mocked(fetch).mockImplementation(normalFetch);
   await element('resume-task').onclick();
@@ -289,11 +465,11 @@ it('does not compare an older resumed task with a newly edited placement', async
         '[data-detail-view="original"]'
       ) as HTMLButtonElement
     ).disabled
-  ).toBe(true);
+  ).toBe(false);
   expect(
     (document.querySelector('[data-detail-view="draft"]') as HTMLButtonElement)
       .disabled
-  ).toBe(true);
+  ).toBe(false);
   expect(
     (document.querySelector('[data-view="composite"]') as HTMLButtonElement)
       .hidden

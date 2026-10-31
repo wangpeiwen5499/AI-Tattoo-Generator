@@ -1,6 +1,8 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { getThemePage } from '@/core/theme';
+import { isProductPreview } from '@/config/preview/product';
+import { PreviewPricing } from '@/shared/blocks/tattoo/preview-product';
 import { getMetadata } from '@/shared/lib/seo';
 import { getCurrentSubscription } from '@/shared/models/subscription';
 import { getUserInfo } from '@/shared/models/user';
@@ -20,6 +22,7 @@ export default async function PricingPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
+  if (isProductPreview()) return <PreviewPricing locale={locale} />;
 
   // get current subscription
   let currentSubscription;

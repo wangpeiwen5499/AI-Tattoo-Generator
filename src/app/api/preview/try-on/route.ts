@@ -39,6 +39,7 @@ export async function GET(req: Request) {
       configured: labAvailable(),
       missing: missingLabSettings(),
       resolution: '1K',
+      resolutions: ['1K', '2K', '4K'],
     });
   if (!authorizeLab(req)) return json({ error: 'Test access required' }, 403);
   try {
@@ -51,7 +52,7 @@ export async function GET(req: Request) {
       !response.ok ||
       !response.body ||
       !['image/png', 'image/jpeg', 'image/webp'].includes(type) ||
-      Number(response.headers.get('content-length')) > 20 * 1024 * 1024
+      Number(response.headers.get('content-length')) > 48 * 1024 * 1024
     )
       return json({ error: 'Test image unavailable' }, 502);
     let total = 0;
@@ -60,7 +61,7 @@ export async function GET(req: Request) {
         new TransformStream<Uint8Array, Uint8Array>({
           transform(chunk, controller) {
             total += chunk.byteLength;
-            if (total > 20 * 1024 * 1024) throw new Error('Image too large');
+            if (total > 48 * 1024 * 1024) throw new Error('Image too large');
             controller.enqueue(chunk);
           },
         })
@@ -175,6 +176,7 @@ export async function POST(req: Request) {
           photo: z.string(),
           design: z.string(),
           guide: z.string(),
+          resolution: z.enum(['1K', '2K', '4K']).default('1K'),
           region: regionSchema,
         })
         .parse(data);
@@ -188,7 +190,7 @@ export async function POST(req: Request) {
             readLabAsset(parsed.guide),
           ],
           aspect_ratio: 'auto',
-          resolution: '1K',
+          resolution: parsed.resolution,
         },
       });
       return json({ task: signLabTask(result.taskId) });

@@ -1,6 +1,8 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { getThemePage } from '@/core/theme';
+import { isProductPreview } from '@/config/preview/product';
+import { PreviewHome } from '@/shared/blocks/tattoo/preview-product';
 import { TattooGuideLinks } from '@/shared/blocks/tattoo/tattoo-guide-links';
 import { getMetadata } from '@/shared/lib/seo';
 import { DynamicPage } from '@/shared/types/blocks/landing';
@@ -17,6 +19,13 @@ export default async function LandingPage({
   setRequestLocale(locale);
 
   const t = await getTranslations('pages.index');
+  if (isProductPreview())
+    return (
+      <>
+        <PreviewHome locale={locale} />
+        <TattooGuideLinks locale={locale} />
+      </>
+    );
 
   // get page data
   const page: DynamicPage = t.raw('page');

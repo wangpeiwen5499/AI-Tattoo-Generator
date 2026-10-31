@@ -1,3 +1,5 @@
+import { isProductPreview } from '@/config/preview/product';
+
 import { tattooGuideSlugs } from './guide-paths';
 
 type Guide = {
@@ -253,7 +255,32 @@ const chinese: Record<GuideSlug, Guide> = {
 
 export function getTattooGuides(locale: string) {
   const source = locale === 'zh' ? chinese : english;
-  return tattooGuideSlugs.map((slug) => ({ slug, ...source[slug] }));
+  return tattooGuideSlugs.map((slug) => {
+    const guide = {
+      slug,
+      ...source[slug],
+      sections: source[slug].sections.map((section) => ({ ...section })),
+    };
+    if (!isProductPreview()) return guide;
+    const zh = locale === 'zh';
+    if (slug === 'minimalist')
+      guide.sections[2].body = zh
+        ? '使用光线均匀、目标部位清晰可见的照片。Preview 工作室将设计与试戴分开：先上传或生成图案，再自由移动、缩放和旋转，每次试戴生成一张图片。可以免费保存和复用设计，调整位置后再次试戴。预览不是精确尺寸测量工具，也不能替代纹身师确认。'
+        : 'Use an evenly lit photo with the intended area visible. The Preview studio separates design from try-on: upload or generate a design, then move, resize and rotate it freely. Each try-on produces one image. Save and reuse designs free, adjusting placement before another try-on. A preview cannot measure exact physical size or replace an artist’s review.';
+    if (slug === 'geometric')
+      guide.sections[1].body = zh
+        ? '首页狼头案例展示的是已保存的历史四部位图片，浏览免费，不代表新任务每次生成四张。Preview 工作室采用自由定位、单张试戴：复用设计并调整位置后，分别提交想比较的效果。观察不同大小与位置的轮廓、细节和留白。'
+        : 'The homepage wolf example contains real saved historical four-placement images, free to explore. It does not promise four images per new task. The Preview studio uses free placement and single-image try-ons: reuse a design and adjust its position before submitting each comparison. Compare outline, detail and negative space at different sizes and locations.';
+    if (slug === 'first-tattoo') {
+      guide.sections[2].body = zh
+        ? '考虑平常穿衣时是否希望纹身可见，以及图案与身体部位的关系。使用目标位置清晰可见、光线均匀的照片。在 Preview 工作室中自由移动、缩放、旋转设计，再生成单张试戴；复用同一设计比较不同位置。照片不能衡量疼痛、预测愈合或保证实际效果。'
+        : 'Consider visibility in everyday clothing and how the design relates to the body area. Use an evenly lit photo with the intended area visible. In the Preview studio, move, resize and rotate a design, then generate one try-on image. Reuse that design to compare another position. A photo cannot measure pain, predict healing or guarantee a real-world result.';
+      guide.sections[4].body = zh
+        ? '历史狼头案例可免费浏览。Preview 使用独立测试积分，不扣真实账户余额：生成一张 1K 设计为 1 积分；单张 1K、2K、4K 试戴分别为 1、2、3 积分。上传、保存、复用与自由定位免费。AI 请求仍产生 KIE 测试费用，需明确同意。设计与历史仅存当前浏览器。正式版注册验证邮箱赠送 3 积分的原权益保持不变；Preview 不提供真实购买。'
+        : 'Explore the saved wolf example free. Preview uses separate test credits, never real account balances: one 1K design costs 1 credit; a single 1K, 2K or 4K try-on costs 1, 2 or 3 credits. Uploading, saving, reusing and positioning are free. AI requests still incur KIE test costs and require explicit consent. Designs and history stay in this browser. The live signup offer of 3 credits after email verification keeps its existing terms; Preview offers no real purchases.';
+    }
+    return guide;
+  });
 }
 export function getTattooGuide(slug: string, locale: string) {
   return getTattooGuides(locale).find((guide) => guide.slug === slug);
