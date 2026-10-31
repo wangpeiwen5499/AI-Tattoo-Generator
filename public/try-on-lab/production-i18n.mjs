@@ -14,6 +14,22 @@ const COPY = {
     '生成服务暂时不可用，请稍后刷新重试。',
     'Generation is unavailable. Reload to retry later.',
   ],
+  测试数据说明: ['数据保存说明', 'How your data is stored'],
+  '图案和试戴历史仅保存在当前浏览器：不上传正式账户存储，也不跨设备或 Preview 地址同步。':
+    [
+      '图案与 AI 结果保存到账户，可跨设备查看。',
+      'Designs and AI results are saved to your account across devices.',
+    ],
+  '成功生成才结算测试积分；保存与复用免费。测试积分没有购买或退款交易，AI 调用仍消耗 KIE 测试额度。':
+    [
+      '成功生成才结算积分；保存与复用免费，失败退回本次积分。',
+      'Credits settle only after a successful generation; saving and reuse are free, and failures restore the credits used.',
+    ],
+  '手动叠放属于普通叠图；AI 原始结果与局部融合结果会分别展示。上传到 KIE 的测试文件是临时文件，请及时保存结果。':
+    [
+      '手动叠放属于普通叠图；AI 原始结果与局部融合结果会分别展示，请对比后再决定。',
+      'The manual overlay is a plain composite; the raw AI result and the local blend are shown separately for comparison.',
+    ],
   测试积分: ['账户积分', 'Account credits'],
   '正在读取测试积分…': ['正在读取账户积分…', 'Loading account credits…'],
   '模拟新账户赠送 3 credits。仅当前浏览器，清理浏览器数据或更换 Preview 地址后不会保留；与正式账户无关。':
@@ -29,10 +45,15 @@ const COPY = {
     '生成新图案 · 1 积分',
     'Create a design · 1 credit',
   ],
-  '成功生成的图案会自动保存到“我的图案”，下次直接选择，不再重复扣设计积分。生成失败不扣测试积分；保存、复用和手动摆放免费。使用狼头示例也免费。':
+  '成功生成的图案会自动保存到“我的图案”，下次直接选择，不再重复扣设计积分。':
     [
-      '成功生成的图案自动保存到账户，下次复用免费。生成失败退回本次积分。上传、保存和手动摆放免费。',
-      'Generated designs are saved to your account for free reuse. Failed generations restore the credits used. Uploading, saving and manual placement are free.',
+      '成功生成的图案自动保存到账户，下次复用免费，不再重复扣积分。',
+      'Generated designs are saved to your account for free reuse, without paying the design credit again.',
+    ],
+  '生成失败不扣测试积分；保存、复用和手动摆放免费。使用示例图案也免费。':
+    [
+      '生成失败退回本次积分。上传、保存和手动摆放免费。',
+      'Failed generations restore the credits used. Uploading, saving and manual placement are free.',
     ],
   继续查看上次测试任务: ['继续查看任务', 'Resume saved task'],
   先继续查看上次测试任务: [
@@ -118,10 +139,6 @@ export function productionCopy(source, english) {
       english
     );
   if (COPY[normalized]) return COPY[normalized][english ? 1 : 0];
-  if (normalized.startsWith('图案和试戴历史保存在当前浏览器，'))
-    return english
-      ? 'Designs and AI results are saved to your account across devices. Manual placement is free. AI generation uses the displayed credits; failures restore the credits used. Compare original AI and locally blended results before deciding.'
-      : '图案与 AI 结果保存到账户，可跨设备查看。手动摆放免费；AI 生成按所示积分收费，失败退回本次积分。请对比原始 AI 图片和局部融合效果后再决定。';
   let match;
   if ((match = /^可用测试积分 (\d+) credits/.exec(normalized)))
     return english ? `Available credits: ${match[1]}` : `可用积分 ${match[1]}`;

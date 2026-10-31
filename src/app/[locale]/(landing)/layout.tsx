@@ -37,7 +37,7 @@ export default async function LandingLayout({
       items: [
         ...(header.nav?.items ?? []),
         {
-          title: zh ? '我的设计' : 'My designs',
+          title: zh ? '我的设计' : 'My Designs',
           url: '/designs',
           icon: 'Images',
         },
@@ -55,7 +55,7 @@ export default async function LandingLayout({
               ...item,
               children: [
                 ...(item.children ?? []),
-                { title: zh ? '我的设计' : 'My designs', url: '/designs' },
+                { title: zh ? '我的设计' : 'My Designs', url: '/designs' },
                 { title: zh ? '试戴历史' : 'Try-on history', url: '/history' },
               ],
             }

@@ -51,14 +51,14 @@ export function Testimonials({
     <section
       id={section.id}
       className={cn(
-        'tattoo-reviews py-20 md:py-28',
+        'tattoo-reviews tattoo-section',
         section.className,
         className
       )}
       data-paused={paused}
       aria-labelledby={section.id ? section.id + '-title' : undefined}
     >
-      <div className="container mb-10 flex flex-wrap items-end justify-between gap-6 md:mb-14">
+      <div className="tattoo-container mb-10 flex flex-wrap items-end justify-between gap-6 md:mb-14">
         <div className="max-w-2xl">
           <h2
             id={section.id ? section.id + '-title' : undefined}
@@ -84,7 +84,7 @@ export function Testimonials({
           {paused ? t('play') : t('pause')}
         </button>
       </div>
-      <div className="tattoo-reviews-window mx-auto max-w-7xl overflow-hidden">
+      <div className="tattoo-reviews-window tattoo-container overflow-hidden">
         <div className="tattoo-reviews-track">
           {[0, 1].map((copy) => (
             <div

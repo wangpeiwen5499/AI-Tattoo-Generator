@@ -2,30 +2,35 @@
   "header": {
     "id": "header",
     "brand": {
-      "title": "AI Tattoo",
+      "title": "TattooVis",
       "url": "/"
     },
     "nav": {
       "items": [
         {
           "title": "Features",
-          "url": "/#features"
+          "url": "/#features",
+          "icon": "Sparkles"
         },
         {
           "title": "Blog",
-          "url": "/blog"
+          "url": "/blog",
+          "icon": "BookOpenText"
         },
         {
           "title": "Pricing",
-          "url": "/pricing"
+          "url": "/pricing",
+          "icon": "DollarSign"
         },
         {
           "title": "Studio",
-          "url": "/try-on-lab/index.html?lang=en"
+          "url": "/try-on-lab/index.html?lang=en",
+          "icon": "Wand"
         },
         {
           "title": "History",
-          "url": "/history"
+          "url": "/history",
+          "icon": "History"
         }
       ]
     },
@@ -54,8 +59,8 @@
   "footer": {
     "id": "footer",
     "brand": {
-      "title": "AI Tattoo Generator",
-      "description": "Upload or generate a design, move, resize and rotate it on your photo, then generate one AI try-on. Designs and try-on history save to your account.",
+      "title": "TattooVis",
+      "description": "A free AI tattoo generator try-on studio: upload or create a design, move, resize and rotate it on your photo, then generate one AI try-on.",
       "url": "/",
       "logo": {
         "src": "/favicon.ico",

@@ -32,9 +32,9 @@ export default async function IdeasPage({
   setRequestLocale(locale);
   const zh = locale === 'zh';
   return (
-    <main className="pt-28 sm:pt-36">
+    <main className="pt-8 sm:pt-10">
       <div className="mx-auto max-w-4xl px-5">
-        <p className="text-primary mb-4 text-xs tracking-widest">
+        <p className="text-primary mb-3 text-xs tracking-widest">
           TATTOOVIS / DESIGN NOTES
         </p>
         <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
@@ -55,7 +55,9 @@ export default async function IdeasPage({
             {zh ? '打开 AI 纹身生成器' : 'Open the AI tattoo generator'}
           </Link>
           <Link href="/#tattoo-case" className="underline underline-offset-4">
-            {zh ? '查看真实狼头案例' : 'Explore the real wolf tattoo example'}
+            {zh
+              ? '查看真实上臂试戴案例'
+              : 'Explore the real arm try-on example'}
           </Link>
         </div>
       </div>

@@ -1,3 +1,65 @@
+/* Shared homepage section rhythm: one content width, one heading scale and
+   alternating full-width white / light-gray bands (see testimonials.tsx). */
+.tattoo-section {
+  padding-top: 80px;
+  padding-bottom: 80px;
+}
+@media (min-width: 768px) {
+  .tattoo-section {
+    padding-top: 112px;
+    padding-bottom: 112px;
+  }
+}
+.tattoo-section-muted {
+  background: var(--muted);
+}
+.tattoo-container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+@media (min-width: 768px) {
+  .tattoo-container {
+    padding-left: 32px;
+    padding-right: 32px;
+  }
+}
+.tattoo-heading {
+  font-size: 30px;
+  font-weight: 400;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+  margin: 0;
+}
+@media (min-width: 640px) {
+  .tattoo-heading {
+    font-size: 36px;
+  }
+}
+@media (min-width: 1024px) {
+  .tattoo-heading {
+    font-size: 48px;
+  }
+}
+.tattoo-section-body {
+  color: var(--muted-foreground);
+  font-size: 16px;
+  line-height: 1.625;
+  margin: 20px 0 0;
+}
+.tattoo-eyebrow {
+  color: var(--primary);
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  margin: 0 0 12px;
+}
+/* Hero sits on a soft gradient so it reads as its own band above the
+   alternating white / muted sections that follow. */
+.tattoo-hero {
+  background: linear-gradient(180deg, var(--muted), var(--background));
+}
 .tattoo-features-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

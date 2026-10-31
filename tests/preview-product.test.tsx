@@ -2,17 +2,35 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, expect, it, vi } from 'vitest';
 
+import pricingCopy from '@/config/locale/messages/en/pages/pricing.json';
+import zhPricingCopy from '@/config/locale/messages/zh/pages/pricing.json';
 import { isProductPreview, studioUrl } from '@/config/preview/product';
 import {
   PreviewBanner,
   PreviewHome,
   PreviewPricing,
+  PreviewPricingCard,
   ProductionHome,
 } from '@/shared/blocks/tattoo/preview-product';
 
 vi.mock('@/shared/blocks/tattoo/tattoo-case-demo', () => ({
   TattooCaseDemo: () => <div />,
 }));
+
+function cardsFor(locale: string): PreviewPricingCard[] {
+  const copy =
+    locale === 'zh' ? zhPricingCopy : (pricingCopy as typeof zhPricingCopy);
+  return copy.page.sections.pricing.items.map(
+    ({ title, price, credits, description, label, features }) => ({
+      title,
+      price,
+      credits,
+      description,
+      label,
+      features,
+    })
+  );
+}
 
 afterEach(() => vi.unstubAllEnvs());
 it('enables product changes exclusively on Vercel Preview', () => {
@@ -29,7 +47,9 @@ it('enables product changes exclusively on Vercel Preview', () => {
 it.each(['en', 'zh'])(
   'renders %s draft credits without a checkout or fixed image promise',
   (locale) => {
-    const html = renderToStaticMarkup(<PreviewPricing locale={locale} />);
+    const html = renderToStaticMarkup(
+      <PreviewPricing locale={locale} cards={cardsFor(locale)} />
+    );
     for (const text of ['$4.99', '$14.99', '$29.99', '1K', '2K', '4K'])
       expect(html).toContain(text);
     expect(html).toContain(`href="${studioUrl(undefined, locale)}"`);
@@ -43,9 +63,31 @@ it.each(['en', 'zh'])(
 );
 
 it.each(['en', 'zh'])(
+  'explains per-operation costs on every %s pricing card',
+  (locale) => {
+    const html = renderToStaticMarkup(
+      <PreviewPricing locale={locale} cards={cardsFor(locale)} />
+    );
+    const zh = locale === 'zh';
+    for (const credits of ['5', '20', '50']) expect(html).toContain(credits);
+    expect(html).toContain(
+      zh ? '上传、保存、复用与定位免费' : 'Upload, save, reuse and position free'
+    );
+    expect(html).toContain(zh ? '永不过期' : 'never expire');
+    expect(html).toContain(
+      zh ? '一次性购买' : 'One-time purchase'
+    );
+    // The middle card is highlighted as the recommended tier.
+    expect(html).toContain(zh ? '最受欢迎' : 'Most Popular');
+  }
+);
+
+it.each(['en', 'zh'])(
   'separates refund eligibility from order-specific credit recovery in %s pricing',
   (locale) => {
-    const html = renderToStaticMarkup(<PreviewPricing locale={locale} />);
+    const html = renderToStaticMarkup(
+      <PreviewPricing locale={locale} cards={cardsFor(locale)} />
+    );
     expect(html).toContain(
       locale === 'zh' ? '积分永不过期' : 'Credits never expire'
     );
@@ -79,7 +121,19 @@ vi.mock('next/navigation', () => ({
 }));
 vi.mock('next-intl/server', () => ({
   setRequestLocale: vi.fn(),
-  getTranslations: async () => ({ raw: () => ({}) }),
+  getTranslations: async () => ({
+    raw: (key: string) => {
+      const sections = pricingCopy.page.sections as Record<
+        string,
+        { items?: unknown[] }
+      >;
+      const match = key.match(/^page\.sections\.(\w+)(?:\.(\w+))?$/);
+      if (!match) return {};
+      const section = sections[match[1]];
+      if (!section) return {};
+      return match[2] ? section[match[2] as 'items'] : section;
+    },
+  }),
 }));
 vi.mock('@/shared/lib/seo', () => ({ getMetadata: () => async () => ({}) }));
 vi.mock('@/core/theme', () => ({

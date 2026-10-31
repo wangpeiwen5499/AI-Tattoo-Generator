@@ -2,7 +2,10 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { getThemePage } from '@/core/theme';
 import { isProductPreview } from '@/config/preview/product';
-import { PreviewPricing } from '@/shared/blocks/tattoo/preview-product';
+import {
+  PreviewPricing,
+  PreviewPricingCard,
+} from '@/shared/blocks/tattoo/preview-product';
 import { getMetadata } from '@/shared/lib/seo';
 import { getCurrentSubscription } from '@/shared/models/subscription';
 import { getUserInfo } from '@/shared/models/user';
@@ -22,7 +25,20 @@ export default async function PricingPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  if (isProductPreview()) return <PreviewPricing locale={locale} />;
+  if (isProductPreview()) {
+    const t = await getTranslations('pages.pricing');
+    const cards = (
+      t.raw('page.sections.pricing.items') as PreviewPricingCard[]
+    ).map(({ title, price, credits, description, label, features }) => ({
+      title,
+      price,
+      credits,
+      description,
+      label,
+      features,
+    }));
+    return <PreviewPricing locale={locale} cards={cards} />;
+  }
 
   // get current subscription
   let currentSubscription;
@@ -56,7 +72,7 @@ export default async function PricingPage({
 
   return (
     <>
-      <section className="mx-auto max-w-3xl px-5 pt-28 text-center">
+      <section className="mx-auto max-w-3xl px-5 pt-8 text-center sm:pt-10">
         <h1 className="text-3xl font-semibold">
           {locale === 'zh'
             ? '按操作使用积分，设计自由复用'

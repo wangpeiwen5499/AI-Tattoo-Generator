@@ -57,7 +57,7 @@ const english: Record<GuideSlug, Guide> = {
   geometric: {
     title: 'Geometric Tattoo Ideas: Wolf Designs, Shapes and Prompt Examples',
     description:
-      'Plan a geometric tattoo with editable wolf and shape prompts. See a real wolf example, compare symmetry and detail, and prepare a reference for your tattoo artist.',
+      'Plan a geometric tattoo with editable wolf and shape prompts. See a real saved try-on example, compare symmetry and detail, and prepare a reference for your tattoo artist.',
     intro:
       'Geometric tattoo designs use repeated shapes, angular outlines or structured spacing to build an image. They can be entirely abstract or use geometry to describe a familiar subject, such as a wolf. The choice is less about adding more triangles and more about choosing a shape language that stays readable.',
     sections: [
@@ -66,8 +66,8 @@ const english: Record<GuideSlug, Guide> = {
         body: 'Try describing the same subject in two ways: an angular silhouette with very little interior detail, and a more detailed head divided into faceted shapes. The first version emphasizes the outline; the second emphasizes the face and pattern. For a wolf, specify whether you want a front-facing symmetrical head or a side profile. Mixing both instructions often gives the model conflicting directions.',
       },
       {
-        title: 'Use the wolf example as a workflow reference',
-        body: 'The interactive example on the TattooVis homepage shows a black-and-grey geometric wolf design followed by a saved single-image calf try-on. These are saved outputs from the website, so exploring them does not use credits. They demonstrate the workflow rather than promise an identical result for every photograph. Look at how the design’s width and visible detail change as you compare the design with the saved calf result.',
+        title: 'Use the saved example as a workflow reference',
+        body: 'The interactive example on the TattooVis homepage follows an uploaded Gundam design from the original photo through a preset biceps placement to one saved single-image try-on. These are saved outputs from the website, so exploring them does not use credits. They demonstrate the workflow rather than promise an identical result for every photograph. Look at how the design’s width and visible detail change as you compare the uploaded design with the saved try-on result.',
       },
       {
         title: 'Compare detail at the intended viewing size',
@@ -121,7 +121,7 @@ const english: Record<GuideSlug, Guide> = {
       },
       {
         title: 'Know what the free example and credits provide',
-        body: 'You can click through the saved wolf example without an account or credits. Generating with your own photo requires an account with a verified email. New accounts receive a one-time gift of three credits. A 1K design costs 1 credit; a single 1K / 2K / 4K try-on costs 1 / 2 / 3 credits. Uploading, positioning, saving and reusing designs are free. Check the pricing page before purchasing. Designs and try-on history save to your account. Credits never expire.',
+        body: 'You can click through the saved homepage example without an account or credits. Generating with your own photo requires an account with a verified email. New accounts receive a one-time gift of three credits. A 1K design costs 1 credit; a single 1K / 2K / 4K try-on costs 1 / 2 / 3 credits. Uploading, positioning, saving and reusing designs are free. Check the pricing page before purchasing. Designs and try-on history save to your account. Credits never expire.',
       },
     ],
     prompts: [
@@ -191,8 +191,8 @@ const chinese: Record<GuideSlug, Guide> = {
         body: '同一只狼可以用简洁的棱角轮廓表现，也可以用多个切面构成立体的脸部。前者重视外形，后者重视图案与面部细节。提示词应明确正面、对称狼头或侧面轮廓，避免把矛盾的角度要求写在一起。',
       },
       {
-        title: '观察首页真实生成的狼头案例',
-        body: '首页互动案例先展示黑灰几何狼头设计，再展示左臂、右臂、肩部和小腿的生成结果。它们是网站保存的真实输出，点击体验不消耗积分。案例用于解释工作流，不能保证每张照片产生完全相同的结果。可以比较较小的肩部图案与较长的手臂图案，在细节和宽度上有什么变化。',
+        title: '观察首页真实保存的试戴案例',
+        body: '首页互动案例用一张上传的高达图案，从原图、固定肱二头肌位置走到一张已保存的单张试戴结果。它们是网站保存的真实输出，点击体验不消耗积分。案例用于解释工作流，不能保证每张照片产生完全相同的结果。可以比较上传图案与试戴结果在细节和宽度上的变化。',
       },
       {
         title: '放大与缩小都要看',
@@ -238,7 +238,7 @@ const chinese: Record<GuideSlug, Guide> = {
       },
       {
         title: '了解免费案例与积分规则',
-        body: '无需账户即可点击首页保存的狼头案例。使用自己的照片生成需要邮箱已验证的账户，新账户一次性赠送三个积分。生成一张 1K 设计消耗 1 积分；单张 1K / 2K / 4K 试戴分别消耗 1 / 2 / 3 积分。上传、保存、复用与定位免费。设计库与历史保存在账户中，积分永不过期。购买前请查看价格页。',
+        body: '无需账户即可点击首页保存的互动案例。使用自己的照片生成需要邮箱已验证的账户，新账户一次性赠送三个积分。生成一张 1K 设计消耗 1 积分；单张 1K / 2K / 4K 试戴分别消耗 1 / 2 / 3 积分。上传、保存、复用与定位免费。设计库与历史保存在账户中，积分永不过期。购买前请查看价格页。',
       },
     ],
     prompts: english['first-tattoo'].prompts.map((p, i) => ({
@@ -269,15 +269,15 @@ export function getTattooGuides(locale: string) {
         : 'Use an evenly lit photo with the intended area visible. The Preview studio separates design from try-on: upload or generate a design, then move, resize and rotate it freely. Each try-on produces one image. Save and reuse designs free, adjusting placement before another try-on. A preview cannot measure exact physical size or replace an artist’s review.';
     if (slug === 'geometric')
       guide.sections[1].body = zh
-        ? '首页狼头案例展示从原图、设计、固定位置到一张已保存小腿结果的过程，浏览免费。Preview 工作室采用自由定位、单张试戴：复用设计并调整位置后，分别提交想比较的效果。观察不同大小与位置的轮廓、细节和留白。'
-        : 'The homepage wolf example follows a saved photo, design and preset calf placement through to one real saved result, free to explore. The Preview studio uses free placement and single-image try-ons: reuse a design and adjust its position before submitting each comparison. Compare outline, detail and negative space at different sizes and locations.';
+        ? '首页高达案例展示从原图、上传图案、固定肱二头肌位置到一张已保存试戴结果的过程，浏览免费。Preview 工作室采用自由定位、单张试戴：复用设计并调整位置后，分别提交想比较的效果。观察不同大小与位置的轮廓、细节和留白。'
+        : 'The homepage Gundam example follows a saved photo, an uploaded design and a preset biceps placement through to one real saved result, free to explore. The Preview studio uses free placement and single-image try-ons: reuse a design and adjust its position before submitting each comparison. Compare outline, detail and negative space at different sizes and locations.';
     if (slug === 'first-tattoo') {
       guide.sections[2].body = zh
         ? '考虑平常穿衣时是否希望纹身可见，以及图案与身体部位的关系。使用目标位置清晰可见、光线均匀的照片。在 Preview 工作室中自由移动、缩放、旋转设计，再生成单张试戴；复用同一设计比较不同位置。照片不能衡量疼痛、预测愈合或保证实际效果。'
         : 'Consider visibility in everyday clothing and how the design relates to the body area. Use an evenly lit photo with the intended area visible. In the Preview studio, move, resize and rotate a design, then generate one try-on image. Reuse that design to compare another position. A photo cannot measure pain, predict healing or guarantee a real-world result.';
       guide.sections[4].body = zh
-        ? '历史狼头案例可免费浏览。Preview 使用独立测试积分，不扣真实账户余额：生成一张 1K 设计为 1 积分；单张 1K、2K、4K 试戴分别为 1、2、3 积分。上传、保存、复用与自由定位免费。AI 请求仍产生 KIE 测试费用，需明确同意。设计与历史仅存当前浏览器。正式版注册验证邮箱赠送 3 积分的原权益保持不变；Preview 不提供真实购买。'
-        : 'Explore the saved wolf example free. Preview uses separate test credits, never real account balances: one 1K design costs 1 credit; a single 1K, 2K or 4K try-on costs 1, 2 or 3 credits. Uploading, saving, reusing and positioning are free. AI requests still incur KIE test costs and require explicit consent. Designs and history stay in this browser. The live signup offer of 3 credits after email verification keeps its existing terms; Preview offers no real purchases.';
+        ? '首页保存的互动案例可免费浏览。Preview 使用独立测试积分，不扣真实账户余额：生成一张 1K 设计为 1 积分；单张 1K、2K、4K 试戴分别为 1、2、3 积分。上传、保存、复用与自由定位免费。AI 请求仍产生 KIE 测试费用，需明确同意。设计与历史仅存当前浏览器。正式版注册验证邮箱赠送 3 积分的原权益保持不变；Preview 不提供真实购买。'
+        : 'Explore the saved homepage example free. Preview uses separate test credits, never real account balances: one 1K design costs 1 credit; a single 1K, 2K or 4K try-on costs 1, 2 or 3 credits. Uploading, saving, reusing and positioning are free. AI requests still incur KIE test costs and require explicit consent. Designs and history stay in this browser. The live signup offer of 3 credits after email verification keeps its existing terms; Preview offers no real purchases.';
     }
     if (!preview) {
       for (const section of guide.sections) {

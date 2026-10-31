@@ -10,14 +10,14 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 it.each(['en', 'zh'])(
-  'guides the %s example through four button actions without editing or provider calls',
+  'guides the %s Gundam biceps example through four button actions without editing or provider calls',
   (locale) => {
     const fetch = vi.fn();
     vi.stubGlobal('fetch', fetch);
     const zh = locale === 'zh';
     render(<PreviewWorkflowCase locale={locale} />);
     const reveal = screen.getByRole('button', {
-      name: zh ? '查看已生成图案' : 'Reveal saved design',
+      name: zh ? '查看上传的图案' : 'Reveal uploaded design',
     }) as HTMLButtonElement;
     const place = screen.getByRole('button', {
       name: zh ? '套用示例位置' : 'Apply preset placement',
@@ -41,10 +41,10 @@ it.each(['en', 'zh'])(
     expect(
       screen
         .getByAltText(
-          zh ? '已保存的几何狼头纹身设计' : 'Saved geometric wolf tattoo design'
+          zh ? '已上传的高达纹身图案' : 'Uploaded Gundam tattoo design'
         )
         .getAttribute('src')
-    ).toContain('/design.webp');
+    ).toContain('gundam-biceps/design.webp');
     fireEvent.click(place);
     expect(
       screen.getByAltText(
@@ -57,10 +57,10 @@ it.each(['en', 'zh'])(
     expect(
       screen
         .getByAltText(
-          zh ? '保存的 AI 小腿试戴结果' : 'Saved AI calf example result'
+          zh ? '保存的 AI 肱二头肌试戴结果' : 'Saved AI biceps try-on result'
         )
         .getAttribute('src')
-    ).toContain('/calf.webp');
+    ).toContain('gundam-biceps/result.webp');
     expect(screen.queryAllByRole('slider')).toHaveLength(0);
     expect(
       screen.queryByRole('button', {
@@ -76,3 +76,18 @@ it.each(['en', 'zh'])(
     expect(reveal.disabled).toBe(true);
   }
 );
+
+it('presents the uploaded design honestly instead of a generation prompt', () => {
+  const fetch = vi.fn();
+  vi.stubGlobal('fetch', fetch);
+  const { container } = render(<PreviewWorkflowCase locale="en" />);
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Use this sample photo' })
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Reveal uploaded design' }));
+  expect(container.textContent).toContain('uploaded by the user');
+  expect(container.textContent).not.toMatch(
+    /prompt was used|generated on this site as a design/
+  );
+  expect(container.textContent).not.toMatch(/wolf|calf/i);
+});

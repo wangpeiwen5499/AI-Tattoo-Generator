@@ -52,3 +52,15 @@ Product ID: `PROD_1COeqPCRSNk89LbIyHYnC`
 If generation fails, the credits consumed for that operation are returned once. Support reviews purchase refund eligibility under the applicable terms. After a completed full refund, only that order’s remaining unused credits are recovered; spent credits, gifts and other orders’ balances are not deducted. Partial refunds require manual handling. Contact support@tattoovis.ink.
 
 生成失败后，本次操作消耗的积分会退还一次。购买退款资格由支持团队按适用条款审核。全额退款完成后，仅收回该订单剩余未用积分；不追扣已用积分、赠送积分或其他订单余额。部分退款人工处理。联系 support@tattoovis.ink。
+
+## Pending manual replacement in the Waffo dashboard (owner action)
+
+This repository cannot modify merchant configuration. The preview pricing page now renders exactly the copy below, so the dashboard entries still showing the older fixed-image-count text/covers are the remaining gap. Status: **not yet applied by the owner** — record the actual completion date here when done.
+
+| Product | ID | Dashboard description | Dashboard cover |
+| --- | --- | --- | --- |
+| Starter | `PROD_5GdIMzJzJlUpdrBCyuaX2x` | replace with the Starter copy above | replace fixed-image-count cover |
+| Most Popular | `PROD_10hOkpFlMDiWFiqLxcWXHi` | replace with the Most Popular copy above | replace fixed-image-count cover |
+| Pro | `PROD_1COeqPCRSNk89LbIyHYnC` | replace with the Pro copy above | replace fixed-image-count cover |
+
+Prices, product IDs and credit quantities must remain unchanged while replacing text and artwork. No subscription, discount or unlimited-generation claims may be added.

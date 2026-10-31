@@ -36,11 +36,11 @@ export default async function GuidePage({ params }: Props) {
   if (!guide) notFound();
   const zh = locale === 'zh';
   return (
-    <main className="px-5 pt-28 pb-20 sm:pt-36">
+    <main className="px-5 pt-8 pb-20 sm:pt-10">
       <article className="mx-auto max-w-3xl">
         <nav
           aria-label={zh ? '面包屑导航' : 'Breadcrumb'}
-          className="text-muted-foreground mb-8 flex flex-wrap gap-2 text-sm"
+          className="text-muted-foreground mb-5 flex flex-wrap gap-2 text-sm"
         >
           <Link href="/">TattooVis</Link>
           <span aria-hidden="true">/</span>
@@ -48,7 +48,7 @@ export default async function GuidePage({ params }: Props) {
             {zh ? '设计灵感' : 'Tattoo ideas'}
           </Link>
         </nav>
-        <p className="text-primary mb-4 text-xs tracking-widest">
+        <p className="text-primary mb-3 text-xs tracking-widest">
           DESIGN NOTES / TATTOOVIS
         </p>
         <h1 className="text-3xl leading-tight font-semibold tracking-tight sm:text-5xl">
@@ -106,8 +106,8 @@ export default async function GuidePage({ params }: Props) {
               className="text-primary underline underline-offset-4"
             >
               {zh
-                ? '打开几何狼头互动案例'
-                : 'Explore the geometric wolf interactive example'}
+                ? '打开首页互动案例（高达上臂试戴）'
+                : 'Explore the homepage interactive example (Gundam arm try-on)'}
             </Link>
           </p>
         )}

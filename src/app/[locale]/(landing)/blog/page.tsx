@@ -23,9 +23,9 @@ export default async function BlogPage({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
   return (
-    <main className="pt-28 sm:pt-36">
+    <main className="pt-8 sm:pt-10">
       <header className="mx-auto max-w-6xl px-5">
-        <p className="text-primary mb-4 text-xs tracking-widest">
+        <p className="text-primary mb-3 text-xs tracking-widest">
           TATTOOVIS / JOURNAL
         </p>
         <h1 className="text-4xl font-medium sm:text-5xl">
@@ -39,7 +39,7 @@ export default async function BlogPage({ params }: Props) {
             : 'From a first idea to a design that feels personal. Explore styles, prompts and photo try-on guides for your next concept.'}
         </p>
       </header>
-      <TattooGuideLinks locale={locale} />
+      <TattooGuideLinks locale={locale} showAllLink={false} />
     </main>
   );
 }

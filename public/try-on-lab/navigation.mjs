@@ -25,6 +25,12 @@ export function initStudioNavigation({ locale, t, root = document }) {
     toggle.textContent = t(open ? '关闭' : '菜单');
   };
   toggle.addEventListener('click', () => setOpen(toggle.getAttribute('aria-expanded') !== 'true'));
+  // Mirror the site Header: transparent at the top, blurred surface once scrolled.
+  const setScrolled = () => {
+    header.dataset.scrolled = String(window.scrollY > 50);
+  };
+  setScrolled();
+  window.addEventListener('scroll', setScrolled, { passive: true });
   links.addEventListener('click', (event) => {
     if (event.target.closest('a, button')) setOpen(false);
   });

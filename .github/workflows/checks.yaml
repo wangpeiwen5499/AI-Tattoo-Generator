@@ -1,7 +1,7 @@
 name: Project checks
 on:
   push:
-    branches: [shipany-two, main, feat/single-placement-preview, feat/placement-studio-production]
+    branches: [shipany-two, main, feat/single-placement-preview, feat/placement-studio-production, preview/ui-refinements]
   pull_request:
 jobs:
   verify:

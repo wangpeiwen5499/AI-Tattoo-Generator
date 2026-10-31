@@ -15,12 +15,12 @@
 }
 body {
   margin: 0;
-  padding-top: 72px;
+  padding-top: 56px;
   background: #f8fafc;
   color: var(--ink);
   font-family: Georgia, 'Times New Roman', 'Noto Serif SC', 'Songti SC', SimSun, serif;
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: 16px;
+  line-height: 1.7;
 }
 button,
 input,
@@ -97,9 +97,9 @@ main {
   border: 1px solid transparent;
   background: #f8fafc;
   color: var(--muted);
-  padding: 8px 12px;
+  padding: 8px 13px;
   border-radius: 7px;
-  font-size: 13px;
+  font-size: 14px;
 }
 .tabs button[aria-pressed='true'] {
   background: #fff;
@@ -110,7 +110,7 @@ main {
 }
 #view-caption {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 13px;
 }
 .canvas-shell {
   position: relative;
@@ -283,7 +283,7 @@ canvas.moving {
   flex-wrap: wrap;
 }
 .canvas-footer p {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--muted);
   margin: 0;
 }
@@ -295,12 +295,12 @@ canvas.moving {
   background: #fff;
 }
 .controls section {
-  padding: 0 0 22px;
-  margin-bottom: 23px;
+  padding: 0 0 26px;
+  margin-bottom: 28px;
   border-bottom: 1px solid var(--line);
 }
 h2 {
-  font-size: 15px;
+  font-size: 17px;
   margin: 0;
   font-weight: 650;
 }
@@ -313,13 +313,15 @@ h2 {
 }
 .hint {
   color: var(--muted);
-  font-size: 13px;
-  margin: 8px 0 12px;
+  font-size: 16px;
+  line-height: 1.65;
+  margin: 8px 0 14px;
 }
 .small {
   color: var(--muted);
-  font-size: 12px;
-  margin: 7px 0;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 8px 0;
 }
 .button {
   display: inline-flex;
@@ -352,14 +354,14 @@ h2 {
   border: 0;
   background: transparent;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 14px;
 }
 .text-button {
   border: 0;
   background: none;
   padding: 3px 0;
   color: var(--accent);
-  font-size: 12px;
+  font-size: 14px;
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -369,7 +371,7 @@ h2 {
   margin: 14px 0 5px;
 }
 .range-grid label {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--muted);
   display: block;
 }
@@ -382,14 +384,14 @@ h2 {
 output {
   float: right;
   color: var(--ink);
-  font-size: 11px;
+  font-size: 13px;
 }
 .free {
   color: #28745b;
   background: #e7f4ee;
   padding: 2px 7px;
   border-radius: 4px;
-  font-size: 11px;
+  font-size: 12px;
 }
 #design-preview {
   display: flex;
@@ -406,21 +408,22 @@ output {
   border-radius: 7px;
 }
 #design-name {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 550;
 }
 .field-label,
 .test-config label {
   display: block;
-  font-size: 12px;
-  margin: 13px 0 7px;
+  font-size: 14px;
+  margin: 14px 0 8px;
 }
 textarea,
 input[type='password'] {
   width: 100%;
   border: 1px solid #d6d9e4;
   border-radius: 7px;
-  padding: 10px;
+  padding: 12px;
+  font-size: 16px;
   background: white;
   color: var(--ink);
   resize: vertical;
@@ -430,11 +433,11 @@ input[type='password'] {
 }
 .consent {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   color: var(--muted);
-  font-size: 11px;
-  line-height: 1.7;
-  margin: 14px 0;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 16px 0;
 }
 .consent input {
   accent-color: var(--accent);
@@ -445,7 +448,8 @@ input[type='password'] {
   width: 100%;
 }
 #status {
-  font-size: 12px;
+  font-size: 14px;
+  line-height: 1.6;
   margin: 12px 0 0;
   white-space: pre-line;
 }
@@ -456,14 +460,21 @@ input[type='password'] {
   padding: 12px 18px;
   background: #f0f7f4;
   border-top: 1px solid var(--line);
-  font-size: 12px;
+  font-size: 14px;
   color: #315d4c;
 }
 footer {
-  font-size: 11px;
+  font-size: 14px;
+  line-height: 1.65;
   color: var(--muted);
   margin-top: 24px;
   max-width: 800px;
+}
+footer p {
+  margin: 0 0 10px;
+}
+footer p:last-child {
+  margin-bottom: 0;
 }
 #configuration[data-ready='false'] {
   color: #946020;
@@ -506,7 +517,8 @@ footer {
     margin-bottom: 20px;
   }
   .intro p {
-    font-size: 12px;
+    font-size: 14px;
+    line-height: 1.6;
   }
   .canvas-shell {
     min-height: 350px;
@@ -527,7 +539,7 @@ footer {
   }
   .tabs button {
     padding: 8px;
-    font-size: 11px;
+    font-size: 12px;
   }
   .canvas-footer {
     padding: 11px 13px;
@@ -562,7 +574,7 @@ footer {
 }
 .tattoo-menu button {
   width: 100%;
-  min-height: 42px;
+  min-height: 44px;
   border: 0;
   border-radius: 6px;
   padding: 9px 10px;
@@ -572,7 +584,7 @@ footer {
   gap: 12px;
   background: transparent;
   color: var(--ink);
-  font-size: 12px;
+  font-size: 14px;
   text-align: left;
 }
 .tattoo-menu button:hover,
@@ -582,7 +594,7 @@ footer {
 .tattoo-menu kbd {
   color: var(--muted);
   font: inherit;
-  font-size: 10px;
+  font-size: 11px;
 }
 #placement-status:empty {
   display: none;
@@ -599,19 +611,20 @@ footer {
   background: #fff;
 }
 .test-wallet strong {
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 600;
 }
 .test-wallet p {
-  font-size: 11px;
+  font-size: 14px;
+  line-height: 1.6;
   color: var(--muted);
-  margin: 4px 0 0;
+  margin: 5px 0 0;
 }
 .test-wallet .button {
   width: auto;
   flex-shrink: 0;
-  font-size: 12px;
-  min-height: 38px;
+  font-size: 14px;
+  min-height: 40px;
 }
 .design-sources {
   display: grid;
@@ -621,8 +634,8 @@ footer {
 }
 .design-sources .button {
   padding: 8px 4px;
-  font-size: 12px;
-  min-height: 38px;
+  font-size: 13px;
+  min-height: 40px;
 }
 .design-save-actions {
   display: flex;
@@ -682,7 +695,7 @@ footer {
 .gallery-note,
 .gallery-status {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 14px;
 }
 .gallery-status:empty {
   display: none;
@@ -709,19 +722,19 @@ footer {
   border-radius: 7px;
 }
 .gallery-card h3 {
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: 16px;
+  line-height: 1.55;
   overflow-wrap: anywhere;
 }
 .gallery-meta {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--muted);
 }
 .gallery-prompt {
-  font-size: 12px;
-  line-height: 1.7;
+  font-size: 14px;
+  line-height: 1.65;
   overflow-wrap: anywhere;
-  max-height: 120px;
+  max-height: 140px;
   overflow: auto;
 }
 .gallery-actions {
@@ -734,8 +747,8 @@ footer {
   flex: 1;
   width: auto;
   padding: 8px 10px;
-  font-size: 11px;
-  min-height: 36px;
+  font-size: 13px;
+  min-height: 38px;
 }
 @media (max-width: 760px) {
   .test-wallet {
@@ -770,7 +783,7 @@ footer {
   }
 }
 .eyebrow {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.2em;
   color: var(--accent) !important;
@@ -789,12 +802,12 @@ footer {
   gap: 10px;
   padding-top: 12px;
   border-top: 2px solid #dedbd5;
-  font-size: 11px;
+  font-size: 12px;
   color: #8b8782;
   font-variant-numeric: tabular-nums;
 }
 .workflow-steps li span {
-  font-size: 13px;
+  font-size: 14px;
 }
 .workflow-steps li[data-done='true'] {
   border-color: #b6afcf;
@@ -817,16 +830,16 @@ footer {
   background: #efecf3;
 }
 .workflow-guide strong {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
 }
 .workflow-guide span {
-  font-size: 12px;
+  font-size: 14px;
   color: #68616f;
 }
 .section-number {
   color: #93899e;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 400;
   margin-right: 5px;
 }
@@ -851,9 +864,9 @@ footer {
 }
 .detail-actions .button,
 .detail-fit-actions .button {
-  min-height: 38px;
+  min-height: 40px;
   padding: 8px 13px;
-  font-size: 12px;
+  font-size: 13px;
 }
 .detail-header h2 small {
   display: inline;
@@ -874,8 +887,8 @@ footer {
   border-radius: 9px;
 }
 .detail-toolbar .tabs button {
-  min-height: 38px;
-  font-size: 13px;
+  min-height: 40px;
+  font-size: 14px;
 }
 .detail-toolbar .tabs button[aria-pressed='true'] {
   background: var(--accent);
@@ -884,7 +897,7 @@ footer {
 }
 .detail-toolbar label {
   flex: 1;
-  font-size: 12px;
+  font-size: 14px;
 }
 #detail-dialog .tabs button {
   background: transparent;
@@ -932,7 +945,7 @@ footer {
     min-height: 32px;
   }
   #detail-hint {
-    font-size: 10px;
+    font-size: 12px;
   }
 }
 @media (max-height: 500px) {
@@ -952,13 +965,13 @@ footer {
 }
 .test-config summary {
   cursor: pointer;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--ink);
 }
 .test-config summary span {
   float: right;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 .ink-popover {
   position: absolute;
@@ -972,7 +985,7 @@ footer {
 }
 .ink-popover label {
   display: block;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
 }
 .ink-popover input {
@@ -983,7 +996,7 @@ footer {
 .ink-popover > span {
   display: flex;
   justify-content: space-between;
-  font-size: 11px;
+  font-size: 13px;
   color: var(--muted);
 }
 .ink-popover button {
@@ -1008,13 +1021,13 @@ footer {
     gap: 2px;
   }
   .workflow-steps li span {
-    font-size: 11px;
+    font-size: 12px;
   }
   .workflow-guide {
     padding: 13px 15px;
   }
   .photo-actions .button {
-    font-size: 12px;
+    font-size: 13px;
     padding: 10px;
   }
   .detail-header {

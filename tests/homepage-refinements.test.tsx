@@ -63,7 +63,9 @@ it('renders production reviews after blog articles with initials and an honest s
     await LandingPage({ params: Promise.resolve({ locale: 'en' }) })
   );
   expect(html).toContain('id="blog"');
-  expect(html).toContain('PLACEMENT STUDIO');
+  // P02: the decorative hero label was removed from both homes.
+  expect(html).not.toContain('PLACEMENT STUDIO');
+  expect(html).not.toContain('PREVIEW STUDIO');
   expect(html).toContain('id="testimonials"');
   expect(html.indexOf('id="blog"')).toBeLessThan(
     html.indexOf('id="testimonials"')

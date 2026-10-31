@@ -105,8 +105,10 @@ const EN = new Map(
     '主题 + 风格 + 构图，例如：黑灰几何狼头，细线和点刺，纵向构图':
       'Subject + style + composition, e.g. a black-and-gray geometric wolf, fine lines and dotwork, vertical layout',
     '生成新图案 · 1 测试 credit': 'Create a design · 1 test credit',
-    '成功生成的图案会自动保存到“我的图案”，下次直接选择，不再重复扣设计积分。生成失败不扣测试积分；保存、复用和手动摆放免费。使用狼头示例也免费。':
-      'Successful designs are saved to My designs automatically. Reuse them without another design charge. Failed generation costs no test credits. Saving, reuse, manual placement, and the wolf sample are free.',
+    '成功生成的图案会自动保存到“我的图案”，下次直接选择，不再重复扣设计积分。':
+      'A successful design is saved to “My designs” automatically, so you can reuse it next time without paying the design credit again.',
+    '生成失败不扣测试积分；保存、复用和手动摆放免费。使用示例图案也免费。':
+      'A failed generation does not consume test credits; saving, reusing and manual placement are free. Using the sample design is free too.',
     看它融入皮肤: 'See it on your skin',
     '先在照片上确认位置、大小和深浅，再生成一张试戴图。AI 会尝试贴合皮肤，结果需检查是否改动原照片。':
       'Set the position, size, and ink intensity, then generate a try-on. AI will try to match your skin; check whether it changed the original photo.',
@@ -121,8 +123,13 @@ const EN = new Map(
       'I agree to send test images to KIE. AI generation uses the KIE test quota, not my website credits.',
     生成真实试戴效果: 'Generate AI try-on',
     继续查看上次测试任务: 'Resume previous test task',
-    '图案和试戴历史保存在当前浏览器，不会上传至正式账户存储，也不跨设备或 Preview 地址同步。成功生成才结算测试积分，保存与复用免费。测试积分没有购买或退款交易；AI 调用仍消耗 KIE 测试额度。手动叠放属于普通叠图；AI 原始结果和局部融合结果会分别展示。上传到 KIE 的测试文件是临时文件，请及时保存结果。':
-      'Designs and try-on history are stored in this browser, separate from your real account. They do not sync across devices or Preview addresses. Test credits are charged only for successful generation; saving and reuse are free. Test credits involve no purchases or refunds. AI calls still use the KIE test quota. Manual placement is a simple overlay. Original AI results and locally blended results are shown separately. Files uploaded to KIE are temporary, so save your results promptly.',
+    测试数据说明: 'How test data is handled',
+    '图案和试戴历史仅保存在当前浏览器：不上传正式账户存储，也不跨设备或 Preview 地址同步。':
+      'Designs and try-on history stay in this browser only: they are not uploaded to account storage and do not sync across devices or Preview URLs.',
+    '成功生成才结算测试积分；保存与复用免费。测试积分没有购买或退款交易，AI 调用仍消耗 KIE 测试额度。':
+      'Test credits settle only after a successful generation; saving and reuse are free. Test credits have no purchases or refunds, while AI calls still consume KIE test quota.',
+    '手动叠放属于普通叠图；AI 原始结果与局部融合结果会分别展示。上传到 KIE 的测试文件是临时文件，请及时保存结果。':
+      'The manual overlay is a plain composite; the raw AI result and the local blend are shown separately. Files uploaded to KIE are temporary, so save results promptly.',
     三图对比: 'Compare three views',
     '同一位置，看看变化': 'Same position. See the difference.',
     '↓ 下载 AI 结果': '↓ Download AI result',
