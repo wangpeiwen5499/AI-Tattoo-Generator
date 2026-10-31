@@ -1,3 +1,34 @@
+.studio-bootstrap {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 24px;
+  background: #f8fafc;
+  color: #1e293b;
+  text-align: center;
+}
+.studio-bootstrap-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: inherit;
+  font-size: 28px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.studio-bootstrap p {
+  margin: 0;
+  color: #64748b;
+}
+.studio-bootstrap-reload {
+  color: #64748b;
+  font-size: 13px;
+  text-underline-offset: 3px;
+}
 :root {
   color-scheme: light;
   --ink: #1e293b;

@@ -1829,13 +1829,18 @@ async function checkConfiguration() {
 $('check-configuration').onclick = checkConfiguration;
 const panel = new URLSearchParams(location.search).get('panel');
 if (panel === 'history' || panel === 'designs') gallery.open(panel);
-await checkConfiguration();
-if (bootError && !state.configured)
-  status(
-    studioLocale === 'zh'
-      ? '暂时无法连接账户服务。可以继续手动摆放，稍后刷新重试。'
-      : 'Account service is unavailable. You can still place designs manually; reload to retry.',
-    true
-  );
-$('resume-task').hidden = !hasPendingTask();
-draw();
+try {
+  await checkConfiguration();
+  if (bootError && !state.configured)
+    status(
+      studioLocale === 'zh'
+        ? '暂时无法连接账户服务。可以继续手动摆放，稍后刷新重试。'
+        : 'Account service is unavailable. You can still place designs manually; reload to retry.',
+      true
+    );
+  $('resume-task').hidden = !hasPendingTask();
+  draw();
+} finally {
+  document.body.dataset.runtimeReady = 'true';
+  $('studio-bootstrap').hidden = true;
+}

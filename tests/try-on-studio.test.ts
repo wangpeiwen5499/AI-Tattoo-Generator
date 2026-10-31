@@ -667,3 +667,8 @@ it('flips and resets directly through keyboard commands without provider request
   });
   expect(requests).toHaveLength(0);
 });
+
+it('reveals the initialized studio and dismisses the neutral loading screen', () => {
+  expect(document.body.dataset.runtimeReady).toBe('true');
+  expect(element('studio-bootstrap').hidden).toBe(true);
+});

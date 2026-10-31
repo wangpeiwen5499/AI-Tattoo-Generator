@@ -330,3 +330,29 @@ it('still resumes authoritative pending work when browser storage is blocked', a
   );
   expect(element('save-design').disabled).toBe(true);
 });
+
+it('reveals the initialized studio and dismisses the neutral loading screen', () => {
+  expect(document.body.dataset.runtimeReady).toBe('true');
+  expect(element('studio-bootstrap').hidden).toBe(true);
+});
+
+it('releases the loading gate when account capabilities cannot be reached', async () => {
+  vi.resetModules();
+  document.documentElement.innerHTML = readFileSync(
+    'public/try-on-lab/index.html',
+    'utf8'
+  );
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => {
+      throw new Error('offline');
+    })
+  );
+  await import('../public/try-on-lab/studio.mjs');
+  expect(document.body.dataset.runtimeReady).toBe('true');
+  expect(element('studio-bootstrap').hidden).toBe(true);
+  expect(element('grant-test-credits').hidden).toBe(true);
+  expect(element('status').textContent).toContain('手动摆放');
+  await element('sample-design').onclick();
+  expect(element('design-name').textContent).not.toBe('还没有选择图案');
+});

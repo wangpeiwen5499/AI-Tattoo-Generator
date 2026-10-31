@@ -1,14 +1,57 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta name="robots" content="noindex,nofollow" />
-    <title>TattooVis · 定点试戴预览</title>
+    <title>TattooVis</title>
+    <script>
+      document.documentElement.lang =
+        new URLSearchParams(location.search).get('lang') === 'en'
+          ? 'en'
+          : 'zh-CN';
+    </script>
+    <style>
+      body[data-runtime-ready='false'] > :not(#studio-bootstrap) {
+        display: none !important;
+      }
+      body[data-runtime-ready='true'] > #studio-bootstrap {
+        display: none !important;
+      }
+      .studio-boot-zh {
+        display: none;
+      }
+      html[lang='zh-CN'] .studio-boot-en {
+        display: none;
+      }
+      html[lang='zh-CN'] .studio-boot-zh {
+        display: inline;
+      }
+    </style>
     <link rel="stylesheet" href="./studio.css" />
     <link rel="stylesheet" href="/site-navigation.css" />
   </head>
-  <body>
+  <body data-runtime-ready="false">
+    <div
+      id="studio-bootstrap"
+      class="studio-bootstrap"
+      role="status"
+      aria-live="polite"
+    >
+      <a class="studio-bootstrap-brand" href="/" aria-label="TattooVis">
+        <img src="/favicon.ico" alt="" width="32" height="32" /><span
+          >TattooVis</span
+        >
+      </a>
+      <p>
+        <span class="studio-boot-en" lang="en">Opening your studio…</span
+        ><span class="studio-boot-zh" lang="zh-CN">正在打开工作室…</span>
+      </p>
+      <a class="studio-bootstrap-reload" href=""
+        ><span class="studio-boot-en" lang="en">Taking longer? Reload</span
+        ><span class="studio-boot-zh" lang="zh-CN">等待过久？重新加载</span></a
+      >
+    </div>
     <header class="site-navigation" data-menu-open="false">
       <div class="site-navigation-inner">
         <a class="site-brand brand" href="/zh" aria-label="TattooVis">
