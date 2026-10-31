@@ -8,7 +8,12 @@ import { PreviewHome } from '@/shared/blocks/tattoo/preview-product';
 
 vi.mock('next-intl/server', () => ({
   setRequestLocale: vi.fn(),
-  getTranslations: async () => ({ raw: () => indexCopy.page }),
+  getTranslations: async () => ({
+    raw: (key: string) =>
+      key === 'page.sections.testimonials'
+        ? indexCopy.page.sections.testimonials
+        : indexCopy.page,
+  }),
 }));
 vi.mock('@/config/preview/product', async (importOriginal) => ({
   ...(await importOriginal<object>()),
@@ -53,14 +58,21 @@ it('places blog articles before reviews and renders initials instead of avatar i
   expect(html).not.toContain('Trusted by tattoo enthusiasts worldwide');
 });
 
-it('renders the production studio home with guides and excludes unverified sample endorsements', async () => {
+it('renders production reviews after blog articles with initials and an honest sample caption', async () => {
   const html = renderToStaticMarkup(
     await LandingPage({ params: Promise.resolve({ locale: 'en' }) })
   );
   expect(html).toContain('id="blog"');
   expect(html).toContain('PLACEMENT STUDIO');
-  expect(html).not.toContain('id="testimonials"');
-  expect(html).not.toContain('Layout preview');
-  expect(html).not.toContain('sample feedback');
+  expect(html).toContain('id="testimonials"');
+  expect(html.indexOf('id="blog"')).toBeLessThan(
+    html.indexOf('id="testimonials"')
+  );
+  expect(html).toContain(
+    'Layout preview: sample feedback awaiting verification.'
+  );
+  expect(html).toContain('>A</span>');
+  expect(html).toContain('>S</span>');
+  expect(html).not.toContain('/imgs/avatars/');
   expect(indexCopy.page.sections).not.toHaveProperty('blog');
 });

@@ -177,6 +177,7 @@ export function PreviewHome({
 
 export function ProductionHome({
   locale,
+  reviews,
 }: {
   locale: string;
   reviews?: Section;
@@ -270,6 +271,7 @@ export function ProductionHome({
         <PreviewWorkflowCase locale={locale} />
       </div>
       <TattooGuideLinks locale={locale} />
+      {reviews && <Testimonials section={reviews} />}
       <section className="mx-auto max-w-3xl px-5 pb-20">
         <h2 className="mb-8 text-2xl">
           {zh ? '开始前需要了解' : 'Before you try it'}
