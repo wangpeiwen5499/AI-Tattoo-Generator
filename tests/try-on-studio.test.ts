@@ -331,6 +331,108 @@ it('adjusts ink opacity by dragging its on-photo handle without moving the tatto
   expect(placement().scale).toBe(1);
   expect(requests).toHaveLength(0);
 });
+it('opens an on-photo ink slider on a tap and closes it on Escape without paid calls', () => {
+  pointer('down', 242, 408);
+  pointer('up', 242, 408);
+  expect(element('ink-popover').hidden).toBe(false);
+  element('ink-opacity').value = '50';
+  element('ink-opacity').dispatchEvent(new Event('input'));
+  expect(placement().opacity).toBeCloseTo(0.5);
+  expect(placement().px).toBe(0.5);
+  element('ink-popover').dispatchEvent(
+    new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+  );
+  expect(element('ink-popover').hidden).toBe(true);
+  expect(requests).toHaveLength(0);
+});
+it('opens the native photo picker from the visible upload action', () => {
+  const picker = vi.spyOn(element('photo'), 'click');
+  element('choose-photo').click();
+  expect(picker).toHaveBeenCalledOnce();
+});
+it('guides placement, then comparison, and downloads the selected comparison source', async () => {
+  expect(element('workflow-title').textContent).toContain('摆放');
+  await renderResult();
+  expect(element('workflow-title').textContent).toContain('对比');
+  element('inspect-result').click();
+  (
+    document.querySelector('[data-detail-view="original"]') as HTMLButtonElement
+  ).click();
+  const download = vi
+    .spyOn(HTMLAnchorElement.prototype, 'click')
+    .mockImplementation(function (this: HTMLAnchorElement) {
+      expect(this.download).toBe('tattoovis-original.png');
+    });
+  element('detail-download').click();
+  expect(download).toHaveBeenCalledOnce();
+});
+it('shows native image pixels even when they exceed five times the fitted size', async () => {
+  await renderResult();
+  Object.defineProperty(element('detail-viewport'), 'clientWidth', {
+    configurable: true,
+    value: 100,
+  });
+  Object.defineProperty(element('detail-viewport'), 'clientHeight', {
+    configurable: true,
+    value: 100,
+  });
+  element('inspect-result').click();
+  element('detail-native').click();
+  expect(element('detail-image').style.width).toBe('800px');
+  expect(element('detail-image').style.height).toBe('1200px');
+});
+it('keeps the photo point under the fingers when pinching a centered portrait comparison', async () => {
+  await renderResult();
+  const viewport = element('detail-viewport');
+  Object.defineProperty(viewport, 'clientWidth', {
+    configurable: true,
+    value: 100,
+  });
+  Object.defineProperty(viewport, 'clientHeight', {
+    configurable: true,
+    value: 100,
+  });
+  viewport.getBoundingClientRect = () => ({ left: 0, top: 0 });
+  viewport.setPointerCapture = () => {};
+  element('inspect-result').click();
+  const point = (type: string, id: number, x: number) =>
+    viewport[`onpointer${type}`]({
+      pointerId: id,
+      clientX: x,
+      clientY: 50,
+      preventDefault() {},
+    });
+  point('down', 1, 40);
+  point('down', 2, 60);
+  point('move', 1, 30);
+  point('move', 2, 70);
+  expect(viewport.scrollLeft).toBeCloseTo(100 / 6);
+});
+it('fits a taller AI result without stretching or cropping when its aspect differs from the original', async () => {
+  const viewport = element('detail-viewport');
+  Object.defineProperty(viewport, 'clientWidth', {
+    configurable: true,
+    value: 700,
+  });
+  Object.defineProperty(viewport, 'clientHeight', {
+    configurable: true,
+    value: 500,
+  });
+  const original = document.createElement('canvas');
+  original.width = 1200;
+  original.height = 800;
+  const raw = document.createElement('canvas');
+  raw.width = 800;
+  raw.height = 1200;
+  const { createDetailViewer } =
+    await import('../public/try-on-lab/detail-viewer.mjs');
+  createDetailViewer(() => ({ original, raw })).open();
+  element('detail-fit').click();
+  expect(parseFloat(element('detail-image').style.height)).toBeCloseTo(500);
+  expect(parseFloat(element('detail-image').style.width)).toBeCloseTo(
+    (500 * 2) / 3
+  );
+});
 it('opens the tattoo menu with a touch long press and returns focus on Escape', () => {
   vi.useFakeTimers();
   element('stage').onpointerdown({

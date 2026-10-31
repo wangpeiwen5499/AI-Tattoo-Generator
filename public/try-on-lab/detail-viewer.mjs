@@ -12,15 +12,28 @@ export function createDetailViewer(getSources) {
   let previousOverflow = '';
   const points = new Map();
   let gesture = null;
+  let maxZoom = 5;
   function sourceSize(source) {
     return {
       width: source.naturalWidth || source.width,
       height: source.naturalHeight || source.height,
     };
   }
+  function centering(atZoom) {
+    const source = sources[selected];
+    const height =
+      baseWidth *
+      atZoom *
+      (source ? source.height / source.width : baseHeight / baseWidth);
+    return {
+      x: Math.max(0, (viewport.clientWidth - baseWidth * atZoom) / 2),
+      y: Math.max(0, (viewport.clientHeight - height) / 2),
+    };
+  }
   function size() {
     image.style.width = `${baseWidth * zoom}px`;
-    image.style.height = `${baseHeight * zoom}px`;
+    const source = sources[selected];
+    image.style.height = `${baseWidth * zoom * (source ? source.height / source.width : baseHeight / baseWidth)}px`;
     $('detail-zoom').value = String(Math.round(zoom * 100));
     $('detail-zoom-value').textContent = `${Math.round(zoom * 100)}%`;
   }
@@ -30,12 +43,14 @@ export function createDetailViewer(getSources) {
     y = viewport.clientHeight / 2
   ) {
     const old = zoom;
-    const left = (viewport.scrollLeft + x) / old,
-      top = (viewport.scrollTop + y) / old;
-    zoom = Math.max(1, Math.min(5, value));
+    const before = centering(old);
+    const left = (viewport.scrollLeft + x - before.x) / old,
+      top = (viewport.scrollTop + y - before.y) / old;
+    zoom = Math.max(1, Math.min(maxZoom, value));
     size();
-    viewport.scrollLeft = left * zoom - x;
-    viewport.scrollTop = top * zoom - y;
+    const after = centering(zoom);
+    viewport.scrollLeft = left * zoom - x + after.x;
+    viewport.scrollTop = top * zoom - y + after.y;
   }
   function select(view) {
     if (!sources[view]) return;
@@ -44,6 +59,9 @@ export function createDetailViewer(getSources) {
     image.alt = { original: '原图', draft: '手动叠放纹身', raw: 'AI 生成结果' }[
       view
     ];
+    $('detail-download').textContent =
+      `↓ 下载${{ original: '原图', draft: '手动叠放', raw: 'AI 结果' }[view]}`;
+    size();
     for (const button of document.querySelectorAll('[data-detail-view]'))
       button.setAttribute(
         'aria-pressed',
@@ -53,6 +71,12 @@ export function createDetailViewer(getSources) {
   for (const button of document.querySelectorAll('[data-detail-view]'))
     button.onclick = () => select(button.dataset.detailView);
   $('detail-close').onclick = () => dialog.close();
+  $('detail-download').onclick = () => {
+    const link = document.createElement('a');
+    link.href = sources[selected].url;
+    link.download = `tattoovis-${selected}.png`;
+    link.click();
+  };
   $('detail-zoom').addEventListener('input', () =>
     setZoom(Number($('detail-zoom').value) / 100)
   );
@@ -104,14 +128,18 @@ export function createDetailViewer(getSources) {
       const bounds = viewport.getBoundingClientRect();
       const sx = (start[0].x + start[1].x) / 2 - bounds.left;
       const sy = (start[0].y + start[1].y) / 2 - bounds.top;
-      zoom = Math.max(1, Math.min(5, gesture.zoom * ratio));
+      const before = centering(gesture.zoom);
+      zoom = Math.max(1, Math.min(maxZoom, gesture.zoom * ratio));
       size();
+      const after = centering(zoom);
       viewport.scrollLeft =
-        ((gesture.left + sx) * zoom) / gesture.zoom -
-        ((current[0].x + current[1].x) / 2 - bounds.left);
+        ((gesture.left + sx - before.x) * zoom) / gesture.zoom -
+        ((current[0].x + current[1].x) / 2 - bounds.left) +
+        after.x;
       viewport.scrollTop =
-        ((gesture.top + sy) * zoom) / gesture.zoom -
-        ((current[0].y + current[1].y) / 2 - bounds.top);
+        ((gesture.top + sy - before.y) * zoom) / gesture.zoom -
+        ((current[0].y + current[1].y) / 2 - bounds.top) +
+        after.y;
     } else {
       viewport.scrollLeft = gesture.left - current[0].x + start[0].x;
       viewport.scrollTop = gesture.top - current[0].y + start[0].y;
@@ -157,17 +185,28 @@ export function createDetailViewer(getSources) {
       }
       previousOverflow = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
+      const original = sources.original || sources.raw;
+      // Portrait photos deserve a focused viewer, not a full-width empty stage.
+      const availableHeight = Math.max(240, window.innerHeight * 0.92 - 210);
+      dialog.style.width = `${Math.min(window.innerWidth * 0.96, Math.max(740, (availableHeight * original.width) / original.height + 48))}px`;
       dialog.showModal();
       for (const button of document.querySelectorAll('[data-detail-view]'))
         button.disabled = !sources[button.dataset.detailView];
-      const original = sources.original || sources.raw;
+      const tallestAspect = Math.max(
+        ...Object.values(sources).map((source) => source.height / source.width)
+      );
       const ratio = Math.min(
         (viewport.clientWidth || 800) / original.width,
-        (viewport.clientHeight || 600) / original.height,
+        (viewport.clientHeight || 600) / (original.width * tallestAspect),
         1
       );
       baseWidth = original.width * ratio;
       baseHeight = original.height * ratio;
+      maxZoom = Math.max(
+        5,
+        ...Object.values(sources).map((source) => source.width / baseWidth)
+      );
+      $('detail-zoom').max = String(Math.ceil(maxZoom * 100));
       zoom = 1;
       size();
       select(sources[view] ? view : 'raw');

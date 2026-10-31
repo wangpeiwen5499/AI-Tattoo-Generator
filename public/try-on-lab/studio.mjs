@@ -29,6 +29,7 @@ const state = {
   px: 0.5,
   py: 0.5,
   busy: false,
+  activity: null,
   configured: false,
   checking: false,
   photoAsset: null,
@@ -65,6 +66,9 @@ function update() {
     'access-token',
     'consent',
     'prompt',
+    'upload-photo',
+    'choose-photo',
+    'choose-design',
   ])
     $(id).disabled = state.busy;
   const placed = !!(state.photo && state.design);
@@ -81,6 +85,15 @@ function update() {
   $('generate-design').disabled =
     !access || state.busy || $('prompt').value.trim().length < 3;
   $('render').disabled = !placed || !access || state.busy;
+  $('render').textContent =
+    state.busy && state.activity === 'render'
+      ? '正在生成真实效果…'
+      : '生成真实试戴效果';
+  $('generate-design').textContent =
+    state.busy && state.activity === 'design' ? '正在创作图案…' : '生成新图案';
+  document
+    .querySelector('.photo-workspace')
+    .setAttribute('aria-busy', String(state.busy));
   const missing = [];
   if (!state.photo) missing.push('上传部位照片');
   if (!state.design) missing.push('选择纹身图案');
@@ -96,6 +109,61 @@ function update() {
   $('check-configuration').disabled = state.busy || state.checking;
 
   $('download').hidden = !(state.photo || state.raw);
+  $('download').disabled = state.busy;
+  $('download').textContent =
+    `↓ 下载${{ draft: '手动预览', original: '原图', raw: 'AI 结果', composite: '融合结果' }[state.view]}`;
+  const step = !state.photo ? 1 : !state.design ? 2 : 3;
+  for (const item of document.querySelectorAll('[data-step]')) {
+    const current =
+      Number(item.dataset.step) ===
+      (state.raw || (state.busy && state.activity !== 'design')
+        ? 4
+        : state.busy
+          ? 2
+          : step);
+    if (current) item.setAttribute('aria-current', 'step');
+    else item.removeAttribute('aria-current');
+    item.dataset.done = String(
+      Number(item.dataset.step) < (state.raw ? 5 : step)
+    );
+  }
+  const guidance = state.busy
+    ? state.activity === 'design'
+      ? [
+          '正在创作你的纹身图案',
+          '无需重复提交。图案准备好后，就可以在照片上拖动摆放。',
+        ]
+      : [
+          '正在生成真实效果',
+          '无需再次点击。结果返回后可对比原图、手动叠放和 AI 效果。',
+        ]
+    : state.raw
+      ? [
+          '生成完成，放大对比一下',
+          '点击「三图对比」检查位置和皮肤细节，确认满意后下载 AI 结果。返回编辑并调整摆放将清除本次对比，请先保存。',
+        ]
+      : step === 1
+        ? [
+            '先上传一张部位照片',
+            '让想纹身的位置清晰可见，局部和侧面照片都可以。也可先用示例体验。',
+          ]
+        : step === 2
+          ? [
+              '接下来，选一个纹身图案',
+              '上传已有图案，或点击狼头示例。想要新的设计？填写主题、风格和构图后生成。',
+            ]
+          : [
+              '在照片上摆放到你想纹的位置',
+              '拖动图案移动；右下角缩放，上方旋转；点击「深浅」调节浓淡。手机可双指缩放旋转。满意后点击「生成真实试戴效果」。',
+            ];
+  $('workflow-title').textContent = guidance[0];
+  $('workflow-description').textContent = guidance[1];
+  if (!placed || state.busy || state.view !== 'draft') closeInk(false);
+  $('ink-opacity').value = String(Math.round(state.opacity * 100));
+  $('ink-value').textContent = `${Math.round(state.opacity * 100)}%`;
+  $('authorization-summary').querySelector('span').textContent = access
+    ? '已准备好'
+    : '展开完成授权';
   $('empty').hidden = !!(state.photo || state.raw);
   canvas.dataset.placement = JSON.stringify({
     px: state.px,
@@ -320,7 +388,7 @@ async function setPhoto(image, sample = false) {
   state.view = 'draft';
   $('result-info').hidden = true;
   $('photo-hint').textContent =
-    '拖动纹身移动，右下角缩放，上方旋转，左上角调深浅。手机支持双指操作；长按或右键图案可翻转、重置和移除。键盘方向键移动，+ / − 缩放，R 旋转，[ / ] 调深浅。';
+    '拖动图案移动 · 右下角缩放 · 上方旋转 · 点击或上下拖动「深浅」调浓淡。长按 / 右键可翻转、重置和移除。';
   status('照片已准备好。选择纹身图案，即可直接在原图上调整。');
   draw();
 }
@@ -365,7 +433,16 @@ async function fileImage(file) {
     URL.revokeObjectURL(url);
   }
 }
+for (const [button, input] of [
+  ['upload-photo', 'photo'],
+  ['choose-photo', 'photo'],
+  ['choose-design', 'design'],
+])
+  $(button).onclick = () => {
+    if (!state.busy) $(input).click();
+  };
 $('photo').addEventListener('change', async (event) => {
+  if (!event.target.files?.length) return;
   try {
     if (state.busy) return;
     const image = await fileImage(event.target.files[0]);
@@ -377,6 +454,7 @@ $('photo').addEventListener('change', async (event) => {
   event.target.value = '';
 });
 $('design').addEventListener('change', async (event) => {
+  if (!event.target.files?.length) return;
   try {
     if (state.busy) return;
     const image = await fileImage(event.target.files[0]);
@@ -436,6 +514,33 @@ for (const button of document.querySelectorAll('[data-view]'))
     if (!state.busy) setView(button.dataset.view);
   };
 let longPressTimer = null;
+function closeInk(focus = true) {
+  if ($('ink-popover').hidden) return;
+  $('ink-popover').hidden = true;
+  if (focus) canvas.focus({ preventScroll: true });
+}
+function openInk(clientX, clientY) {
+  if (state.busy || !state.design || state.view !== 'draft') return;
+  closeTattooMenu(false);
+  const shell = $('canvas-shell').getBoundingClientRect();
+  const popover = $('ink-popover');
+  popover.style.left = `${Math.max(8, Math.min(clientX - shell.left, shell.width - 232))}px`;
+  popover.style.top = `${Math.max(8, Math.min(clientY - shell.top + 20, shell.height - 146))}px`;
+  popover.hidden = false;
+  $('ink-opacity').focus({ preventScroll: true });
+}
+$('ink-close').onclick = () => closeInk();
+$('ink-popover').addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    closeInk();
+  }
+});
+$('ink-opacity').addEventListener('input', () => {
+  if (state.busy || !state.design || state.view !== 'draft') return;
+  state.opacity = constrain(Number($('ink-opacity').value) / 100, 0.2, 1);
+  edited();
+});
 function cancelLongPress() {
   if (longPressTimer !== null) {
     clearTimeout(longPressTimer);
@@ -452,6 +557,7 @@ function openTattooMenu(clientX, clientY) {
   if (state.busy || !state.design || !state.photo || state.view !== 'draft')
     return;
   cancelLongPress();
+  closeInk(false);
   const menu = $('tattoo-menu'),
     shell = $('canvas-shell').getBoundingClientRect();
   menu.hidden = false;
@@ -491,6 +597,7 @@ $('tattoo-menu').addEventListener('keydown', (event) => {
 });
 document.addEventListener('pointerdown', (event) => {
   if (!$('tattoo-menu').contains(event.target)) closeTattooMenu(false);
+  if (!$('ink-popover').contains(event.target)) closeInk(false);
 });
 const pointers = new Map();
 function photoPoint(event) {
@@ -541,7 +648,10 @@ canvas.onpointerdown = (event) => {
       ? 'rotate'
       : near(h.resize)
         ? 'resize'
-        : near(h.opacity)
+        : near(h.opacity) ||
+            (Math.abs(point.y * state.height - h.opacity.y) <= 18 * h.unit &&
+              point.x * state.width >= h.opacity.x - 55 * h.unit &&
+              point.x * state.width <= h.opacity.x)
           ? 'opacity'
           : 'move';
   if (
@@ -551,6 +661,7 @@ canvas.onpointerdown = (event) => {
   )
     return;
   event.preventDefault();
+  closeInk(false);
   closeTattooMenu(false);
   cancelLongPress();
   canvas.focus({ preventScroll: true });
@@ -625,6 +736,19 @@ canvas.onpointermove = (event) => {
 };
 function endGesture(event) {
   cancelLongPress();
+  const gesture = state.gesture;
+  if (gesture?.mode === 'opacity' && event.type !== 'lostpointercapture') {
+    const first = gesture.points[0],
+      point = photoPoint(event);
+    const bounds = canvas.getBoundingClientRect();
+    if (
+      Math.hypot(
+        (first.x - point.x) * bounds.width,
+        (first.y - point.y) * bounds.height
+      ) < 7
+    )
+      openInk(event.clientX, event.clientY);
+  }
   pointers.delete(event.pointerId);
   state.gesture = null;
   if (pointers.size) beginGesture();
@@ -838,6 +962,7 @@ async function showResult(image, matches = false) {
 async function billable(kind, action) {
   if (state.busy) return;
   state.busy = true;
+  state.activity = kind;
   cancelLongPress();
   closeTattooMenu(false);
   state.gesture = null;
@@ -849,6 +974,7 @@ async function billable(kind, action) {
     status(error.message, true);
   } finally {
     state.busy = false;
+    state.activity = null;
     update();
   }
 }

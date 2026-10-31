@@ -16,10 +16,23 @@
     <main>
       <div class="intro">
         <div>
-          <h1>就纹在这里。</h1>
-          <p>上传照片，直接摆放纹身，再看真实效果。</p>
+          <p class="eyebrow">YOUR SKIN. YOUR STORY.</p>
+          <h1>先看见，再决定。</h1>
+          <p>让一个纹身想法，在你的照片上成为可能。</p>
         </div>
         <button id="reset" class="quiet">重新开始</button>
+      </div>
+      <ol class="workflow-steps" aria-label="试戴步骤">
+        <li data-step="1">01 <span>上传照片</span></li>
+        <li data-step="2">02 <span>选择或创作图案</span></li>
+        <li data-step="3">03 <span>在照片上摆放</span></li>
+        <li data-step="4">04 <span>生成与对比</span></li>
+      </ol>
+      <div class="workflow-guide" aria-live="polite">
+        <strong id="workflow-title">先上传一张部位照片</strong>
+        <span id="workflow-description"
+          >让想纹身的位置清晰可见，局部和侧面照片都可以。</span
+        >
       </div>
       <div class="workspace">
         <section class="photo-workspace" aria-label="照片工作区">
@@ -37,6 +50,29 @@
             <span id="view-caption">本地叠图，尚未进行 AI 渲染</span>
           </div>
           <div class="canvas-shell" id="canvas-shell">
+            <div
+              id="ink-popover"
+              class="ink-popover"
+              role="group"
+              aria-label="纹身深浅"
+              hidden
+            >
+              <label for="ink-opacity"
+                >纹身深浅 <output id="ink-value">85%</output></label
+              >
+              <input
+                id="ink-opacity"
+                type="range"
+                min="20"
+                max="100"
+                step="1"
+                value="85"
+              />
+              <span>浅淡 <span>浓黑</span></span>
+              <button id="ink-close" type="button" aria-label="收起深浅调节">
+                完成
+              </button>
+            </div>
             <canvas
               id="stage"
               aria-label="在原图上拖动纹身，使用控制柄或双指缩放和旋转；长按或右键打开纹身菜单"
@@ -72,7 +108,8 @@
               <p>
                 手臂、肩背、小腿或其他清晰可见的部位。<br />正面、侧面、局部照片都可以。
               </p>
-              <label class="button primary" for="photo">上传部位照片</label
+              <button id="upload-photo" class="button primary" type="button">
+                上传部位照片</button
               ><button id="sample-photo" class="quiet">先用示例体验</button>
             </div>
           </div>
@@ -84,9 +121,11 @@
               aria-label="当前纹身状态"
             ></output>
             <div class="photo-actions">
-              <button id="inspect-result" class="quiet" hidden>
-                放大查看 / 三图对比</button
-              ><button id="download" class="quiet" hidden>下载当前图</button>
+              <button id="inspect-result" class="button primary" hidden>
+                ⊞ 放大查看 · 三图对比</button
+              ><button id="download" class="button secondary" hidden>
+                ↓ 下载当前图
+              </button>
             </div>
           </div>
           <div id="result-info" class="result-info" hidden></div>
@@ -94,8 +133,10 @@
         <aside class="controls">
           <section>
             <div class="section-heading">
-              <h2>身体照片</h2>
-              <label for="photo" class="text-button">更换照片</label>
+              <h2><span class="section-number">01</span> 你的照片</h2>
+              <button id="choose-photo" type="button" class="text-button">
+                选择 / 更换照片
+              </button>
             </div>
             <input
               type="file"
@@ -109,8 +150,10 @@
           </section>
           <section>
             <div class="section-heading">
-              <h2>纹身设计</h2>
-              <label for="design" class="text-button">上传已有图案</label>
+              <h2><span class="section-number">02</span> 你的纹身</h2>
+              <button id="choose-design" type="button" class="text-button">
+                上传已有图案
+              </button>
             </div>
             <input
               type="file"
@@ -122,7 +165,7 @@
               <img id="design-thumb" alt="当前纹身图案" hidden />
               <div>
                 <strong id="design-name">还没有选择图案</strong>
-                <p class="small">已有图案可以反复试戴，不必重新生成。</p>
+                <p class="small">选好即放进照片，可拖动到想纹身的位置。</p>
                 <button id="sample-design" class="text-button">
                   使用几何狼头示例
                 </button>
@@ -133,19 +176,25 @@
               id="prompt"
               rows="3"
               maxlength="500"
-              placeholder="例如：黑灰几何狼头，细线和点刺，纵向构图"
+              placeholder="主题 + 风格 + 构图，例如：黑灰几何狼头，细线和点刺，纵向构图"
             ></textarea
             ><button id="generate-design" class="button secondary" disabled>
-              生成设计（调用 KIE）
+              生成新图案
             </button>
+            <p class="small">
+              只想体验摆放？点击上方狼头示例即可，无需生成。生成新图案需要下方的测试口令和授权。
+            </p>
           </section>
           <section class="render-section">
-            <h2>生成一张真实效果</h2>
+            <h2><span class="section-number">03</span> 看它融入皮肤</h2>
             <p class="hint">
-              这一轮先验证
-              1K、位置和原图保持情况。每次只生成一张，不补画其他部位。
+              先在照片上确认位置、大小和深浅，再生成一张 1K 试戴图。AI
+              会尝试贴合皮肤，结果需检查是否改动原照片。
             </p>
-            <div class="test-config">
+            <details class="test-config">
+              <summary id="authorization-summary">
+                测试授权 <span>生成前需完成</span>
+              </summary>
               <label for="access-token">预览测试访问口令</label
               ><input
                 type="password"
@@ -157,7 +206,7 @@
               <button id="check-configuration" class="text-button">
                 重新检查配置
               </button>
-            </div>
+            </details>
             <label class="consent"
               ><input id="consent" type="checkbox" /><span
                 >我同意将测试图片传给 KIE。AI 生成会消耗 KIE
@@ -181,23 +230,32 @@
       </div>
       <footer>
         这是交互与出图验证页。手动叠放属于普通叠图；AI
-        原始结果和局部融合结果结果会分别展示。上传到 KIE
+        原始结果和局部融合结果会分别展示。上传到 KIE
         的测试文件是临时文件，请及时保存结果。
       </footer>
     </main>
     <dialog id="detail-dialog" aria-labelledby="detail-title">
       <div class="detail-header">
-        <h2 id="detail-title">放大查看 · 同位置对比</h2>
-        <button id="detail-close" class="quiet" autofocus>关闭</button>
+        <h2 id="detail-title">三图对比 <small>同一位置，看看变化</small></h2>
+        <div class="detail-actions">
+          <button id="detail-download" class="button primary">
+            ↓ 下载 AI 结果
+          </button>
+          <button id="detail-close" class="button secondary" autofocus>
+            关闭
+          </button>
+        </div>
       </div>
       <div class="detail-toolbar">
         <div class="tabs" role="group" aria-label="对比图片">
-          <button data-detail-view="original" aria-pressed="false">原图</button>
+          <button data-detail-view="original" aria-pressed="false">
+            ① 原图
+          </button>
           <button data-detail-view="draft" aria-pressed="false">
-            手动叠放
+            ② 手动叠放
           </button>
           <button data-detail-view="raw" aria-pressed="true">
-            AI 生成结果
+            ③ AI 生成结果
           </button>
         </div>
         <label
@@ -211,8 +269,10 @@
             step="10"
           /><output id="detail-zoom-value">100%</output></label
         >
-        <button id="detail-fit" class="quiet">适应窗口</button>
-        <button id="detail-native" class="quiet">实际像素</button>
+        <div class="detail-fit-actions">
+          <button id="detail-fit" class="button secondary">适应窗口</button>
+          <button id="detail-native" class="button secondary">实际像素</button>
+        </div>
       </div>
       <p id="detail-hint" class="small">
         拖动查看局部，滚轮或双指缩放；切换图片会保留查看位置。
@@ -222,7 +282,9 @@
         tabindex="0"
         aria-label="大图细节，可滚动或拖动查看"
       >
-        <img id="detail-image" alt="纹身对比大图" draggable="false" />
+        <div id="detail-plane">
+          <img id="detail-image" alt="纹身对比大图" draggable="false" />
+        </div>
       </div>
     </dialog>
     <script type="module" src="./studio.mjs"></script>
