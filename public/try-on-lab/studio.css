@@ -571,3 +571,43 @@ footer {
     scroll-behavior: auto !important;
   }
 }
+.tattoo-menu {
+  position: absolute;
+  z-index: 5;
+  width: 198px;
+  padding: 6px;
+  border: 1px solid #dcd8ed;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 8px 28px rgb(32 24 70 / 16%);
+}
+.tattoo-menu[hidden] {
+  display: none;
+}
+.tattoo-menu button {
+  width: 100%;
+  min-height: 42px;
+  border: 0;
+  border-radius: 6px;
+  padding: 9px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 12px;
+  text-align: left;
+}
+.tattoo-menu button:hover,
+.tattoo-menu button:focus-visible {
+  background: var(--soft);
+}
+.tattoo-menu kbd {
+  color: var(--muted);
+  font: inherit;
+  font-size: 10px;
+}
+#placement-status:empty {
+  display: none;
+}

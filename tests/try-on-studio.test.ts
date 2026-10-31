@@ -106,6 +106,7 @@ beforeEach(async () => {
   await element('sample-design').onclick();
 });
 afterEach(() => {
+  vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
@@ -118,9 +119,32 @@ function pointer(type: string, x: number, y: number, id = 1) {
     preventDefault() {},
   });
 }
-function slider(id: string, value: number) {
-  element(id).value = String(value);
-  element(id).oninput();
+function placement() {
+  return JSON.parse(element('stage').dataset.placement);
+}
+function key(value: string, shiftKey = false) {
+  element('stage').onkeydown({ key: value, shiftKey, preventDefault() {} });
+}
+function adjustWithKeyboard(id: string, target: number) {
+  const property: Record<string, string> = {
+    scale: 'scale',
+    rotation: 'rotation',
+    opacity: 'opacity',
+    'placement-x': 'px',
+    'placement-y': 'py',
+  };
+  const multiplier = id === 'rotation' ? 1 : 100;
+  for (let attempts = 0; attempts < 300; attempts++) {
+    const current = placement()[property[id]] * multiplier;
+    if (Math.abs(current - target) < 0.01) return;
+    const up = current < target;
+    if (id === 'scale') key(up ? '+' : '-');
+    else if (id === 'rotation') key('r', !up);
+    else if (id === 'opacity') key(up ? ']' : '[');
+    else if (id === 'placement-x') key(up ? 'ArrowRight' : 'ArrowLeft');
+    else key(up ? 'ArrowDown' : 'ArrowUp');
+  }
+  throw new Error('Keyboard adjustment did not reach target');
 }
 async function renderResult() {
   element('access-token').value = 'a'.repeat(32);
@@ -130,13 +154,14 @@ async function renderResult() {
 }
 
 it('makes uploaded designs immediately editable without selecting a region or making paid requests', () => {
-  expect(element('scale').disabled).toBe(false);
+  expect(document.querySelector('.controls input[type="range"]')).toBeNull();
+  expect(element('stage').dataset.placement).toBeTruthy();
   expect(element('select-region')).toBeNull();
   pointer('down', 400, 600);
   pointer('move', 480, 660);
   pointer('up', 480, 660);
-  expect(Number(element('placement-x').value)).toBeCloseTo(60);
-  expect(Number(element('placement-y').value)).toBeCloseTo(55);
+  expect(placement().px * 100).toBeCloseTo(60);
+  expect(placement().py * 100).toBeCloseTo(55);
   expect(requests).toHaveLength(0);
 });
 
@@ -145,24 +170,24 @@ it('supports two-finger scale and rotation, then continues dragging after one fi
   pointer('down', 440, 600, 2);
   pointer('move', 400, 520, 1);
   pointer('move', 400, 680, 2);
-  expect(Number(element('scale').value)).toBeCloseTo(200);
-  expect(Number(element('rotation').value)).toBeCloseTo(90);
+  expect(placement().scale * 100).toBeCloseTo(200);
+  expect(placement().rotation).toBeCloseTo(90);
   pointer('up', 400, 680, 2);
   pointer('move', 440, 520, 1);
   pointer('up', 440, 520, 1);
-  expect(Number(element('placement-x').value)).toBeCloseTo(55);
+  expect(placement().px * 100).toBeCloseTo(55);
   expect(requests).toHaveLength(0);
 });
 
 it('preserves placement across original comparison and sends the latest automatic region on explicit render', async () => {
-  slider('placement-x', 70);
-  slider('rotation', 35);
+  adjustWithKeyboard('placement-x', 70);
+  adjustWithKeyboard('rotation', 35);
   (
     document.querySelector('[data-view="original"]') as HTMLButtonElement
   ).click();
   (document.querySelector('[data-view="draft"]') as HTMLButtonElement).click();
-  expect(Number(element('placement-x').value)).toBe(70);
-  expect(Number(element('rotation').value)).toBe(35);
+  expect(placement().px * 100).toBeCloseTo(70);
+  expect(placement().rotation).toBe(35);
   await renderResult();
   const renders = requests.filter((r) => r.mode === 'render');
   expect(renders).toHaveLength(1);
@@ -171,7 +196,7 @@ it('preserves placement across original comparison and sends the latest automati
 });
 
 it('compares three sources at the same detail zoom and keeps editing transforms on closing', async () => {
-  slider('rotation', 30);
+  adjustWithKeyboard('rotation', 30);
   await renderResult();
   element('inspect-result').click();
   expect(element('detail-dialog').open).toBe(true);
@@ -193,14 +218,14 @@ it('compares three sources at the same detail zoom and keeps editing transforms 
   }
   element('detail-close').click();
   (document.querySelector('[data-view="draft"]') as HTMLButtonElement).click();
-  expect(Number(element('rotation').value)).toBe(30);
-  slider('opacity', 70);
+  expect(placement().rotation).toBe(30);
+  adjustWithKeyboard('opacity', 70);
   expect(element('inspect-result').hidden).toBe(true);
 });
 
 it('removes a design and prevents rendering until a new design is selected', () => {
-  element('remove-design').click();
-  expect(element('scale').disabled).toBe(true);
+  key('Delete');
+  expect(element('flip-design').disabled).toBe(true);
   expect(element('render').disabled).toBe(true);
   expect(element('design-thumb').hidden).toBe(true);
 });
@@ -236,7 +261,7 @@ it('locks placement and rejects duplicate renders during an in-flight upload', a
   pointer('down', 400, 600);
   pointer('move', 500, 700);
   pointer('up', 500, 700);
-  expect(element('placement-x').value).toBe('50');
+  expect(placement().px).toBe(0.5);
   expect(element('flip-design').disabled).toBe(true);
   await element('render').onclick();
   release!(new Response(JSON.stringify({ asset: 'first' })));
@@ -253,7 +278,7 @@ it('does not compare an older resumed task with a newly edited placement', async
   });
   await renderResult();
   expect(sessionStorage.getItem('try-on-lab-task')).not.toBeNull();
-  slider('placement-x', 75);
+  adjustWithKeyboard('placement-x', 75);
   vi.mocked(fetch).mockImplementation(normalFetch);
   await element('resume-task').onclick();
   element('inspect-result').click();
@@ -273,4 +298,69 @@ it('does not compare an older resumed task with a newly edited placement', async
     (document.querySelector('[data-view="composite"]') as HTMLButtonElement)
       .hidden
   ).toBe(true);
+});
+it('removes the standalone adjustment panel and supports in-photo menu and keyboard operations', () => {
+  expect(document.querySelector('.controls input[type="range"]')).toBeNull();
+  const stage = element('stage');
+  stage.onkeydown({ key: 'F10', shiftKey: true, preventDefault() {} });
+  expect(element('tattoo-menu').hidden).toBe(false);
+  expect(element('tattoo-menu').contains(element('flip-design'))).toBe(true);
+});
+
+it('keeps a small tattoo at the same size when dragging its center on a mobile-sized canvas', () => {
+  adjustWithKeyboard('scale', 20);
+  element('stage').getBoundingClientRect = () => ({
+    left: 0,
+    top: 0,
+    width: 300,
+    height: 450,
+  });
+  pointer('down', 150, 225);
+  pointer('move', 170, 225);
+  pointer('up', 170, 225);
+  expect(placement().scale * 100).toBeCloseTo(20);
+  expect(placement().px * 100).toBeGreaterThan(50);
+});
+
+it('adjusts ink opacity by dragging its on-photo handle without moving the tattoo', () => {
+  pointer('down', 242, 408);
+  pointer('move', 242, 390);
+  pointer('up', 242, 390);
+  expect(placement().opacity).toBeCloseTo(0.95);
+  expect(placement().px).toBe(0.5);
+  expect(placement().scale).toBe(1);
+  expect(requests).toHaveLength(0);
+});
+it('opens the tattoo menu with a touch long press and returns focus on Escape', () => {
+  vi.useFakeTimers();
+  element('stage').onpointerdown({
+    clientX: 400,
+    clientY: 600,
+    pointerId: 7,
+    pointerType: 'touch',
+    preventDefault() {},
+  });
+  vi.advanceTimersByTime(600);
+  expect(element('tattoo-menu').hidden).toBe(false);
+  element('tattoo-menu').dispatchEvent(
+    new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+  );
+  expect(element('tattoo-menu').hidden).toBe(true);
+  expect(document.activeElement).toBe(element('stage'));
+  expect(requests).toHaveLength(0);
+});
+it('flips and resets directly through keyboard commands without provider requests', () => {
+  key('f');
+  expect(placement().flipped).toBe(true);
+  key('ArrowRight');
+  key('r');
+  key('0');
+  expect(placement()).toMatchObject({
+    px: 0.5,
+    py: 0.5,
+    scale: 1,
+    rotation: 0,
+    flipped: false,
+  });
+  expect(requests).toHaveLength(0);
 });

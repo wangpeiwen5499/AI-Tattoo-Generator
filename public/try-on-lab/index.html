@@ -39,9 +39,33 @@
           <div class="canvas-shell" id="canvas-shell">
             <canvas
               id="stage"
-              aria-label="在原图上拖动纹身，使用控制柄或双指缩放和旋转"
+              aria-label="在原图上拖动纹身，使用控制柄或双指缩放和旋转；长按或右键打开纹身菜单"
+              aria-describedby="photo-hint placement-status"
+              aria-haspopup="menu"
               tabindex="0"
             ></canvas>
+            <div
+              id="tattoo-menu"
+              class="tattoo-menu"
+              role="menu"
+              aria-label="纹身操作"
+              hidden
+            >
+              <button
+                id="flip-design"
+                type="button"
+                role="menuitemcheckbox"
+                aria-checked="false"
+              >
+                水平翻转 <kbd>F</kbd>
+              </button>
+              <button id="fit-design" type="button" role="menuitem">
+                恢复初始摆放 <kbd>0</kbd>
+              </button>
+              <button id="remove-design" type="button" role="menuitem">
+                移除纹身 <kbd>Delete</kbd>
+              </button>
+            </div>
             <div class="empty" id="empty">
               <div class="upload-symbol">＋</div>
               <h2>你的照片，就是试戴画布</h2>
@@ -54,6 +78,11 @@
           </div>
           <div class="canvas-footer">
             <p id="photo-hint">照片在点击真实生成前只留在本机浏览器中。</p>
+            <output
+              id="placement-status"
+              class="small"
+              aria-label="当前纹身状态"
+            ></output>
             <div class="photo-actions">
               <button id="inspect-result" class="quiet" hidden>
                 放大查看 / 三图对比</button
@@ -109,73 +138,6 @@
             ><button id="generate-design" class="button secondary" disabled>
               生成设计（调用 KIE）
             </button>
-          </section>
-          <section>
-            <div class="section-heading">
-              <h2>调整纹身</h2>
-              <span class="free">免费调整</span>
-            </div>
-            <p class="hint">
-              拖动图案移动；右下角控制柄缩放，上方圆点旋转。手机可双指缩放和旋转，也可用滑块微调。白底会自动淡化。
-            </p>
-            <div class="range-grid">
-              <label
-                >图案大小 <output id="scale-value">100%</output
-                ><input
-                  id="scale"
-                  type="range"
-                  min="20"
-                  max="300"
-                  value="100"
-                  disabled /></label
-              ><label
-                >旋转角度 <output id="rotation-value">0°</output
-                ><input
-                  id="rotation"
-                  type="range"
-                  min="-180"
-                  max="180"
-                  value="0"
-                  disabled /></label
-              ><label
-                >图案横向位置<input
-                  id="placement-x"
-                  type="range"
-                  min="0"
-                  max="100"
-                  value="50"
-                  disabled /></label
-              ><label
-                >图案纵向位置<input
-                  id="placement-y"
-                  type="range"
-                  min="0"
-                  max="100"
-                  value="50"
-                  disabled /></label
-              ><label
-                >墨色深浅 <output id="opacity-value">85%</output
-                ><input
-                  id="opacity"
-                  type="range"
-                  min="20"
-                  max="100"
-                  value="85"
-                  disabled
-              /></label>
-            </div>
-            <button id="fit-design" class="quiet" disabled>
-              重置位置和角度
-            </button>
-            <button
-              id="flip-design"
-              class="quiet"
-              disabled
-              aria-pressed="false"
-            >
-              水平翻转
-            </button>
-            <button id="remove-design" class="quiet" disabled>移除图案</button>
           </section>
           <section class="render-section">
             <h2>生成一张真实效果</h2>

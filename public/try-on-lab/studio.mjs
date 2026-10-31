@@ -39,7 +39,7 @@ const state = {
   resultMatches: false,
 };
 const editingContext = () => `${editorSession}:${state.revision}`;
-const controls = ['scale', 'rotation', 'opacity', 'placement-x', 'placement-y'];
+
 function status(message, error = false) {
   $('status').textContent = message;
   $('status').dataset.error = String(error);
@@ -68,10 +68,9 @@ function update() {
   ])
     $(id).disabled = state.busy;
   const placed = !!(state.photo && state.design);
-  for (const id of controls) $(id).disabled = !placed || state.busy;
   for (const id of ['flip-design', 'remove-design'])
     $(id).disabled = !placed || state.busy;
-  $('flip-design').setAttribute('aria-pressed', String(state.flipped));
+  $('flip-design').setAttribute('aria-checked', String(state.flipped));
   $('inspect-result').hidden = !state.raw;
   $('inspect-result').disabled = state.busy;
   $('fit-design').disabled = !placed || state.busy;
@@ -98,14 +97,18 @@ function update() {
 
   $('download').hidden = !(state.photo || state.raw);
   $('empty').hidden = !!(state.photo || state.raw);
-  $('scale-value').textContent = `${Math.round(state.scale * 100)}%`;
-  $('rotation-value').textContent = `${Math.round(state.rotation)}°`;
-  $('opacity-value').textContent = `${Math.round(state.opacity * 100)}%`;
-  $('scale').value = String(state.scale * 100);
-  $('rotation').value = String(state.rotation);
-  $('opacity').value = String(state.opacity * 100);
-  $('placement-x').value = String(state.px * 100);
-  $('placement-y').value = String(state.py * 100);
+  canvas.dataset.placement = JSON.stringify({
+    px: state.px,
+    py: state.py,
+    scale: state.scale,
+    rotation: state.rotation,
+    opacity: state.opacity,
+    flipped: state.flipped,
+  });
+  $('placement-status').textContent = placed
+    ? `大小 ${Math.round(state.scale * 100)}% · 旋转 ${Math.round(state.rotation)}° · 深浅 ${Math.round(state.opacity * 100)}%`
+    : '';
+  if (!placed || state.busy || state.view !== 'draft') closeTattooMenu(false);
   for (const button of document.querySelectorAll('[data-view]')) {
     button.setAttribute(
       'aria-pressed',
@@ -164,7 +167,8 @@ function handles() {
   return {
     g,
     unit,
-    resize: project(g.width / 2, g.height / 2),
+    resize: project(g.width / 2 + 14 * unit, g.height / 2 + 14 * unit),
+    opacity: project(-g.width / 2 - 30 * unit, -g.height / 2),
     rotate: project(0, -g.height / 2 - 30 * unit),
   };
 }
@@ -182,7 +186,11 @@ function drawHandles() {
   ctx.lineTo(0, -h.g.height / 2 - 30 * h.unit);
   ctx.stroke();
   ctx.restore();
-  for (const point of [h.resize, h.rotate]) {
+  for (const [point, label] of [
+    [h.resize, '↔'],
+    [h.rotate, '↻'],
+    [h.opacity, '◐'],
+  ]) {
     ctx.beginPath();
     ctx.arc(point.x, point.y, 8 * h.unit, 0, Math.PI * 2);
     ctx.fillStyle = '#ffffff';
@@ -190,9 +198,19 @@ function drawHandles() {
     ctx.strokeStyle = '#7160ed';
     ctx.lineWidth = 2 * h.unit;
     ctx.stroke();
+    ctx.fillStyle = '#6355df';
+    ctx.font = `${12 * h.unit}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, point.x, point.y);
   }
+  ctx.fillStyle = '#6355df';
+  ctx.font = `${11 * h.unit}px sans-serif`;
+  ctx.textAlign = 'right';
+  ctx.fillText('深浅', h.opacity.x - 12 * h.unit, h.opacity.y);
 }
 function invalidateResult() {
+  closeTattooMenu(false);
   state.revision += 1;
   state.resultMatches = false;
   state.raw = null;
@@ -302,7 +320,7 @@ async function setPhoto(image, sample = false) {
   state.view = 'draft';
   $('result-info').hidden = true;
   $('photo-hint').textContent =
-    '直接拖动纹身调整位置，控制柄或双指可缩放和旋转。';
+    '拖动纹身移动，右下角缩放，上方旋转，左上角调深浅。手机支持双指操作；长按或右键图案可翻转、重置和移除。键盘方向键移动，+ / − 缩放，R 旋转，[ / ] 调深浅。';
   status('照片已准备好。选择纹身图案，即可直接在原图上调整。');
   draw();
 }
@@ -388,12 +406,16 @@ $('sample-design').onclick = async () => {
   }
 };
 $('fit-design').onclick = () => {
-  if (!state.busy) fitDesign();
+  if (!state.busy) {
+    fitDesign();
+    canvas.focus({ preventScroll: true });
+  }
 };
 $('flip-design').onclick = () => {
   if (state.busy) return;
   state.flipped = !state.flipped;
   edited();
+  canvas.focus({ preventScroll: true });
 };
 $('remove-design').onclick = () => {
   if (state.busy) return;
@@ -407,21 +429,69 @@ $('remove-design').onclick = () => {
   $('design-name').textContent = '还没有选择图案';
   invalidateResult();
   draw();
+  canvas.focus({ preventScroll: true });
 };
 for (const button of document.querySelectorAll('[data-view]'))
   button.onclick = () => {
     if (!state.busy) setView(button.dataset.view);
   };
-for (const id of controls)
-  $(id).oninput = () => {
-    if (state.busy) return;
-    state.scale = Number($('scale').value) / 100;
-    state.rotation = Number($('rotation').value);
-    state.opacity = Number($('opacity').value) / 100;
-    state.px = Number($('placement-x').value) / 100;
-    state.py = Number($('placement-y').value) / 100;
-    edited();
-  };
+let longPressTimer = null;
+function cancelLongPress() {
+  if (longPressTimer !== null) {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+  }
+}
+function closeTattooMenu(focus = true) {
+  const menu = $('tattoo-menu');
+  if (!menu || menu.hidden) return;
+  menu.hidden = true;
+  if (focus) canvas.focus({ preventScroll: true });
+}
+function openTattooMenu(clientX, clientY) {
+  if (state.busy || !state.design || !state.photo || state.view !== 'draft')
+    return;
+  cancelLongPress();
+  const menu = $('tattoo-menu'),
+    shell = $('canvas-shell').getBoundingClientRect();
+  menu.hidden = false;
+  menu.style.left = `${Math.max(8, Math.min(clientX - shell.left, shell.width - 206))}px`;
+  menu.style.top = `${Math.max(8, Math.min(clientY - shell.top, shell.height - 150))}px`;
+  menu.querySelector('button').focus({ preventScroll: true });
+}
+canvas.oncontextmenu = (event) => {
+  if (state.busy || !state.design || !state.photo || state.view !== 'draft')
+    return;
+  if (!hitPlacement(photoPoint(event), geometry(), state.width, state.height))
+    return;
+  event.preventDefault();
+  state.gesture = null;
+  pointers.clear();
+  openTattooMenu(event.clientX, event.clientY);
+};
+$('tattoo-menu').addEventListener('keydown', (event) => {
+  const items = [...$('tattoo-menu').querySelectorAll('button')];
+  const index = items.indexOf(document.activeElement);
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    closeTattooMenu();
+    return;
+  }
+  if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
+    event.preventDefault();
+    const next =
+      event.key === 'Home'
+        ? 0
+        : event.key === 'End'
+          ? items.length - 1
+          : (index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) %
+            items.length;
+    items[next].focus();
+  }
+});
+document.addEventListener('pointerdown', (event) => {
+  if (!$('tattoo-menu').contains(event.target)) closeTattooMenu(false);
+});
 const pointers = new Map();
 function photoPoint(event) {
   const b = canvas.getBoundingClientRect();
@@ -440,6 +510,7 @@ function beginGesture(mode = 'move') {
       py: state.py,
       scale: state.scale,
       rotation: state.rotation,
+      opacity: state.opacity,
     },
   };
 }
@@ -457,7 +528,22 @@ canvas.onpointerdown = (event) => {
   const near = (p) =>
     Math.hypot(point.x * state.width - p.x, point.y * state.height - p.y) <=
     22 * h.unit;
-  const mode = near(h.rotate) ? 'rotate' : near(h.resize) ? 'resize' : 'move';
+  const centerDistance = Math.hypot(
+    point.x * state.width - h.g.cx,
+    point.y * state.height - h.g.cy
+  );
+  const central =
+    centerDistance <=
+    Math.min(12 * h.unit, h.g.width * 0.35, h.g.height * 0.35);
+  const mode = central
+    ? 'move'
+    : near(h.rotate)
+      ? 'rotate'
+      : near(h.resize)
+        ? 'resize'
+        : near(h.opacity)
+          ? 'opacity'
+          : 'move';
   if (
     !pointers.size &&
     mode === 'move' &&
@@ -465,15 +551,35 @@ canvas.onpointerdown = (event) => {
   )
     return;
   event.preventDefault();
+  closeTattooMenu(false);
+  cancelLongPress();
   canvas.focus({ preventScroll: true });
   canvas.setPointerCapture(event.pointerId);
   pointers.set(event.pointerId, point);
   beginGesture(mode);
+  if (event.pointerType === 'touch' && pointers.size === 1 && mode === 'move') {
+    const clientX = event.clientX,
+      clientY = event.clientY;
+    longPressTimer = setTimeout(() => {
+      state.gesture = null;
+      pointers.clear();
+      openTattooMenu(clientX, clientY);
+    }, 550);
+  }
 };
 canvas.onpointermove = (event) => {
   if (!state.gesture || !pointers.has(event.pointerId) || state.busy) return;
   event.preventDefault();
   const point = photoPoint(event);
+  const pressStart = state.gesture.points[0];
+  if (
+    pointers.size > 1 ||
+    Math.hypot(
+      (point.x - pressStart.x) * canvas.clientWidth,
+      (point.y - pressStart.y) * canvas.clientHeight
+    ) > 7
+  )
+    cancelLongPress();
   pointers.set(event.pointerId, point);
   const gesture = state.gesture,
     start = gesture.points[0],
@@ -488,6 +594,13 @@ canvas.onpointermove = (event) => {
         state.width,
         state.height
       )
+    );
+  } else if (gesture.mode === 'opacity') {
+    state.opacity = constrain(
+      initial.opacity +
+        ((start.y - point.y) * canvas.getBoundingClientRect().height) / 180,
+      0.2,
+      1
     );
   } else if (gesture.mode === 'move') {
     state.px = initial.px + point.x - start.x;
@@ -511,6 +624,7 @@ canvas.onpointermove = (event) => {
   edited();
 };
 function endGesture(event) {
+  cancelLongPress();
   pointers.delete(event.pointerId);
   state.gesture = null;
   if (pointers.size) beginGesture();
@@ -518,6 +632,7 @@ function endGesture(event) {
 }
 canvas.onpointerup = endGesture;
 canvas.onpointercancel = () => {
+  cancelLongPress();
   pointers.clear();
   state.gesture = null;
   draw();
@@ -527,6 +642,30 @@ canvas.onlostpointercapture = (event) => {
 };
 canvas.onkeydown = (event) => {
   if (!state.design || state.busy || state.view !== 'draft') return;
+  if (event.key === 'ContextMenu' || (event.key === 'F10' && event.shiftKey)) {
+    event.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    openTattooMenu(
+      rect.left + state.px * rect.width,
+      rect.top + state.py * rect.height
+    );
+    return;
+  }
+  if (event.key === 'Delete' || event.key === 'Backspace') {
+    event.preventDefault();
+    $('remove-design').click();
+    return;
+  }
+  if (event.key.toLowerCase() === 'f') {
+    event.preventDefault();
+    $('flip-design').click();
+    return;
+  }
+  if (event.key === '0') {
+    event.preventDefault();
+    fitDesign();
+    return;
+  }
   const delta = event.shiftKey ? 0.05 : 0.01;
   if (event.key === 'ArrowLeft') state.px -= delta;
   else if (event.key === 'ArrowRight') state.px += delta;
@@ -534,6 +673,12 @@ canvas.onkeydown = (event) => {
   else if (event.key === 'ArrowDown') state.py += delta;
   else if (event.key === '+' || event.key === '=') state.scale += 0.05;
   else if (event.key === '-') state.scale -= 0.05;
+  else if (event.key.toLowerCase() === 'r')
+    state.rotation += event.shiftKey ? -5 : 5;
+  else if (event.key === '[')
+    state.opacity = constrain(state.opacity - 0.05, 0.2, 1);
+  else if (event.key === ']')
+    state.opacity = constrain(state.opacity + 0.05, 0.2, 1);
   else return;
   event.preventDefault();
   edited();
@@ -693,6 +838,8 @@ async function showResult(image, matches = false) {
 async function billable(kind, action) {
   if (state.busy) return;
   state.busy = true;
+  cancelLongPress();
+  closeTattooMenu(false);
   state.gesture = null;
   pointers.clear();
   update();
