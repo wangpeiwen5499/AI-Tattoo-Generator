@@ -53,10 +53,14 @@ it('places blog articles before reviews and renders initials instead of avatar i
   expect(html).not.toContain('Trusted by tattoo enthusiasts worldwide');
 });
 
-it('also preserves blog-before-reviews ordering in the standard landing renderer', async () => {
+it('renders the production studio home with guides and excludes unverified sample endorsements', async () => {
   const html = renderToStaticMarkup(
     await LandingPage({ params: Promise.resolve({ locale: 'en' }) })
   );
-  expect(html).toContain('features,blog,testimonials,faq');
+  expect(html).toContain('id="blog"');
+  expect(html).toContain('PLACEMENT STUDIO');
+  expect(html).not.toContain('id="testimonials"');
+  expect(html).not.toContain('Layout preview');
+  expect(html).not.toContain('sample feedback');
   expect(indexCopy.page.sections).not.toHaveProperty('blog');
 });

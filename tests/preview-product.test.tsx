@@ -7,6 +7,7 @@ import {
   PreviewBanner,
   PreviewHome,
   PreviewPricing,
+  ProductionHome,
 } from '@/shared/blocks/tattoo/preview-product';
 
 vi.mock('@/shared/blocks/tattoo/tattoo-case-demo', () => ({
@@ -141,20 +142,18 @@ it('renders proposed Preview pricing before reading any live subscription or acc
   );
   expect(html).toContain('No real purchases');
 });
-it('keeps the production generator and rejects the Preview-only designs route', async () => {
+it('routes production generation and designs into the account studio', async () => {
   vi.stubEnv('VERCEL_ENV', 'production');
   const { default: generate } =
     await import('@/app/[locale]/(landing)/generate/page');
   const { default: designs } =
     await import('@/app/[locale]/(landing)/designs/page');
   await expect(
-    designs({ params: Promise.resolve({ locale: 'en' }) })
-  ).rejects.toThrow('NOT_FOUND');
-  const html = renderToStaticMarkup(
-    await generate({ params: Promise.resolve({ locale: 'en' }) })
-  );
-  expect(html).toContain('Production generator');
-  expect(html).not.toContain('/try-on-lab');
+    generate({ params: Promise.resolve({ locale: 'en' }) })
+  ).rejects.toThrow(`REDIRECT:${studioUrl(undefined, 'en')}`);
+  await expect(
+    designs({ params: Promise.resolve({ locale: 'zh' }) })
+  ).rejects.toThrow(`REDIRECT:${studioUrl('designs', 'zh')}`);
 });
 it.each(['en', 'zh'])(
   'updates Preview guides while preserving production guide copy in %s',
@@ -187,6 +186,24 @@ it.each(['en', 'zh'])(
     expect(banner).toContain('KIE');
     expect(banner).toContain(
       locale === 'zh' ? '不扣真实账户积分' : 'never real account credits'
+    );
+  }
+);
+
+it.each(['en', 'zh'])(
+  'renders production %s home with account persistence and live operation rates',
+  (locale) => {
+    vi.stubEnv('VERCEL_ENV', 'production');
+    const html = renderToStaticMarkup(<ProductionHome locale={locale} />);
+    expect(html).toContain('1K / 2K / 4K');
+    expect(html).toContain(
+      locale === 'zh' ? '账户设计库' : 'your account library'
+    );
+    expect(html).toContain(
+      locale === 'zh' ? '积分永不过期' : 'Credits never expire'
+    );
+    expect(html).not.toMatch(
+      /test credits|KIE|browser-local|this browser|测试积分|拟议|PREVIEW STUDIO/
     );
   }
 );

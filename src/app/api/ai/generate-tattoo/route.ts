@@ -24,6 +24,15 @@ const requestSchema = z.object({
 export async function POST(req: Request): Promise<Response> {
   const access = await requireGenerationUser();
   if (access.response) return access.response;
+  if (process.env.VERCEL_ENV === 'production')
+    return Response.json(
+      {
+        error: 'This generator has been replaced by the placement studio.',
+        code: 'STUDIO_REQUIRED',
+        url: '/generate',
+      },
+      { status: 410, headers: { 'Cache-Control': 'private, no-store' } }
+    );
   const actor = { type: 'user' as const, id: access.user.id };
   const limited = enforceMinIntervalRateLimit(req, {
     intervalMs: 1500,

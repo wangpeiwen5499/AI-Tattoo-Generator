@@ -20,8 +20,8 @@
           "url": "/pricing"
         },
         {
-          "title": "Generate",
-          "url": "/generate"
+          "title": "Studio",
+          "url": "/try-on-lab/index.html?lang=en"
         },
         {
           "title": "History",
@@ -55,7 +55,7 @@
     "id": "footer",
     "brand": {
       "title": "AI Tattoo Generator",
-      "description": "See your tattoo before you ink. Upload a photo, describe your idea, and AI generates realistic tattoo previews.",
+      "description": "Upload or generate a design, move, resize and rotate it on your photo, then generate one AI try-on. Designs and try-on history save to your account.",
       "url": "/",
       "logo": {
         "src": "/favicon.ico",
@@ -80,8 +80,8 @@
               "target": "_self"
             },
             {
-              "title": "Generate",
-              "url": "/generate",
+              "title": "Studio",
+              "url": "/try-on-lab/index.html?lang=en",
               "target": "_self"
             }
           ]

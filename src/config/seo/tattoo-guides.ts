@@ -29,7 +29,7 @@ const english: Record<GuideSlug, Guide> = {
       },
       {
         title: 'Preview the composition on a clear body photo',
-        body: 'Use even light and leave the intended body area visible. For the current TattooVis generator, a photo showing the arms, shoulders and calves is the best fit for its four-placement preview set. Compare the design’s direction with the line of the limb and look at its balance in the whole photograph. This workflow generates a design and body previews together; it is not a stencil editor or an exact physical-size measuring tool.',
+        body: 'Use even light and leave the intended body area visible. Upload or generate a design, then move, resize and rotate it on your photo before generating a single-image try-on. Compare the design’s direction with the line of the limb and look at its balance in the whole photograph. Design generation and each single-image try-on are separate operations; it is not a stencil editor or an exact physical-size measuring tool.',
       },
       {
         title: 'Keep a reference for the artist conversation',
@@ -67,7 +67,7 @@ const english: Record<GuideSlug, Guide> = {
       },
       {
         title: 'Use the wolf example as a workflow reference',
-        body: 'The interactive example on the TattooVis homepage shows a black-and-grey geometric wolf design followed by generated previews on the left arm, right arm, shoulder and calf. These are saved outputs from the website, so exploring them does not use credits. They demonstrate the workflow rather than promise an identical result for every photograph. Look at how the design’s width and visible detail change between the smaller shoulder placement and the longer arm examples.',
+        body: 'The interactive example on the TattooVis homepage shows a black-and-grey geometric wolf design followed by a saved single-image calf try-on. These are saved outputs from the website, so exploring them does not use credits. They demonstrate the workflow rather than promise an identical result for every photograph. Look at how the design’s width and visible detail change as you compare the design with the saved calf result.',
       },
       {
         title: 'Compare detail at the intended viewing size',
@@ -113,7 +113,7 @@ const english: Record<GuideSlug, Guide> = {
       },
       {
         title: 'Think about placement in your everyday context',
-        body: 'Consider whether you want the tattoo visible in your usual clothing, how the shape relates to the body area and what you want to see when looking at yourself. There is no single best placement for a first tattoo. Use a clear, evenly lit photo and compare the design at more than one viewing size. The current TattooVis preview set covers the left arm, right arm, shoulder and calf; photos showing these areas work best. The preview cannot measure pain, predict healing or guarantee a real-world result.',
+        body: 'Consider whether you want the tattoo visible in your usual clothing, how the shape relates to the body area and what you want to see when looking at yourself. There is no single best placement for a first tattoo. Use a clear, evenly lit photo and compare the design at more than one viewing size. Move, resize and rotate the design on your chosen area, then generate one try-on image. The preview cannot measure pain, predict healing or guarantee a real-world result.',
       },
       {
         title: 'Use AI previews to prepare questions',
@@ -121,7 +121,7 @@ const english: Record<GuideSlug, Guide> = {
       },
       {
         title: 'Know what the free example and credits provide',
-        body: 'You can click through the saved wolf example without an account or credits. Generating with your own photo requires an account with a verified email. New accounts receive a one-time gift of three credits. In the current production workflow, one complete design-and-four-placement set costs one credit at 1K, two at 2K or three at 4K. Check the pricing page before purchasing. These rules describe the current generator, not the experimental single-placement studio.',
+        body: 'You can click through the saved wolf example without an account or credits. Generating with your own photo requires an account with a verified email. New accounts receive a one-time gift of three credits. A 1K design costs 1 credit; a single 1K / 2K / 4K try-on costs 1 / 2 / 3 credits. Uploading, positioning, saving and reusing designs are free. Check the pricing page before purchasing. Designs and try-on history save to your account. Credits never expire.',
       },
     ],
     prompts: [
@@ -162,7 +162,7 @@ const chinese: Record<GuideSlug, Guide> = {
       },
       {
         title: '用清晰的身体照片比较构图',
-        body: '目前正式版会生成设计和左臂、右臂、肩部、小腿四个位置的预览，适合使用这些位置清晰可见的照片。观察图案方向与肢体线条是否协调，也看看整张照片里的比例。这不是精确尺寸测量工具，也不是纹身模板编辑器。',
+        body: '先上传或生成设计，在照片上自由移动、缩放和旋转，再生成一张试戴图片。使用目标位置清晰可见、光线均匀的照片。观察图案方向与肢体线条是否协调，也看看整张照片里的比例。这不是精确尺寸测量工具，也不是纹身模板编辑器。',
       },
       {
         title: '记录你真正想修改的部分',
@@ -230,7 +230,7 @@ const chinese: Record<GuideSlug, Guide> = {
       },
       {
         title: '把位置放进日常场景里考虑',
-        body: '想一想平常穿衣时是否希望图案可见，以及形状与身体部位是否协调。不存在人人适用的“第一次纹身最佳位置”。当前正式版支持左臂、右臂、肩部和小腿的整套预览，建议照片中这些区域清晰可见。照片不能衡量疼痛、预测愈合或保证实际效果。',
+        body: '想一想平常穿衣时是否希望图案可见，以及形状与身体部位是否协调。不存在人人适用的“第一次纹身最佳位置”。在照片上自由移动、缩放和旋转设计，再生成单张试戴。使用目标区域清晰可见的照片。照片不能衡量疼痛、预测愈合或保证实际效果。',
       },
       {
         title: '用预览准备具体的问题',
@@ -238,7 +238,7 @@ const chinese: Record<GuideSlug, Guide> = {
       },
       {
         title: '了解免费案例与积分规则',
-        body: '无需账户即可点击首页保存的狼头案例。使用自己的照片生成需要邮箱已验证的账户，新账户一次性赠送三个积分。目前正式版每次生成设计与四个部位预览，1K、2K、4K 分别消耗一、二、三个积分，购买前请查看价格页。这是当前生成器的规则，不是实验中的单部位工作室规则。',
+        body: '无需账户即可点击首页保存的狼头案例。使用自己的照片生成需要邮箱已验证的账户，新账户一次性赠送三个积分。生成一张 1K 设计消耗 1 积分；单张 1K / 2K / 4K 试戴分别消耗 1 / 2 / 3 积分。上传、保存、复用与定位免费。设计库与历史保存在账户中，积分永不过期。购买前请查看价格页。',
       },
     ],
     prompts: english['first-tattoo'].prompts.map((p, i) => ({
@@ -261,7 +261,7 @@ export function getTattooGuides(locale: string) {
       ...source[slug],
       sections: source[slug].sections.map((section) => ({ ...section })),
     };
-    if (!isProductPreview()) return guide;
+    const preview = isProductPreview();
     const zh = locale === 'zh';
     if (slug === 'minimalist')
       guide.sections[2].body = zh
@@ -269,8 +269,8 @@ export function getTattooGuides(locale: string) {
         : 'Use an evenly lit photo with the intended area visible. The Preview studio separates design from try-on: upload or generate a design, then move, resize and rotate it freely. Each try-on produces one image. Save and reuse designs free, adjusting placement before another try-on. A preview cannot measure exact physical size or replace an artist’s review.';
     if (slug === 'geometric')
       guide.sections[1].body = zh
-        ? '首页狼头案例展示的是已保存的历史四部位图片，浏览免费，不代表新任务每次生成四张。Preview 工作室采用自由定位、单张试戴：复用设计并调整位置后，分别提交想比较的效果。观察不同大小与位置的轮廓、细节和留白。'
-        : 'The homepage wolf example contains real saved historical four-placement images, free to explore. It does not promise four images per new task. The Preview studio uses free placement and single-image try-ons: reuse a design and adjust its position before submitting each comparison. Compare outline, detail and negative space at different sizes and locations.';
+        ? '首页狼头案例展示从原图、设计、固定位置到一张已保存小腿结果的过程，浏览免费。Preview 工作室采用自由定位、单张试戴：复用设计并调整位置后，分别提交想比较的效果。观察不同大小与位置的轮廓、细节和留白。'
+        : 'The homepage wolf example follows a saved photo, design and preset calf placement through to one real saved result, free to explore. The Preview studio uses free placement and single-image try-ons: reuse a design and adjust its position before submitting each comparison. Compare outline, detail and negative space at different sizes and locations.';
     if (slug === 'first-tattoo') {
       guide.sections[2].body = zh
         ? '考虑平常穿衣时是否希望纹身可见，以及图案与身体部位的关系。使用目标位置清晰可见、光线均匀的照片。在 Preview 工作室中自由移动、缩放、旋转设计，再生成单张试戴；复用同一设计比较不同位置。照片不能衡量疼痛、预测愈合或保证实际效果。'
@@ -278,6 +278,18 @@ export function getTattooGuides(locale: string) {
       guide.sections[4].body = zh
         ? '历史狼头案例可免费浏览。Preview 使用独立测试积分，不扣真实账户余额：生成一张 1K 设计为 1 积分；单张 1K、2K、4K 试戴分别为 1、2、3 积分。上传、保存、复用与自由定位免费。AI 请求仍产生 KIE 测试费用，需明确同意。设计与历史仅存当前浏览器。正式版注册验证邮箱赠送 3 积分的原权益保持不变；Preview 不提供真实购买。'
         : 'Explore the saved wolf example free. Preview uses separate test credits, never real account balances: one 1K design costs 1 credit; a single 1K, 2K or 4K try-on costs 1, 2 or 3 credits. Uploading, saving, reusing and positioning are free. AI requests still incur KIE test costs and require explicit consent. Designs and history stay in this browser. The live signup offer of 3 credits after email verification keeps its existing terms; Preview offers no real purchases.';
+    }
+    if (!preview) {
+      for (const section of guide.sections) {
+        section.body = section.body
+          .replaceAll('Preview 工作室', '工作室')
+          .replaceAll('The Preview studio', 'The studio')
+          .replaceAll('the Preview studio', 'the studio');
+      }
+      if (slug === 'first-tattoo')
+        guide.sections[4].body = zh
+          ? '历史案例可免费浏览。新账户一次性获得 3 积分欢迎礼，验证邮箱后使用。生成一张 1K 设计消耗 1 积分；单张 1K / 2K / 4K 试戴分别消耗 1 / 2 / 3 积分。上传、保存、复用与定位免费。设计库与试戴历史保存在账户中，已有余额保持不变。积分永不过期，图片数量取决于操作与分辨率。'
+          : 'Explore the saved example free. New accounts receive 3 welcome credits once, usable after email verification. A 1K design costs 1 credit; a single 1K / 2K / 4K try-on costs 1 / 2 / 3 credits. Uploading, saving, reusing and positioning are free. Designs and try-on history save to your account; existing balances stay unchanged. Credits never expire, and image counts depend on operations and resolution.';
     }
     return guide;
   });

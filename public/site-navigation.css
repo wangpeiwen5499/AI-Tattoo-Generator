@@ -93,6 +93,11 @@
 .site-navigation .site-language a { font-size: 12px; }
 .site-navigation .site-language a[aria-current='true'] { color: #6347cc; font-weight: 700; }
 .site-navigation .site-menu-toggle { display: none; }
+.site-navigation .site-account-menu { position: relative; }
+.site-navigation .site-account-menu summary { list-style: none; cursor: pointer; }
+.site-navigation .site-account-menu summary::-webkit-details-marker { display: none; }
+.site-navigation .site-account-panel { position: absolute; top: 48px; right: 0; min-width: 180px; padding: 10px; background: #fff; border: 1px solid #dce1eb; border-radius: 12px; box-shadow: 0 12px 32px rgb(30 41 59 / 10%); }
+.site-navigation .site-account-panel a, .site-navigation .site-account-panel button { display: block; padding: 10px; width: 100%; text-align: left; font: inherit; font-size: 14px; background: transparent; border: 0; text-decoration: none; cursor: pointer; }
 @media (max-width: 1050px) {
   .site-navigation { padding: 0 20px; }
   .site-navigation .site-menu-toggle { display: inline-flex; min-width: 48px; }

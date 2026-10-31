@@ -67,7 +67,25 @@ export function createStudioGallery({
   isBusy = () => false,
   locale = 'zh',
 }) {
-  const copy = COPY[locale.startsWith('en') ? 'en' : 'zh'];
+  const english = locale.startsWith('en');
+  const copy = {
+    ...COPY[english ? 'en' : 'zh'],
+    ...(library.account
+      ? {
+          title: english ? 'My library' : '我的图库',
+          loading: english ? 'Loading account library…' : '正在读取账户图库…',
+          local: english
+            ? 'Saved to your account. Available across devices.'
+            : '保存到账户，可跨设备查看。',
+          loadError: english
+            ? 'Could not load your account library. Sign in or retry.'
+            : '无法读取账户图库，请登录或重试。',
+          emptyHistory: english
+            ? 'Completed try-ons are saved here automatically.'
+            : '成功生成的试戴结果会自动保存在这里。',
+        }
+      : {}),
+  };
   const id = `studio-gallery-${globalThis.crypto.randomUUID()}`;
   const dialog = element('dialog', 'studio-gallery');
   const header = element('div', 'gallery-header');
@@ -108,6 +126,15 @@ export function createStudioGallery({
     return node;
   });
   dialog.append(header, tabs, note, status, grid);
+  if (library.account) {
+    const archive = element(
+      'a',
+      'gallery-note',
+      english ? 'Previous generation history' : '以往生成记录'
+    );
+    archive.href = `${english ? '' : '/zh'}/history/archive`;
+    dialog.append(archive);
+  }
   document.body.append(dialog);
   dialog.addEventListener('close', cleanup);
   dialog.addEventListener('cancel', () => {
@@ -174,40 +201,49 @@ export function createStudioGallery({
     if (!guard() || !callback) return;
     close();
     try {
-      await callback(value);
+      await callback(
+        library.loadRecord && typeof value === 'object'
+          ? await library.loadRecord(value)
+          : value
+      );
     } catch (reason) {
       show();
       error(copy.error, reason);
     }
   }
 
-  function download(record) {
-    const url = URL.createObjectURL(record.image);
-    const anchor = element('a');
-    anchor.href = url;
-    const extension =
-      record.image.type === 'image/jpeg'
-        ? 'jpg'
-        : record.image.type === 'image/webp'
-          ? 'webp'
-          : 'png';
-    anchor.download = `tattoovis-${activeTab === 'designs' ? 'design' : 'result'}-${String(
-      record.id
-    )
-      .replace(/[^a-zA-Z0-9_-]/g, '')
-      .slice(0, 80)}.${extension}`;
-    document.body.append(anchor);
-    anchor.click();
-    anchor.remove();
-    // Downloads may consume the object URL after the click event completes.
-    setTimeout(() => URL.revokeObjectURL(url), 30000);
+  async function download(record) {
+    try {
+      if (library.loadRecord) record = await library.loadRecord(record);
+      const url = URL.createObjectURL(record.image);
+      const anchor = element('a');
+      anchor.href = url;
+      const extension =
+        record.image.type === 'image/jpeg'
+          ? 'jpg'
+          : record.image.type === 'image/webp'
+            ? 'webp'
+            : 'png';
+      anchor.download = `tattoovis-${activeTab === 'designs' ? 'design' : 'result'}-${String(
+        record.id
+      )
+        .replace(/[^a-zA-Z0-9_-]/g, '')
+        .slice(0, 80)}.${extension}`;
+      document.body.append(anchor);
+      anchor.click();
+      anchor.remove();
+      // Downloads may consume the object URL after the click event completes.
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+    } catch (reason) {
+      error(copy.error, reason);
+    }
   }
 
   function card(record, tab) {
     const node = element('article', 'gallery-card');
     const thumbnail = element('img', 'gallery-thumbnail');
-    const url = URL.createObjectURL(record.image);
-    thumbnailURLs.add(url);
+    const url = record.imageUrl || URL.createObjectURL(record.image);
+    if (!record.imageUrl) thumbnailURLs.add(url);
     thumbnail.src = url;
     thumbnail.alt = tab === 'designs' ? record.name : copy.result;
     thumbnail.loading = 'lazy';

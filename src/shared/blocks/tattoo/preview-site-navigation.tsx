@@ -5,7 +5,15 @@ import { usePathname } from 'next/navigation';
 
 import { previewNavigation } from '@/config/preview/navigation';
 
-export function PreviewSiteNavigation({ locale }: { locale: string }) {
+import { AccountNavigation } from './account-navigation';
+
+export function PreviewSiteNavigation({
+  locale,
+  showAccount = false,
+}: {
+  locale: string;
+  showAccount?: boolean;
+}) {
   const pathname = usePathname();
   const nav = previewNavigation(locale);
   const [open, setOpen] = useState(false);
@@ -68,6 +76,7 @@ export function PreviewSiteNavigation({ locale }: { locale: string }) {
               {link.label}
             </a>
           ))}
+          {showAccount && <AccountNavigation locale={locale} />}
           <div
             className="site-language"
             aria-label={locale === 'zh' ? '语言' : 'Language'}

@@ -1,3 +1,5 @@
+import { productionCopy } from './production-i18n.mjs';
+
 const EN = new Map(
   Object.entries({
     主导航: 'Main navigation',
@@ -260,11 +262,17 @@ const normalize = (value) => value.replace(/\s+/g, ' ').trim();
  */
 export function createStudioI18n(
   locale = new URLSearchParams(globalThis.location?.search || '').get('lang') ||
-    'zh'
+    'zh',
+  { account = false } = {}
 ) {
   const english = String(locale).toLowerCase().startsWith('en');
   function t(message) {
-    if (!english || typeof message !== 'string') return message;
+    if (typeof message !== 'string') return message;
+    if (account) {
+      const copy = productionCopy(message, english);
+      if (copy !== undefined) return copy;
+    }
+    if (!english) return message;
     const source = normalize(message);
     if (EN.has(source)) return EN.get(source);
     let match;
@@ -339,9 +347,13 @@ export function createStudioI18n(
 
   function apply() {
     document.documentElement.lang = english ? 'en' : 'zh-CN';
-    document.title = english
-      ? 'TattooVis · Try-on Studio Preview'
-      : 'TattooVis · 定点试戴预览';
+    document.title = account
+      ? english
+        ? 'TattooVis · Try-on Studio'
+        : 'TattooVis · 试戴工作室'
+      : english
+        ? 'TattooVis · Try-on Studio Preview'
+        : 'TattooVis · 定点试戴预览';
     for (const node of document.querySelectorAll('[data-i18n]'))
       node.textContent = t(node.getAttribute('data-i18n'));
     for (const attr of ['placeholder', 'aria-label', 'alt']) {

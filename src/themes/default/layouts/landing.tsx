@@ -7,7 +7,7 @@ import {
   Footer as FooterType,
   Header as HeaderType,
 } from '@/shared/types/blocks/landing';
-import { Footer, Header } from '@/themes/default/blocks';
+import { Footer } from '@/themes/default/blocks';
 
 export default async function LandingLayout({
   children,
@@ -20,11 +20,10 @@ export default async function LandingLayout({
 }) {
   return (
     <div className="h-screen w-screen">
-      {isProductPreview() ? (
-        <PreviewSiteNavigation locale={await getLocale()} />
-      ) : (
-        <Header header={header} />
-      )}
+      <PreviewSiteNavigation
+        locale={await getLocale()}
+        showAccount={!isProductPreview()}
+      />
       {children}
       <Footer footer={footer} />
     </div>

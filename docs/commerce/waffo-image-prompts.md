@@ -1,14 +1,15 @@
-# Waffo image generation
+# Waffo cover replacement prompts — ready for manual application
 
-Mode: built-in image_gen tool. Reference: public/logo.png (the same artwork as the browser favicon). Final exports: 1200×630 PNG, three separate products. Generated originals retained under the thread's generated_images directory. Final exact-size exports preserve the generated composition.
+The existing merchant covers advertise historical fixed image counts. Replace them together with the production descriptions in [waffo-products.md](waffo-products.md). These prompts do not generate, upload or apply merchant images.
 
-## Starter prompt
+Use the existing logo and restrained violet product-card layout as a visual reference. Export each pack separately as a 1200×630 PNG. Keep text inside 80px margins. Do not promise a fixed image count or four-placement sets.
 
-Create ONE polished ecommerce product cover image, exact canvas 1200x630 pixels, landscape 1.90476:1, razor-sharp high-definition lettering. This is the STARTER credit pack for the real website tattoovis.ink. Reference image role: the site's actual favicon/logo. Faithfully preserve its distinctive violet sailboat-shaped mark with the small upper-right 2 symbol, do not invent or replace the mark, do not write ShipAny. Use the reference as a large elegant violet emblem on the right, about 360px square, with soft studio dimension and no busy background. Left-aligned editorial typography with generous whitespace, Georgia-like serif main headline and highly legible supporting text. Very pale cool lavender background #F7F6FC, deep ink text #29243C, violet #6554F6 accent. Premium restrained design, professional checkout product card, no tattoo photographs, no wolves, no additional logos, no badges, no mockup frames, no watermarks. Exact required text only, placed inside 80px safe margins: small brand line 'AI Tattoo Generator'; large headline 'Starter'; large secondary '5 credits'; supporting line '20 body previews'; subtle bottom line '4 placements per set • Credits never expire'; price '$4.99' in a clear violet rounded capsule near the lower left; small 'tattoovis.ink' near lower right. Ensure the numbers are exactly 5 credits, 20 body previews, $4.99. Render the final image only at exactly 1200x630.
+## Shared design prompt
 
-## Related tier edit prompts
+Create one polished ecommerce credit pack cover, 1200×630 landscape. Preserve the existing TattooVis logo, pale lavender background, deep ink serif typography, violet accents and generous spacing. No photographs, watermarks or extra badges. Exact shared text: “TattooVis”, “Design & single-image try-on credits”, “1K design: 1 credit”, “Try-on 1K / 2K / 4K: 1 / 2 / 3 credits”, “Credits never expire”, “tattoovis.ink”. Add the tier title, credit quantity and price below. Never add a body-preview count or a per-set promise.
 
-Edit the generated Starter cover as the layout/style template. Preserve the violet sailboat favicon/logo, pale lavender background, ink Georgia-style typography, generous spacing, brand text and exact overall design. Change ONLY product text and amounts. Keep 'AI Tattoo Generator', '4 placements per set • Credits never expire', and 'tattoovis.ink'. Remove all old Starter tier amounts. No collage; each is one 1200x630 cover.
+- Starter: “Starter”, “5 credits”, “$4.99”.
+- Most Popular: “Most Popular”, “20 credits”, “$14.99”.
+- Pro: “Pro”, “50 credits”, “$29.99”.
 
-- Most Popular: heading 'Most Popular', secondary '20 credits', supporting '80 body previews', price '$14.99'. Reduce title font size to fit one line within left column.
-- Pro: heading 'Pro', secondary '50 credits', supporting '200 body previews', price '$29.99'.
+Merchant product IDs, prices and granted credits remain unchanged. The local historical PNGs have not been replaced by this document.

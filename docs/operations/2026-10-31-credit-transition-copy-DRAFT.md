@@ -1,8 +1,8 @@
-# DRAFT — credit product transition copy
+# Production transition — merchant and email copy ready
 
-Status: review copy only, October 31, 2026. Do not publish to Waffo, change merchant products, send mail, enable purchasing or apply these terms to existing purchases. Preview uses a browser-local prototype library/history and separate simulated credits. Actual KIE test requests still incur provider costs after explicit consent. No production balances, orders, subscriptions, database or R2 resources are changed by this draft.
+Status: production platform transition approved October 31, 2026; merchant and email copy remains ready for manual application. Existing balances stay numerically unchanged. Production saves designs and try-on history to the account and uses real credits. Preview remains isolated with local records and test credits. This file has not changed Waffo or sent email. Final merchant descriptions: [waffo-products.md](../commerce/waffo-products.md).
 
-## Waffo product description drafts
+## Waffo product descriptions
 
 | Price  | Credits | English display name   | Chinese display name |
 | ------ | ------- | ---------------------- | -------------------- |
@@ -14,7 +14,7 @@ Shared English description: “Credits for TattooVis design generation and singl
 
 统一中文说明：“积分可用于 TattooVis 设计生成与单张试戴。生成一张 1K 设计消耗 1 积分；单张 1K、2K、4K 试戴分别消耗 1、2、3 积分。上传、定位、保存与复用设计免费。可生成图片的总数量取决于所选操作与分辨率，本积分包不承诺固定图片数量。”
 
-## Refund policy draft
+## Refund support copy
 
 English: “Support reviews refund eligibility separately under the applicable purchase terms. Partial credit use alone does not determine eligibility for a full refund. After a full refund is completed, automatically recover only that order’s remaining unused credits. Do not claw back spent credits or deduct welcome gifts or other orders’ balances. Partial refunds require manual handling; no automatic credit recovery is applied to a partial refund. Existing purchases retain their applicable purchase terms until any separate transition is explicitly confirmed. This draft does not amend existing purchased entitlements.”
 
@@ -54,21 +54,21 @@ English: “Your full refund for order [order reference] is complete. We recover
 
 Subject: Welcome to TattooVis / 欢迎使用 TattooVis
 
-English: “Your live account receives a one-time welcome gift of 3 credits, usable after email verification. Signing in again does not refill it. Preview test credits are separate from this live balance. In the Preview studio, one 1K design costs 1 test credit and a single 1K / 2K / 4K try-on costs 1 / 2 / 3 test credits. Uploading, saving, reusing and positioning are free. Preview designs and try-on history stay in the current browser, without account sync; download important images as a backup. No real purchases are available in Preview.”
+English: “Your account receives 3 welcome credits once, usable after email verification. Generate a 1K design for 1 credit; a single 1K / 2K / 4K try-on costs 1 / 2 / 3 credits. Uploading, saving, reusing and positioning are free. Designs and try-on history save to your account. Credits never expire.”
 
-中文：“正式账户一次性获得 3 积分欢迎礼，验证邮箱后可使用，重新登录不会补充。Preview 测试积分与该真实余额分开。在 Preview 工作室中，1K 设计消耗 1 测试积分，单张 1K / 2K / 4K 试戴分别消耗 1 / 2 / 3 测试积分。上传、保存、复用与定位免费。Preview 设计与试戴历史仅保存在当前浏览器，不与账户同步；请下载重要图片备份。Preview 不提供真实购买。”
+中文：“账户一次性获得 3 积分欢迎礼，验证邮箱后可使用。生成一张 1K 设计消耗 1 积分；单张 1K / 2K / 4K 试戴分别消耗 1 / 2 / 3 积分。上传、保存、复用与定位免费。设计库与试戴历史保存在账户中。积分永不过期。”
 
-## Rollout checklist — not authorization to execute
+## Remaining application steps
 
 - Verify English and Chinese pricing, operation costs, welcome copy, purchase confirmation and refund text together.
-- Decide separately how legacy purchased credits/entitlements retain their original rights; do not silently reprice old purchases.
-- Approve the actual billing ledger rules, success/failure charging and payment product configuration before enabling real purchases.
-- Confirm persistence resources and privacy/retention terms before describing a design library as account-synced or durable across devices.
-- Replace Preview-only language only after production scope and live rates are approved.
+- Approved transition: keep existing balances numerically unchanged and retain existing history.
+- Verify that the implementation charges per operation and restores failed-operation consumption once. Preserve existing product IDs, prices and credit quantities.
+- Verify account-owned design/history persistence and related privacy terms before deployment.
+- Production scope and rates are approved; keep Preview disclosures isolated to Preview.
 - Obtain explicit publication/sending authorization before merchant changes, policy publication or email delivery. This file is the review artifact only.
 
 ## Provider cost revalidation gate
 
-The parent review found the [KIE GPT Image 2 pricing page](https://kie.ai/gpt-image-2) lists 6 / 10 / 16 provider credits per image for 1K / 2K / 4K, differing from the earlier 3 / 5 / 8 estimate. Revalidate the live provider quote and actual billed test usage before approving margins or production billing. Provider credits and TattooVis platform credits are separate units. The approved proposed platform rates remain 1 credit per 1K design and 1 / 2 / 3 credits per single 1K / 2K / 4K try-on; this note does not authorize a rate or merchant change.
+The parent review found the [KIE GPT Image 2 pricing page](https://kie.ai/gpt-image-2) lists 6 / 10 / 16 provider credits per image for 1K / 2K / 4K, differing from the earlier 3 / 5 / 8 estimate. Revalidate the live provider quote and actual billed test usage before approving margins or production billing. Provider credits and TattooVis platform credits are separate units. The approved platform rates remain 1 credit per 1K design and 1 / 2 / 3 credits per single 1K / 2K / 4K try-on; this note does not authorize a rate or merchant change.
 
-上游成本需复核：上述 KIE 页面在主任务核查时列出 1K / 2K / 4K 每张 6 / 10 / 16 上游积分，与此前 3 / 5 / 8 的估算不同。上线前应复核当前报价与实际测试扣费，再确认毛利和正式计费。上游积分与平台积分不是同一单位；已批准的平台拟议操作费率保持不变。
+上游成本需复核：上述 KIE 页面在主任务核查时列出 1K / 2K / 4K 每张 6 / 10 / 16 上游积分，与此前 3 / 5 / 8 的估算不同。上线前应复核当前报价与实际测试扣费，再确认毛利和正式计费。上游积分与平台积分不是同一单位；已批准的平台操作费率保持不变。

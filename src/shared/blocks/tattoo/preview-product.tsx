@@ -175,6 +175,163 @@ export function PreviewHome({
   );
 }
 
+export function ProductionHome({
+  locale,
+}: {
+  locale: string;
+  reviews?: Section;
+}) {
+  const zh = locale === 'zh';
+  const steps = zh
+    ? [
+        [
+          '01 / 设计',
+          '上传或生成设计',
+          '上传已有图案免费；也可以输入提示词，以 1 积分生成一张 1K 设计。成功生成后自动存入账户设计库。',
+        ],
+        [
+          '02 / 定位',
+          '在自己的照片上自由摆放',
+          '上传照片，选择新设计或复用已保存设计，自由移动、缩放和旋转。上传、保存、复用与定位均免费。',
+        ],
+        [
+          '03 / 试戴',
+          '确认位置，生成单张效果',
+          '每次试戴生成一张图片。1K / 2K / 4K 分别消耗 1 / 2 / 3 积分；生成前确认清晰度和费用。',
+        ],
+      ]
+    : [
+        [
+          '01 / DESIGN',
+          'Upload or create a design',
+          'Upload an existing design free, or describe a new idea and generate one 1K design for 1 credit. Successful new designs save automatically to your account library.',
+        ],
+        [
+          '02 / POSITION',
+          'Place it freely on your photo',
+          'Upload your photo and choose a new or saved design. Move, resize and rotate it. Uploading, saving, reusing and positioning designs are free.',
+        ],
+        [
+          '03 / TRY ON',
+          'Confirm placement. Generate one image.',
+          'Each try-on creates one image. Choose 1K / 2K / 4K for 1 / 2 / 3 credits. Review resolution and cost before generating.',
+        ],
+      ];
+  return (
+    <main>
+      <section className="mx-auto max-w-5xl px-5 pt-24 pb-20 text-center sm:pt-32">
+        <p className="text-primary mb-5 text-xs tracking-widest">
+          TATTOOVIS / PLACEMENT STUDIO
+        </p>
+        <h1 className="text-4xl font-semibold tracking-tight sm:text-6xl">
+          {zh
+            ? '先设计，再自由定位试戴'
+            : 'Design it. Place it. See it on you.'}
+        </h1>
+        <p className="text-muted-foreground mx-auto mt-6 max-w-2xl text-lg leading-8">
+          {zh
+            ? '上传或生成纹身设计，在自己的照片上自由移动、缩放、旋转，再生成一张 AI 试戴效果。喜欢的设计可以保存，下次直接复用。'
+            : 'Upload or create a tattoo design, move, resize and rotate it on your own photo, then generate a single AI try-on. Save designs you love and reuse them next time.'}
+        </p>
+        <div className="mt-8 flex flex-wrap justify-center gap-4">
+          <a href={studioUrl(undefined, locale)} className={linkClass}>
+            {zh ? '打开自由定位工作室' : 'Open the placement studio'}
+          </a>
+          <a
+            href="#tattoo-case"
+            className="rounded-full border px-7 py-3 text-sm"
+          >
+            {zh ? '浏览历史案例' : 'Explore saved examples'}
+          </a>
+        </div>
+        <p className="text-muted-foreground mt-5 text-xs leading-6">
+          {zh
+            ? '新账户验证邮箱后可使用一次性 3 积分欢迎礼。积分永不过期，已有账户余额保持不变。'
+            : 'New accounts receive 3 welcome credits once, usable after email verification. Credits never expire; existing account balances stay unchanged.'}
+        </p>
+      </section>
+      <section
+        id="features"
+        className="mx-auto grid max-w-6xl gap-6 px-5 pb-20 md:grid-cols-3"
+      >
+        {steps.map(([number, title, body]) => (
+          <article key={number} className="bg-card rounded-2xl border p-7">
+            <p className="text-primary mb-5 text-xs tracking-widest">
+              {number}
+            </p>
+            <h2 className="text-xl font-medium">{title}</h2>
+            <p className="text-muted-foreground mt-4 text-sm leading-7">
+              {body}
+            </p>
+          </article>
+        ))}
+      </section>
+      <div className="px-5 pb-20">
+        <PreviewWorkflowCase locale={locale} />
+      </div>
+      <TattooGuideLinks locale={locale} />
+      <section className="mx-auto max-w-3xl px-5 pb-20">
+        <h2 className="mb-8 text-2xl">
+          {zh ? '开始前需要了解' : 'Before you try it'}
+        </h2>
+        {(zh
+          ? [
+              [
+                '如何使用积分？',
+                '生成一张 1K 设计消耗 1 积分；单张 1K / 2K / 4K 试戴分别消耗 1 / 2 / 3 积分。上传、保存、复用与定位免费。生成前会显示费用。',
+              ],
+              [
+                '设计和历史保存在哪里？',
+                '设计库与试戴历史保存在你的账户中。登录后可查看、下载与复用已保存的设计，也可继续查看已有历史结果。',
+              ],
+              [
+                '一次会生成几张试戴图片？',
+                '新流程每次只生成一张试戴图片，位置由你自由调整。需要比较其他位置时，复用设计、调整位置，再提交一次试戴。',
+              ],
+              [
+                '生成失败会怎样？',
+                '生成失败后，本次操作消耗的积分会退还一次。购买退款请联系支持团队，部分退款人工处理。',
+              ],
+              [
+                'AI 图片能直接作为纹身稿吗？',
+                '结果是视觉参考。AI 可能改变皮肤、体型或背景；实际纹身前，请让专业纹身师确认线条、大小和位置。',
+              ],
+            ]
+          : [
+              [
+                'How do credits work?',
+                'One 1K design costs 1 credit. A single 1K / 2K / 4K try-on costs 1 / 2 / 3 credits. Uploading, saving, reusing and positioning are free. Review the cost before generating.',
+              ],
+              [
+                'Where are my designs and history saved?',
+                'Your design library and try-on history are saved to your account. Sign in to view, download and reuse saved designs, and revisit existing results.',
+              ],
+              [
+                'How many placements does one task create?',
+                'Each new try-on generates one image at your chosen position. Reuse the design, adjust its placement and submit another try-on to compare positions.',
+              ],
+              [
+                'What happens if generation fails?',
+                'The credits consumed for a failed operation are returned once. Contact support for purchase refund requests; partial refunds require manual handling.',
+              ],
+              [
+                'Can I use the image as a tattoo stencil?',
+                'Treat it as a visual reference. AI may change skin, body shape or background details. Ask a professional tattoo artist to review linework, size and placement.',
+              ],
+            ]
+        ).map(([question, answer]) => (
+          <details key={question} className="border-b py-5">
+            <summary className="cursor-pointer font-medium">{question}</summary>
+            <p className="text-muted-foreground mt-4 text-sm leading-7">
+              {answer}
+            </p>
+          </details>
+        ))}
+      </section>
+    </main>
+  );
+}
+
 export function PreviewPricing({ locale }: { locale: string }) {
   const zh = locale === 'zh';
   return (

@@ -32,7 +32,8 @@ function image(value, field, optional = false) {
 function record(input, store) {
   if (!input || typeof input !== 'object')
     throw new TypeError('A record is required.');
-  const value = store === 'pending' ? {} : { image: image(input.image, 'image') };
+  const value =
+    store === 'pending' ? {} : { image: image(input.image, 'image') };
   if (store === 'pending') value.id = identifier(input.id);
   if (input.id !== undefined) value.id = identifier(input.id);
   if (input.createdAt !== undefined) {
@@ -66,7 +67,10 @@ function record(input, store) {
  * Errors intentionally propagate: callers must offer retry or image download.
  * Metadata is plain text; consumers must render it with textContent, never HTML.
  */
-export function createStudioLibrary({ indexedDB = globalThis.indexedDB } = {}) {
+export function createStudioLibrary({
+  indexedDB = globalThis.indexedDB,
+  dbName = DB_NAME,
+} = {}) {
   let connection;
 
   function open() {
@@ -78,7 +82,7 @@ export function createStudioLibrary({ indexedDB = globalThis.indexedDB } = {}) {
       );
     if (!connection) {
       connection = new Promise((resolve, reject) => {
-        const request = indexedDB.open(DB_NAME, 2);
+        const request = indexedDB.open(dbName, 2);
         let rejected = false;
         request.onupgradeneeded = () => {
           const db = request.result;

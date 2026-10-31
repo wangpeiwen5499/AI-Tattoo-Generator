@@ -58,4 +58,5 @@ it('discovers useful guides in both languages and excludes private and experimen
   expect(new Set(urls).size).toBe(urls.length);
   expect(urls).toContain('https://tattoovis.ink/zh');
   expect(urls).not.toContain('https://tattoovis.ink/zh/');
+  expect(urls).not.toContain('https://tattoovis.ink/generate');
 });
