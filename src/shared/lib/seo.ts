@@ -1,7 +1,7 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { envConfigs } from '@/config';
-import { defaultLocale, locales } from '@/config/locale';
+import { defaultLocale } from '@/config/locale';
 
 // get metadata for page component
 export function getMetadata(
@@ -64,7 +64,7 @@ export function getMetadata(
     if (imageUrl.startsWith('http')) {
       imageUrl = imageUrl;
     } else {
-      imageUrl = `${envConfigs.app_url.replace(/\/$/, '')}${imageUrl}`;
+      imageUrl = `${envConfigs.app_url}${imageUrl}`;
     }
 
     // app name
@@ -88,30 +88,11 @@ export function getMetadata(
         defaultMetadata.keywords,
       alternates: {
         canonical: canonicalUrl,
-        ...(!options.noIndex && !options.canonicalUrl?.startsWith('http')
-          ? {
-              languages: Object.fromEntries(
-                await Promise.all([
-                  ...locales.map(async (lang) => [
-                    lang,
-                    await getCanonicalUrl(options.canonicalUrl || '/', lang),
-                  ]),
-                  (async () => [
-                    'x-default',
-                    await getCanonicalUrl(
-                      options.canonicalUrl || '/',
-                      defaultLocale
-                    ),
-                  ])(),
-                ])
-              ),
-            }
-          : {}),
       },
 
       openGraph: {
         type: 'website',
-        locale: locale === 'zh' ? 'zh_CN' : 'en_US',
+        locale: locale,
         url: canonicalUrl,
         title,
         description,
@@ -124,13 +105,11 @@ export function getMetadata(
         title,
         description,
         images: [imageUrl.toString()],
+        site: envConfigs.app_url,
       },
 
       robots: {
-        index:
-          options.noIndex || process.env.VERCEL_ENV === 'preview'
-            ? false
-            : true,
+        index: options.noIndex ? false : true,
         follow: options.noIndex ? false : true,
       },
     };
@@ -164,7 +143,7 @@ async function getCanonicalUrl(canonicalUrl: string, locale: string) {
       canonicalUrl = `/${canonicalUrl}`;
     }
 
-    canonicalUrl = `${envConfigs.app_url.replace(/\/$/, '')}${
+    canonicalUrl = `${envConfigs.app_url}${
       !locale || locale === defaultLocale ? '' : `/${locale}`
     }${canonicalUrl}`;
 

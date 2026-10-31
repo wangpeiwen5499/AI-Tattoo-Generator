@@ -57,10 +57,6 @@ async function main() {
   console.log(
     await applyTattooBackgroundUpgrade(db(), process.env.DB_SCHEMA || 'public')
   );
-  const { applyStudioUpgrade } = await import('./lib/studio-upgrade');
-  console.log(
-    await applyStudioUpgrade(db(), process.env.DB_SCHEMA || 'public')
-  );
   if (!process.env.CRON_SECRET)
     console.warn(
       'CRON_SECRET is not configured. Background task advancement still requires scheduler setup; active browser polling continues to advance jobs.'

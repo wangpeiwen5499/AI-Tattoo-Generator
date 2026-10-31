@@ -61,20 +61,16 @@ it('quotes 1/2/3 credits and lets a two-credit user lower 4K to 2K without forci
   expect(
     (
       screen.getByRole('radio', {
-        name: '1K, 1 credit per single try-on',
+        name: '1K, 1 credit per set',
       }) as HTMLInputElement
     ).checked
   ).toBe(true);
-  fireEvent.click(
-    screen.getByRole('radio', { name: '4K, 3 credits per single try-on' })
-  );
+  fireEvent.click(screen.getByRole('radio', { name: '4K, 3 credits per set' }));
   expect(screen.getByRole('button', { name: 'Buy credits' })).not.toBeNull();
   expect(screen.getByRole('status').textContent).toContain(
     'Choose a lower resolution'
   );
-  fireEvent.click(
-    screen.getByRole('radio', { name: '2K, 2 credits per single try-on' })
-  );
+  fireEvent.click(screen.getByRole('radio', { name: '2K, 2 credits per set' }));
   expect(screen.queryByRole('button', { name: 'Buy credits' })).toBeNull();
   fireEvent.click(
     screen.getByRole('button', { name: /Generate My Tattoo Preview/ })

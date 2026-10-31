@@ -9,23 +9,23 @@
       "items": [
         {
           "title": "功能",
-          "url": "/#features"
-        },
-        {
-          "title": "博客",
-          "url": "/blog"
+          "url": "/#features",
+          "icon": "Sparkles"
         },
         {
           "title": "定价",
-          "url": "/pricing"
+          "url": "/pricing",
+          "icon": "DollarSign"
         },
         {
-          "title": "工作室",
-          "url": "/try-on-lab/index.html"
+          "title": "生成",
+          "url": "/generate",
+          "icon": "Wand"
         },
         {
           "title": "历史",
-          "url": "/history"
+          "url": "/history",
+          "icon": "History"
         }
       ]
     },
@@ -55,7 +55,7 @@
     "id": "footer",
     "brand": {
       "title": "AI 纹身生成器",
-      "description": "上传或生成设计，在自己的照片上自由移动、缩放和旋转，再生成单张 AI 试戴。设计库与试戴历史保存在你的账户中。",
+      "description": "在纹身之前先看效果。上传照片、描述想法，AI 即可生成逼真的纹身预览。",
       "url": "/",
       "logo": {
         "src": "/favicon.ico",
@@ -80,8 +80,8 @@
               "target": "_self"
             },
             {
-              "title": "工作室",
-              "url": "/try-on-lab/index.html",
+              "title": "生成",
+              "url": "/generate",
               "target": "_self"
             }
           ]
@@ -89,11 +89,6 @@
         {
           "title": "资源",
           "children": [
-            {
-              "title": "博客",
-              "url": "/blog",
-              "target": "_self"
-            },
             {
               "title": "可接受使用政策",
               "url": "/acceptable-use",

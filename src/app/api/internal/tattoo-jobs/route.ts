@@ -1,6 +1,5 @@
 import { timingSafeEqual } from 'node:crypto';
 import { advanceDueTattooJobs } from '@/server/ai/tattoo-jobs';
-import { advanceDueStudioJobs } from '@/server/studio/runner';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -18,13 +17,9 @@ export async function GET(req: Request): Promise<Response> {
   ) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  if (process.env.VERCEL_ENV !== 'production') {
-    return Response.json({ error: 'Production runner only' }, { status: 503 });
-  }
   const advanced = await advanceDueTattooJobs();
-  const studioAdvanced = await advanceDueStudioJobs();
   return Response.json(
-    { advanced, studioAdvanced },
+    { advanced },
     { headers: { 'Cache-Control': 'no-store' } }
   );
 }

@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "title": "AI Tattoo Generator Pricing & Preview Credits | TattooVis",
-    "description": "Generate one 1K design for 1 credit. A single 1K / 2K / 4K try-on costs 1 / 2 / 3 credits. Uploading, saving, reusing and positioning are free. Credits never expire."
+    "title": "Pricing",
+    "description": "Buy flexible tattoo preview credits. Generate complete sets at 1K, 2K or 4K; credits never expire."
   },
   "messages": {
     "current_plan": "Current Plan",
@@ -13,7 +13,7 @@
       "pricing": {
         "id": "pricing",
         "title": "Choose Your Credits",
-        "description": "Generate one 1K design for 1 credit. A single 1K / 2K / 4K try-on costs 1 / 2 / 3 credits. Uploading, saving, reusing and positioning are free.",
+        "description": "Choose your resolution for each complete set: 1K costs 1 credit, 2K costs 2, and 4K costs 3. Credits never expire.",
         "groups": [
           {
             "name": "one-time",
@@ -30,22 +30,20 @@
             "currency": "USD",
             "amount": 4.99,
             "credits": 5,
-            "description": "5 credits for separate design generation and single-image try-ons. Image counts depend on operations and resolution.",
+            "description": "5 flexible credits for tattoo designs and previews at your chosen resolution.",
             "features_title": "Includes",
             "features": [
-              "5 credits",
-              "1K design: 1 credit",
-              "Single 1K / 2K / 4K try-on: 1 / 2 / 3 credits",
-              "Upload, save, reuse and position free",
+              "5 credits — mix 1K, 2K and 4K sets",
+              "1K: 1 credit · 2K: 2 credits · 4K: 3 credits per set",
+              "One tattoo design + four body previews per set",
+              "Left arm, right arm, shoulder and calf",
               "Credits never expire",
               "One-time purchase — no subscription"
             ],
             "button": {
               "title": "Get Starter"
             },
-            "payment_providers": [
-              "waffo"
-            ],
+            "payment_providers": ["waffo"],
             "payment_product_id": "PROD_5GdIMzJzJlUpdrBCyuaX2x"
           },
           {
@@ -57,23 +55,21 @@
             "currency": "USD",
             "amount": 14.99,
             "credits": 20,
-            "description": "20 credits for separate design generation and single-image try-ons. Image counts depend on operations and resolution.",
+            "description": "20 flexible credits for tattoo designs and previews at your chosen resolution.",
             "label": "Most Popular",
             "features_title": "Includes",
             "features": [
-              "20 credits",
-              "1K design: 1 credit",
-              "Single 1K / 2K / 4K try-on: 1 / 2 / 3 credits",
-              "Upload, save, reuse and position free",
+              "20 credits — mix 1K, 2K and 4K sets",
+              "1K: 1 credit · 2K: 2 credits · 4K: 3 credits per set",
+              "One tattoo design + four body previews per set",
+              "Left arm, right arm, shoulder and calf",
               "Credits never expire",
               "One-time purchase — no subscription"
             ],
             "button": {
               "title": "Get Most Popular"
             },
-            "payment_providers": [
-              "waffo"
-            ],
+            "payment_providers": ["waffo"],
             "payment_product_id": "PROD_10hOkpFlMDiWFiqLxcWXHi"
           },
           {
@@ -85,22 +81,21 @@
             "currency": "USD",
             "amount": 29.99,
             "credits": 50,
-            "description": "50 credits for separate design generation and single-image try-ons. Image counts depend on operations and resolution.",
+            "description": "50 flexible credits for tattoo designs and previews at your chosen resolution.",
             "features_title": "Includes",
             "features": [
-              "50 credits",
-              "1K design: 1 credit",
-              "Single 1K / 2K / 4K try-on: 1 / 2 / 3 credits",
-              "Upload, save, reuse and position free",
+              "50 credits — mix 1K, 2K and 4K sets",
+              "1K: 1 credit · 2K: 2 credits · 4K: 3 credits per set",
+              "One tattoo design + four body previews per set",
+              "Left arm, right arm, shoulder and calf",
               "Credits never expire",
-              "One-time purchase — no subscription"
+              "One-time purchase — no subscription",
+              "Lowest cost per credit"
             ],
             "button": {
               "title": "Get Pro"
             },
-            "payment_providers": [
-              "waffo"
-            ],
+            "payment_providers": ["waffo"],
             "payment_product_id": "PROD_1COeqPCRSNk89LbIyHYnC"
           }
         ]
@@ -115,7 +110,7 @@
           },
           {
             "question": "What is a credit?",
-            "answer": "Generate one 1K design for 1 credit. A single 1K / 2K / 4K try-on costs 1 / 2 / 3 credits. Uploading, saving, reusing and positioning are free. Packs do not promise a fixed image count."
+            "answer": "Credits pay for complete preview sets: 1K costs 1 credit, 2K costs 2 credits, and 4K costs 3 credits. Each set includes one tattoo design and four body placements. You can mix resolutions using the same balance."
           },
           {
             "question": "Do credits expire?",
@@ -127,7 +122,7 @@
           },
           {
             "question": "Can I get a refund?",
-            "answer": "If generation fails, the credits consumed for that operation are returned once. Support reviews purchase refund eligibility under the applicable terms. After a completed full refund, only that order’s remaining unused credits are recovered; spent credits, gifts and other orders’ balances are not deducted. Partial refunds require manual handling. Contact support@tattoovis.ink."
+            "answer": "If any of the 4 body previews fails, your generation credit is returned once processing finishes. Available previews remain viewable. For payment issues, contact support@tattoovis.ink."
           }
         ]
       }

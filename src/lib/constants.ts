@@ -53,7 +53,7 @@ export const CREDIT_PACKAGES: CreditPackage[] = [
     name: 'Starter',
     credits: 5,
     priceUsdCents: 499,
-    description: '5 credits · Designs and single-image try-ons',
+    description: '5 credits · 1K/2K/4K cost 1/2/3 credits per set',
     waffoProductId: 'WAFFO_PRODUCT_STARTER',
   },
   {
@@ -61,7 +61,7 @@ export const CREDIT_PACKAGES: CreditPackage[] = [
     name: 'Most Popular',
     credits: 20,
     priceUsdCents: 1499,
-    description: '20 credits · Designs and single-image try-ons',
+    description: '20 credits · Mix 1K, 2K and 4K preview sets',
     waffoProductId: 'WAFFO_PRODUCT_POPULAR',
     highlighted: true,
   },
@@ -70,7 +70,7 @@ export const CREDIT_PACKAGES: CreditPackage[] = [
     name: 'Pro',
     credits: 50,
     priceUsdCents: 2999,
-    description: '50 credits · Designs and single-image try-ons',
+    description: '50 credits · Mix 1K, 2K and 4K preview sets',
     waffoProductId: 'WAFFO_PRODUCT_PRO',
   },
 ];

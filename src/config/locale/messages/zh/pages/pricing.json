@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "title": "AI 纹身生成器价格与积分 | TattooVis",
-    "description": "生成一张 1K 设计消耗 1 积分；单张 1K / 2K / 4K 试戴分别消耗 1 / 2 / 3 积分。上传、保存、复用与定位免费。积分永不过期。"
+    "title": "价格方案",
+    "description": "购买灵活的纹身预览积分，可选择 1K、2K 或 4K 分辨率，积分永不过期。"
   },
   "messages": {
     "current_plan": "当前方案",
@@ -13,7 +13,7 @@
       "pricing": {
         "id": "pricing",
         "title": "选择积分方案",
-        "description": "生成一张 1K 设计消耗 1 积分；单张 1K / 2K / 4K 试戴分别消耗 1 / 2 / 3 积分。上传、保存、复用与定位免费。",
+        "description": "每组包含 1 张设计图和 4 张身体效果图：1K 扣 1 个积分，2K 扣 2 个，4K 扣 3 个。积分永不过期。",
         "groups": [
           {
             "name": "one-time",
@@ -30,22 +30,20 @@
             "currency": "USD",
             "amount": 4.99,
             "credits": 5,
-            "description": "5 积分，用于独立设计生成与单张试戴。图片数量取决于操作与分辨率。",
+            "description": "5 个灵活积分，可按所选分辨率生成纹身设计和身体效果图。",
             "features_title": "包含",
             "features": [
-              "5 积分",
-              "1K 设计：1 积分",
-              "单张 1K / 2K / 4K 试戴：1 / 2 / 3 积分",
-              "上传、保存、复用与定位免费",
+              "5 个积分，可混合选择 1K、2K 和 4K",
+              "每组扣费：1K 1 分 · 2K 2 分 · 4K 3 分",
+              "每组含 1 张设计图和 4 张身体效果图",
+              "覆盖左臂、右臂、肩膀和小腿",
               "积分永不过期",
               "一次性购买，无订阅费用"
             ],
             "button": {
               "title": "购买入门版"
             },
-            "payment_providers": [
-              "waffo"
-            ],
+            "payment_providers": ["waffo"],
             "payment_product_id": "PROD_5GdIMzJzJlUpdrBCyuaX2x"
           },
           {
@@ -57,23 +55,21 @@
             "currency": "USD",
             "amount": 14.99,
             "credits": 20,
-            "description": "20 积分，用于独立设计生成与单张试戴。图片数量取决于操作与分辨率。",
+            "description": "20 个灵活积分，可按所选分辨率生成纹身设计和身体效果图。",
             "label": "最受欢迎",
             "features_title": "包含",
             "features": [
-              "20 积分",
-              "1K 设计：1 积分",
-              "单张 1K / 2K / 4K 试戴：1 / 2 / 3 积分",
-              "上传、保存、复用与定位免费",
+              "20 个积分，可混合选择 1K、2K 和 4K",
+              "每组扣费：1K 1 分 · 2K 2 分 · 4K 3 分",
+              "每组含 1 张设计图和 4 张身体效果图",
+              "覆盖左臂、右臂、肩膀和小腿",
               "积分永不过期",
               "一次性购买，无订阅费用"
             ],
             "button": {
               "title": "购买热门版"
             },
-            "payment_providers": [
-              "waffo"
-            ],
+            "payment_providers": ["waffo"],
             "payment_product_id": "PROD_10hOkpFlMDiWFiqLxcWXHi"
           },
           {
@@ -85,22 +81,21 @@
             "currency": "USD",
             "amount": 29.99,
             "credits": 50,
-            "description": "50 积分，用于独立设计生成与单张试戴。图片数量取决于操作与分辨率。",
+            "description": "50 个灵活积分，可按所选分辨率生成纹身设计和身体效果图。",
             "features_title": "包含",
             "features": [
-              "50 积分",
-              "1K 设计：1 积分",
-              "单张 1K / 2K / 4K 试戴：1 / 2 / 3 积分",
-              "上传、保存、复用与定位免费",
+              "50 个积分，可混合选择 1K、2K 和 4K",
+              "每组扣费：1K 1 分 · 2K 2 分 · 4K 3 分",
+              "每组含 1 张设计图和 4 张身体效果图",
+              "覆盖左臂、右臂、肩膀和小腿",
               "积分永不过期",
-              "一次性购买，无订阅费用"
+              "一次性购买，无订阅费用",
+              "单积分价格最低"
             ],
             "button": {
               "title": "购买专业版"
             },
-            "payment_providers": [
-              "waffo"
-            ],
+            "payment_providers": ["waffo"],
             "payment_product_id": "PROD_1COeqPCRSNk89LbIyHYnC"
           }
         ]
@@ -115,7 +110,7 @@
           },
           {
             "question": "什么是积分？",
-            "answer": "生成一张 1K 设计消耗 1 积分；单张 1K / 2K / 4K 试戴分别消耗 1 / 2 / 3 积分。上传、保存、复用与定位免费。积分包不承诺固定图片数量。"
+            "answer": "积分用于生成完整预览：1K 每组扣 1 个积分，2K 扣 2 个，4K 扣 3 个。每组包含 1 张纹身设计图和 4 张身体效果图，同一余额可以混合使用不同分辨率。"
           },
           {
             "question": "积分会过期吗？",
@@ -127,7 +122,7 @@
           },
           {
             "question": "可以退款吗？",
-            "answer": "生成失败后，本次操作消耗的积分会退还一次。购买退款资格由支持团队按适用条款审核；全额退款完成后，仅收回该订单剩余未用积分，不追扣已用积分、赠送积分或其他订单余额。部分退款人工处理。联系 support@tattoovis.ink。"
+            "answer": "若 4 个部位中任一个生成失败，处理结束后会退还本次消耗的积分，成功的图片仍可查看。支付问题请联系 support@tattoovis.ink。"
           }
         ]
       }

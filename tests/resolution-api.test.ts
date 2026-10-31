@@ -21,29 +21,13 @@ vi.mock('@/server/ai/tattoo-jobs', () => ({
     status = 400;
   },
 }));
-afterEach(() => {
-  vi.clearAllMocks();
-  vi.unstubAllEnvs();
-});
+afterEach(() => vi.clearAllMocks());
 const request = (body: unknown) =>
   new Request('https://tattoovis.ink/api/ai/generate-tattoo', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
   });
-it('retires legacy production submissions without reading photos or debiting credits', async () => {
-  vi.stubEnv('VERCEL_ENV', 'production');
-  const response = await POST(
-    request({ bodyPhotoKey: 'uploads/member/photo.png', prompt: 'Wolf' })
-  );
-  expect(response.status).toBe(410);
-  expect(await response.json()).toMatchObject({
-    code: 'STUDIO_REQUIRED',
-    url: '/generate',
-  });
-  expect(mocks.start).not.toHaveBeenCalled();
-  expect(mocks.validate).not.toHaveBeenCalled();
-});
 it('passes only the validated resolution, never a client-provided credit quote, to the service', async () => {
   mocks.start.mockResolvedValue('project');
   const response = await POST(

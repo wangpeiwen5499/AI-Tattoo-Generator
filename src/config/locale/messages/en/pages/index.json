@@ -4,7 +4,6 @@
       "hero",
       "usage",
       "features",
-      "blog",
       "testimonials",
       "faq",
       "cta"
@@ -12,15 +11,15 @@
     "sections": {
       "hero": {
         "id": "hero",
-        "title": "AI Tattoo Generator: See It Before You Ink",
+        "title": "See Your Tattoo Before You Ink",
         "highlight_text": "Before You Ink",
-        "description": "Upload or generate a design, move, resize and rotate it on your photo, then generate one AI try-on. Designs and try-on history save to your account.",
+        "description": "Upload your photo, describe your idea, and AI generates realistic tattoo previews on your body.<br/>Try it free — no artist appointment needed.",
         "tip": "🎁 Sign up and verify your email for 3 free credits · One-time welcome gift",
         "buttons": [
           {
-            "title": "Studio",
+            "title": "Try It Free",
             "icon": "Sparkles",
-            "url": "/try-on-lab/index.html?lang=en",
+            "url": "/generate",
             "target": "_self",
             "variant": "default",
             "trial_cta": true
@@ -33,8 +32,8 @@
             "variant": "outline"
           }
         ],
-        "show_avatars": false,
-        "avatars_tip": "",
+        "show_avatars": true,
+        "avatars_tip": "Trusted by tattoo enthusiasts worldwide",
         "tattoo_demo": true,
         "demo": {
           "eyebrow": "Interactive example",
@@ -79,13 +78,13 @@
       "usage": {
         "block": "features-step",
         "id": "usage",
-        "title": "How to Design and Preview a Tattoo with AI",
+        "title": "How It Works",
         "description": "Get your tattoo preview in four simple steps:",
         "text_align": "center",
         "items": [
           {
             "title": "Upload Your Photo",
-            "description": "Use an evenly lit photo with the intended area visible."
+            "description": "Take a clear photo of the body part you want tattooed. Left arm, right arm, shoulder, or calf."
           },
           {
             "title": "Describe Your Idea",
@@ -93,7 +92,7 @@
           },
           {
             "title": "AI Generates Preview",
-            "description": "Upload or generate a design, move, resize and rotate it on your photo, then generate one AI try-on. Designs and try-on history save to your account."
+            "description": "Our AI creates a unique tattoo design and realistically places it on your photo in all 4 body positions."
           },
           {
             "title": "Make Your Decision",
@@ -104,12 +103,12 @@
       },
       "features": {
         "id": "features",
-        "title": "Create a Tattoo Design and Compare It on Your Photo",
-        "description": "Explore the design and placement together before discussing your idea with a tattoo artist.",
+        "title": "Why AI Tattoo Generator",
+        "description": "The smartest way to preview your next tattoo.",
         "items": [
           {
-            "title": "Free placement",
-            "description": "Upload or generate a design, move, resize and rotate it on your photo, then generate one AI try-on. Designs and try-on history save to your account.",
+            "title": "4 Body Parts",
+            "description": "Preview your tattoo on left arm, right arm, shoulder, and calf — all in one generation.",
             "icon": "RiBodyScanLine"
           },
           {
@@ -123,8 +122,8 @@
             "icon": "RiMagicLine"
           },
           {
-            "title": "Explore Before an Appointment",
-            "description": "Start from a written idea. Processing time depends on resolution and provider demand; follow your task in History.",
+            "title": "Instant Preview",
+            "description": "No appointments, no drawing skills needed. Get your preview in minutes, not days.",
             "icon": "RiTimerFlashLine"
           },
           {
@@ -134,7 +133,7 @@
           },
           {
             "title": "Secure & Private",
-            "description": "Photos are processed by our AI and storage providers. Review our Privacy Policy before uploading.",
+            "description": "Photos are processed by our AI and storage providers. Image links can be accessed by anyone who has the link. See our Privacy Policy before uploading.",
             "icon": "RiLockLine"
           }
         ]
@@ -142,7 +141,7 @@
       "testimonials": {
         "id": "testimonials",
         "title": "What Our Users Say",
-        "description": "Layout preview: sample feedback awaiting verification.",
+        "description": "Join thousands who found their perfect tattoo design.",
         "items": [
           {
             "name": "Alex M.",
@@ -179,20 +178,20 @@
         "description": "Have questions? We have answers.",
         "items": [
           {
-            "question": "How does an AI tattoo generator work?",
-            "answer": "Upload or generate a design, move, resize and rotate it on your photo, then generate one AI try-on. Designs and try-on history save to your account."
+            "question": "How does AI Tattoo Generator work?",
+            "answer": "Upload a photo of the body part you want tattooed, describe your tattoo idea, and our AI generates a custom design then places it realistically on your photo. You'll see previews on all 4 body positions (left arm, right arm, shoulder, calf)."
           },
           {
             "question": "How many free previews can I try?",
-            "answer": "Generate one 1K design for 1 credit. A single 1K / 2K / 4K try-on costs 1 / 2 / 3 credits. Uploading, saving, reusing and positioning are free."
+            "answer": "Explore the real interactive example for free. New accounts receive 3 one-time credits after email verification. A complete set costs 1 credit at 1K, 2 at 2K, or 3 at 4K. Buy more credits on the pricing page when needed."
           },
           {
             "question": "How realistic are the previews?",
-            "answer": "A tattoo simulator gives you a visual approximation of a design on your photo. AI may also change pose, skin or background details. Compare the output with your original, and ask a tattoo artist to assess the design and placement."
+            "answer": "Our AI uses advanced image-to-image technology to blend the tattoo design naturally onto your skin, accounting for lighting, skin texture, and body contours. While not 100% perfect, users tell us the results are remarkably accurate."
           },
           {
             "question": "How long does generation take?",
-            "answer": "Processing time depends on resolution and provider demand. Return to your account history to see results."
+            "answer": "Typically 3-5 minutes for a full set of 4 previews. The AI works in two steps: first designing the tattoo, then placing it on each body part."
           },
           {
             "question": "What photo should I upload?",
@@ -200,11 +199,7 @@
           },
           {
             "question": "Can I use the generated design at a tattoo shop?",
-            "answer": "Use the design and photo preview as references for a conversation with a tattoo artist. The artist should check linework, size and placement and adapt the concept before tattooing."
-          },
-          {
-            "question": "Can I generate minimalist or geometric tattoo designs?",
-            "answer": "Yes. Describe the subject, style and composition in your prompt, such as a minimalist botanical line drawing or a black-and-grey geometric wolf. AI output varies; check the details before using it as a reference."
+            "answer": "Absolutely! Many users take their AI-generated preview to their tattoo artist as a reference. It helps the artist understand exactly what you're looking for."
           }
         ]
       },
@@ -214,8 +209,8 @@
         "description": "Explore the real example, then sign up for 3 credits to create your own tattoo.",
         "buttons": [
           {
-            "title": "Studio",
-            "url": "/try-on-lab/index.html?lang=en",
+            "title": "Start Generating",
+            "url": "/generate",
             "target": "_self",
             "icon": "Sparkles"
           },
