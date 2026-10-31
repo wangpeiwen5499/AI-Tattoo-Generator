@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>TattooVis · 定点试戴预览</title>
+    <link rel="stylesheet" href="./studio.css" />
+  </head>
+  <body>
+    <header>
+      <a class="brand" href="./index.html"
+        ><img src="/favicon.ico" alt="" />TattooVis <span>试戴工作室</span></a
+      ><span class="preview-tag">Preview 验证版 · 不使用网站积分</span>
+    </header>
+    <main>
+      <div class="intro">
+        <div>
+          <h1>就纹在这里。</h1>
+          <p>上传你想纹身的部位，选好位置，再看真实效果。</p>
+        </div>
+        <button id="reset" class="quiet">重新开始</button>
+      </div>
+      <div class="workspace">
+        <section class="photo-workspace" aria-label="照片工作区">
+          <div class="surface-bar">
+            <div class="tabs" role="group" aria-label="显示模式">
+              <button data-view="draft" aria-pressed="true">摆放预览</button
+              ><button data-view="original" aria-pressed="false">原图</button
+              ><button data-view="raw" hidden aria-pressed="false">
+                AI 原始结果</button
+              ><button data-view="composite" hidden aria-pressed="false">
+                选区内合成
+              </button>
+            </div>
+            <span id="view-caption">本地叠图，尚未进行 AI 渲染</span>
+          </div>
+          <div class="canvas-shell" id="canvas-shell">
+            <canvas
+              id="stage"
+              aria-label="在照片上按住并拖动，圈出希望纹身的区域"
+              tabindex="0"
+            ></canvas>
+            <div class="empty" id="empty">
+              <div class="upload-symbol">＋</div>
+              <h2>你的照片，就是试戴画布</h2>
+              <p>
+                手臂、肩背、小腿或其他清晰可见的部位。<br />正面、侧面、局部照片都可以。
+              </p>
+              <label class="button primary" for="photo">上传部位照片</label
+              ><button id="sample-photo" class="quiet">先用示例体验</button>
+            </div>
+          </div>
+          <div class="canvas-footer">
+            <p id="photo-hint">照片在点击真实生成前只留在本机浏览器中。</p>
+            <button id="download" class="quiet" hidden>下载当前图</button>
+          </div>
+          <div id="result-info" class="result-info" hidden></div>
+        </section>
+        <aside class="controls">
+          <section>
+            <div class="section-heading">
+              <h2>照片与位置</h2>
+              <label for="photo" class="text-button">更换照片</label>
+            </div>
+            <input
+              type="file"
+              id="photo"
+              accept="image/jpeg,image/png,image/webp"
+              hidden
+            />
+            <p class="hint">
+              在照片上拖出一个椭圆，告诉我们纹在哪里。也可以用下面的滑块调整。
+            </p>
+            <button id="select-region" class="button secondary" disabled>
+              圈选纹身区域
+            </button>
+            <div id="region-summary" class="small">还没有选择位置</div>
+            <div class="range-grid">
+              <label
+                >区域横向位置<input
+                  id="region-x"
+                  type="range"
+                  min="0"
+                  max="100"
+                  value="50"
+                  disabled /></label
+              ><label
+                >区域纵向位置<input
+                  id="region-y"
+                  type="range"
+                  min="0"
+                  max="100"
+                  value="50"
+                  disabled /></label
+              ><label
+                >区域宽度<input
+                  id="region-width"
+                  type="range"
+                  min="5"
+                  max="90"
+                  value="30"
+                  disabled /></label
+              ><label
+                >区域高度<input
+                  id="region-height"
+                  type="range"
+                  min="5"
+                  max="90"
+                  value="35"
+                  disabled
+              /></label>
+            </div>
+          </section>
+          <section>
+            <div class="section-heading">
+              <h2>纹身设计</h2>
+              <label for="design" class="text-button">上传已有图案</label>
+            </div>
+            <input
+              type="file"
+              id="design"
+              accept="image/jpeg,image/png,image/webp"
+              hidden
+            />
+            <div id="design-preview">
+              <img id="design-thumb" alt="当前纹身图案" hidden />
+              <div>
+                <strong id="design-name">还没有选择图案</strong>
+                <p class="small">已有图案可以反复试戴，不必重新生成。</p>
+                <button id="sample-design" class="text-button">
+                  使用几何狼头示例
+                </button>
+              </div>
+            </div>
+            <label class="field-label" for="prompt">或描述一个新图案</label
+            ><textarea
+              id="prompt"
+              rows="3"
+              maxlength="500"
+              placeholder="例如：黑灰几何狼头，细线和点刺，纵向构图"
+            ></textarea
+            ><button id="generate-design" class="button secondary" disabled>
+              生成设计（调用 KIE）
+            </button>
+          </section>
+          <section>
+            <div class="section-heading">
+              <h2>摆放预览</h2>
+              <span class="free">免费调整</span>
+            </div>
+            <p class="hint">
+              拖动图案改变位置，或使用滑块微调。白底会在预览中去除。
+            </p>
+            <div class="range-grid">
+              <label
+                >图案大小 <output id="scale-value">100%</output
+                ><input
+                  id="scale"
+                  type="range"
+                  min="20"
+                  max="180"
+                  value="100"
+                  disabled /></label
+              ><label
+                >旋转角度 <output id="rotation-value">0°</output
+                ><input
+                  id="rotation"
+                  type="range"
+                  min="-180"
+                  max="180"
+                  value="0"
+                  disabled /></label
+              ><label
+                >图案横向位置<input
+                  id="placement-x"
+                  type="range"
+                  min="0"
+                  max="100"
+                  value="50"
+                  disabled /></label
+              ><label
+                >图案纵向位置<input
+                  id="placement-y"
+                  type="range"
+                  min="0"
+                  max="100"
+                  value="50"
+                  disabled /></label
+              ><label
+                >墨色深浅 <output id="opacity-value">85%</output
+                ><input
+                  id="opacity"
+                  type="range"
+                  min="20"
+                  max="100"
+                  value="85"
+                  disabled
+              /></label>
+            </div>
+            <button id="fit-design" class="quiet" disabled>
+              让图案重新居中
+            </button>
+          </section>
+          <section class="render-section">
+            <h2>生成一张真实效果</h2>
+            <p class="hint">
+              这一轮先验证
+              1K、位置和原图保持情况。每次只生成一张，不补画其他部位。
+            </p>
+            <div class="test-config">
+              <label for="access-token">预览测试访问口令</label
+              ><input
+                type="password"
+                id="access-token"
+                autocomplete="off"
+                placeholder="仅测试口令，不是 KIE API Key"
+              />
+              <p id="configuration" class="small">正在检查预览环境配置…</p>
+            </div>
+            <label class="consent"
+              ><input id="consent" type="checkbox" /><span
+                >我同意将测试图片传给 KIE。AI 生成会消耗 KIE
+                测试额度，不扣网站积分。</span
+              ></label
+            ><button id="render" class="button primary" disabled>
+              生成真实试戴效果
+            </button>
+            <p id="status" role="status" aria-live="polite"></p>
+            <button id="resume-task" class="text-button" hidden>
+              继续查看上次测试任务
+            </button>
+          </section>
+        </aside>
+      </div>
+      <footer>
+        这是交互与出图验证页。摆放预览属于普通叠图；AI
+        原始结果和选区内合成结果会分别展示。上传到 KIE
+        的测试文件是临时文件，请及时保存结果。
+      </footer>
+    </main>
+    <script type="module" src="./studio.mjs"></script>
+  </body>
+</html>
