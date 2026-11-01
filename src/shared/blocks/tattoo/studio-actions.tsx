@@ -7,6 +7,7 @@ import {
   studioClient,
   type StudioRecord,
 } from '@/lib/studio-client';
+import { toast } from 'sonner';
 
 import { Link } from '@/core/i18n/navigation';
 
@@ -17,23 +18,46 @@ const button =
 export function StudioAccount({
   studio,
   locale,
+  onSignIn,
 }: {
   studio: ReturnType<typeof useStudio>;
   locale: string;
+  onSignIn?: () => void;
 }) {
   const zh = locale === 'zh';
   const caps = studio.capabilities;
   const notice = useRef<HTMLDivElement>(null);
+  const signIn = useRef(onSignIn);
   useEffect(() => {
-    if (studio.gate || studio.error)
+    signIn.current = onSignIn;
+  }, [onSignIn]);
+  useEffect(() => {
+    if (studio.gate === 401)
+      toast.info(
+        zh
+          ? '请登录后继续，当前设置会保留。'
+          : 'Sign in to continue. Your setup will be kept.',
+        {
+          id: 'studio-sign-in',
+          action: {
+            label: zh ? '登录' : 'Sign in',
+            onClick: () => signIn.current?.(),
+          },
+        }
+      );
+  }, [studio.gate, zh]);
+  useEffect(() => {
+    if (
+      (studio.gate && studio.gate !== 401) ||
+      (studio.error && studio.gate !== 401)
+    )
       notice.current?.scrollIntoView?.({ block: 'center' });
   }, [studio.gate, studio.error]);
   if (
-    !caps?.signedIn &&
-    !studio.error &&
+    (!studio.error || studio.gate === 401) &&
     !studio.busy &&
     !studio.pending &&
-    !studio.gate &&
+    (!studio.gate || studio.gate === 401) &&
     (!caps || caps.configured)
   )
     return null;
@@ -42,16 +66,6 @@ export function StudioAccount({
       ref={notice}
       className="mb-6 flex flex-wrap items-center justify-between gap-4 border-y py-5 text-base"
     >
-      {caps?.signedIn && (
-        <>
-          <p>{caps.credits} credits</p>
-          <div className="text-primary flex flex-wrap gap-5">
-            <Link href="/designs">{zh ? '我的图案' : 'My designs'}</Link>
-            <Link href="/history">{zh ? '试戴历史' : 'History'}</Link>
-            <Link href="/pricing">{zh ? '购买积分' : 'Get credits'}</Link>
-          </div>
-        </>
-      )}
       {!caps?.configured && caps && (
         <p className="text-muted-foreground w-full">
           {zh
@@ -71,7 +85,7 @@ export function StudioAccount({
           </button>
         </div>
       )}
-      {(studio.error || studio.busy) && (
+      {((studio.error && studio.gate !== 401) || studio.busy) && (
         <p role="status" className="text-primary w-full">
           {studio.busy
             ? zh
@@ -80,7 +94,7 @@ export function StudioAccount({
             : studio.error}
         </p>
       )}
-      {studio.gate && (
+      {studio.gate && studio.gate !== 401 && (
         <div className="border-primary/30 w-full rounded-xl border p-4">
           <p>
             {studio.gate === 401
@@ -217,8 +231,8 @@ export function StudioDesigns({
         className={`${button} border-primary text-primary mt-3 w-full ${current && prompt.trim() ? 'studio-current-action' : ''}`}
         disabled={busy || !prompt.trim() || !!studio.pending}
         onClick={() => {
-          onGenerate?.();
-          studio.generate(prompt);
+          if (onGenerate) onGenerate();
+          else studio.generate(prompt);
         }}
       >
         {zh ? '生成纹身图案 · 1 credit' : 'Generate design · 1 credit'}

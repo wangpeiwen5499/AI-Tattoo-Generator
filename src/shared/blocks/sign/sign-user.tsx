@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Fragment } from 'react/jsx-runtime';
 import { Coins, LayoutDashboard, Loader2, LogOut, User } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 
 import { signOut, useSession } from '@/core/auth/client';
 import { Link, useRouter } from '@/core/i18n/navigation';
@@ -38,6 +38,7 @@ export function SignUser({
   userNav?: UserNav;
 }) {
   const t = useTranslations('common.sign');
+  const zh = useLocale() === 'zh';
   const router = useRouter();
 
   const [mounted, setMounted] = useState(false);
@@ -55,8 +56,14 @@ export function SignUser({
     user,
     setUser,
     fetchUserInfo,
+    fetchUserCredits,
     showOneTap,
   } = useAppContext();
+  useEffect(() => {
+    const refresh = () => void fetchUserCredits();
+    window.addEventListener('studio-credits-changed', refresh);
+    return () => window.removeEventListener('studio-credits-changed', refresh);
+  }, [fetchUserCredits]);
 
   // get session
   const { data: session, isPending } = useSession();
@@ -109,103 +116,122 @@ export function SignUser({
           <Loader2 className="size-4 animate-spin" />
         </div>
       ) : user ? (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              className="relative h-10 w-10 rounded-full p-0"
-            >
-              <Avatar>
-                <AvatarImage src={user.image || ''} alt={user.name || ''} />
-                <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-              </Avatar>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            {userNav?.show_name && (
-              <>
-                <DropdownMenuItem asChild>
-                  <Link
-                    className="w-full cursor-pointer"
-                    href="/settings/profile"
-                  >
-                    <User />
-                    {user.name}
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-              </>
-            )}
-
-            {userNav?.show_credits && (
-              <>
-                <DropdownMenuItem asChild>
-                  <Link
-                    className="w-full cursor-pointer"
-                    href="/settings/credits"
-                  >
-                    <Coins />
-                    {t('credits_title', {
-                      credits: user.credits?.remainingCredits || 0,
-                    })}
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-              </>
-            )}
-
-            {userNav?.items?.map((item: NavItem, idx: number) => (
-              <Fragment key={idx}>
-                <DropdownMenuItem asChild>
-                  <Link
-                    className="w-full cursor-pointer"
-                    href={item.url || ''}
-                    target={item.target || '_self'}
-                  >
-                    {item.icon && (
-                      <SmartIcon
-                        name={item.icon as string}
-                        className="h-4 w-4"
-                      />
-                    )}
-                    {item.title}
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-              </Fragment>
-            ))}
-
-            {user.isAdmin && (
-              <>
-                <DropdownMenuItem asChild>
-                  <Link className="w-full cursor-pointer" href="/admin">
-                    <LayoutDashboard />
-                    {t('admin_title')}
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-              </>
-            )}
-
-            {userNav?.show_sign_out && (
-              <DropdownMenuItem
-                className="w-full cursor-pointer"
-                onClick={() =>
-                  signOut({
-                    fetchOptions: {
-                      onSuccess: () => {
-                        router.push('/');
-                      },
-                    },
-                  })
-                }
+        <div className="flex items-center gap-3">
+          <Link
+            href="/pricing"
+            className="rounded-full border px-3 py-2 text-sm whitespace-nowrap"
+            aria-label={zh ? '积分余额与购买' : 'Credit balance and packs'}
+          >
+            {user.credits?.remainingCredits ?? '…'} credits
+          </Link>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                className="relative h-10 w-10 rounded-full p-0"
               >
-                <LogOut />
-                <span>{t('sign_out_title')}</span>
+                <Avatar>
+                  <AvatarImage src={user.image || ''} alt={user.name || ''} />
+                  <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem asChild>
+                <Link href="/designs">{zh ? '我的图案' : 'My designs'}</Link>
               </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+              <DropdownMenuItem asChild>
+                <Link href="/history">{zh ? '试戴历史' : 'History'}</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/pricing">{zh ? '购买积分' : 'Get credits'}</Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {userNav?.show_name && (
+                <>
+                  <DropdownMenuItem asChild>
+                    <Link
+                      className="w-full cursor-pointer"
+                      href="/settings/profile"
+                    >
+                      <User />
+                      {user.name}
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
+
+              {userNav?.show_credits && (
+                <>
+                  <DropdownMenuItem asChild>
+                    <Link
+                      className="w-full cursor-pointer"
+                      href="/settings/credits"
+                    >
+                      <Coins />
+                      {t('credits_title', {
+                        credits: user.credits?.remainingCredits || 0,
+                      })}
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
+
+              {userNav?.items?.map((item: NavItem, idx: number) => (
+                <Fragment key={idx}>
+                  <DropdownMenuItem asChild>
+                    <Link
+                      className="w-full cursor-pointer"
+                      href={item.url || ''}
+                      target={item.target || '_self'}
+                    >
+                      {item.icon && (
+                        <SmartIcon
+                          name={item.icon as string}
+                          className="h-4 w-4"
+                        />
+                      )}
+                      {item.title}
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </Fragment>
+              ))}
+
+              {user.isAdmin && (
+                <>
+                  <DropdownMenuItem asChild>
+                    <Link className="w-full cursor-pointer" href="/admin">
+                      <LayoutDashboard />
+                      {t('admin_title')}
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
+
+              {userNav?.show_sign_out && (
+                <DropdownMenuItem
+                  className="w-full cursor-pointer"
+                  onClick={() =>
+                    signOut({
+                      fetchOptions: {
+                        onSuccess: () => {
+                          router.push('/');
+                        },
+                      },
+                    })
+                  }
+                >
+                  <LogOut />
+                  <span>{t('sign_out_title')}</span>
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       ) : (
         <div className="flex w-full flex-col space-y-3 sm:flex-row sm:gap-3 sm:space-y-0 md:w-fit">
           <Button

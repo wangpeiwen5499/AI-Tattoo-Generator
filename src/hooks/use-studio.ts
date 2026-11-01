@@ -31,6 +31,8 @@ export function useStudio() {
     if (alive.current) {
       setCapabilities(caps);
       setPending(caps.pending[0] || null);
+      if (caps.signedIn)
+        window.dispatchEvent(new Event('studio-credits-changed'));
     }
     return caps;
   }, []);

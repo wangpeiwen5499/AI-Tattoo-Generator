@@ -2,6 +2,7 @@
 import React from 'react';
 import type { useStudio } from '@/hooks/use-studio';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { toast } from 'sonner';
 import { afterEach, expect, it, vi } from 'vitest';
 
 import { StudioAccount } from '@/shared/blocks/tattoo/studio-actions';
@@ -21,6 +22,7 @@ vi.mock('@/core/i18n/navigation', () => ({
     <a {...props}>{children}</a>
   ),
 }));
+vi.mock('sonner', () => ({ toast: { info: vi.fn() } }));
 vi.stubGlobal(
   'ResizeObserver',
   class {
@@ -53,12 +55,11 @@ it('hides redundant guest account tools but preserves contextual sign-in request
     screen.queryByText('Sign up and verify your email for 3 free credits')
   ).toBeNull();
   view.rerender(<StudioAccount studio={account(false, 401)} locale="en" />);
-  expect(
-    screen.getByRole('link', { name: 'Continue' }).getAttribute('href')
-  ).toContain('/sign-in');
+  expect(toast.info).toHaveBeenCalled();
+  expect(screen.queryByRole('link', { name: 'Continue' })).toBeNull();
   view.rerender(<StudioAccount studio={account(true)} locale="en" />);
-  expect(screen.getByText('3 credits')).toBeTruthy();
-  expect(screen.getByRole('link', { name: 'My designs' })).toBeTruthy();
+  expect(screen.queryByText('3 credits')).toBeNull();
+  expect(screen.queryByRole('link', { name: 'My designs' })).toBeNull();
 });
 it('derives the next step from real assets and task state, including editing a result', () => {
   expect(

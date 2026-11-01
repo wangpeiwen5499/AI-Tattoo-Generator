@@ -26,6 +26,13 @@ import {
   photoBlob,
   placementRegion,
 } from '@/lib/studio-images';
+import {
+  readLoginDraft,
+  removeLoginDraft,
+  saveLoginDraft,
+  studioLoginUrl,
+} from '@/lib/studio-login-draft';
+import { toast } from 'sonner';
 
 import { StudioAccount, StudioDesigns, StudioRender } from './studio-actions';
 import {
@@ -79,6 +86,8 @@ export function ManualEditor({
   const [actionKind, setActionKind] = useState<
     'design' | 'render' | undefined
   >();
+  const [loginStep, setLoginStep] = useState<2 | 4 | null>(null);
+  const redirecting = useRef(false);
   const [dismissedTips, setDismissedTips] = useState<Set<number>>(
     () => new Set()
   );
@@ -93,13 +102,15 @@ export function ManualEditor({
     task: studio.task?.kind,
     pending: studio.pending?.kind,
   });
-  const currentStep = studioStep({
-    photo: !!photo,
-    design: !!design,
-    result: !!renderResult,
-    showResult: !!renderResult && (aiSelected || original),
-    task: jobKind,
-  });
+  const currentStep =
+    (!jobKind && loginStep) ||
+    studioStep({
+      photo: !!photo,
+      design: !!design,
+      result: !!renderResult,
+      showResult: !!renderResult && (aiSelected || original),
+      task: jobKind,
+    });
   const displayRatio =
     aiSelected && renderResult
       ? renderResult.raw.naturalWidth / renderResult.raw.naturalHeight
@@ -121,6 +132,114 @@ export function ManualEditor({
   const photoInput = useRef<HTMLInputElement>(null);
   const designInput = useRef<HTMLInputElement>(null);
   const revision = useRef(0);
+  useEffect(() => {
+    const token = new URL(window.location.href).searchParams.get(
+      'resumeStudio'
+    );
+    if (!token || initialDesignId || initialHistoryId) return;
+    let cancelled = false;
+    (async () => {
+      await Promise.resolve();
+      if (cancelled) return;
+      setBusy(true);
+      const draft = await readLoginDraft(token);
+      if (!draft)
+        throw new Error(
+          t(
+            'Your temporary draft expired. Please choose your images again.',
+            '临时草稿已过期，请重新选择图片。'
+          )
+        );
+      const [savedPhoto, savedDesign] = await Promise.all([
+        draft.photo
+          ? loadPhoto(
+              new File([draft.photo], 'photo.png', { type: draft.photo.type })
+            )
+          : null,
+        draft.design
+          ? loadDesign(
+              new File([draft.design], 'design.png', {
+                type: draft.design.type,
+              })
+            )
+          : null,
+      ]);
+      if (cancelled) return;
+      setPhoto(savedPhoto);
+      setDesign(savedDesign);
+      setDesignRecord(null);
+      setPrompt(draft.prompt);
+      setResolution(draft.resolution);
+      setPlacement(constrainPlacement(draft.placement));
+      setLoginStep(draft.action === 'render' ? 4 : 2);
+      setOriginal(false);
+      setAiSelected(false);
+      toast.success(
+        t(
+          'Your setup is restored. Review it and click Generate when ready.',
+          '照片和摆放已恢复，确认后点击生成即可。'
+        )
+      );
+      // Only delete after both images have decoded and the editor has its state.
+      await removeLoginDraft(token);
+      const url = new URL(window.location.href);
+      url.searchParams.delete('resumeStudio');
+      window.history.replaceState(window.history.state, '', url);
+    })()
+      .catch((reason) => {
+        if (!cancelled)
+          toast.error(
+            reason instanceof Error
+              ? reason.message
+              : t(
+                  'Could not restore your setup. Please retry.',
+                  '恢复失败，请重试。'
+                )
+          );
+      })
+      .finally(() => {
+        if (!cancelled) setBusy(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [initialDesignId, initialHistoryId, t]);
+
+  async function signInWithSetup(action: 'design' | 'render') {
+    if (redirecting.current) return;
+    redirecting.current = true;
+    setBusy(true);
+    try {
+      const token = await saveLoginDraft({
+        photo: photo ? await canvasBlob(photo) : null,
+        design: design ? await canvasBlob(photoCanvas(design)) : null,
+        placement: { ...placement },
+        prompt,
+        resolution,
+        action,
+      });
+      toast.info(
+        t(
+          'Sign in to continue. Your setup has been kept for your return.',
+          '请登录后继续，当前照片和摆放已临时保留。'
+        )
+      );
+      // Browser Back from a cancelled sign-in must also recover this handoff.
+      const returnUrl = new URL(window.location.href);
+      returnUrl.searchParams.set('resumeStudio', token);
+      window.history.replaceState(window.history.state, '', returnUrl);
+      window.location.assign(studioLoginUrl(locale, token));
+    } catch {
+      toast.error(
+        t(
+          'Could not keep your setup. Please allow browser storage and try again. You are still in the editor.',
+          '暂时无法保存当前设置，请允许浏览器存储后重试。当前编辑内容仍保留。'
+        )
+      );
+      redirecting.current = false;
+      setBusy(false);
+    }
+  }
   const pointers = useRef(new Map<number, Point>());
   const drag = useRef<{
     mode: string;
@@ -136,6 +255,7 @@ export function ManualEditor({
   const update = (p: Placement) => {
     if (busy) return;
     setPlacement(constrainPlacement(p));
+    setLoginStep(null);
     setAiSelected(false);
   };
 
@@ -331,6 +451,7 @@ export function ManualEditor({
   }
   function choose(file: File | undefined, kind: 'photo' | 'design') {
     if (!file || busy) return;
+    setLoginStep(null);
     void run(async () => {
       const id = revision.current;
       if (kind === 'photo') {
@@ -388,6 +509,11 @@ export function ManualEditor({
   }
   function renderTryOn() {
     if (!photo || !design || busy) return;
+    if (!studio.capabilities?.signedIn) {
+      void signInWithSetup('render');
+      return;
+    }
+    setLoginStep(null);
     setActionKind('render');
     const currentPhoto = photo,
       currentDesign = design,
@@ -551,6 +677,7 @@ export function ManualEditor({
     update(p);
   }
   function visitStep(step: number) {
+    setLoginStep(null);
     const target = document.getElementById(
       step === 1
         ? 'studio-photo-step'
@@ -576,7 +703,11 @@ export function ManualEditor({
 
   return (
     <div className="mt-10 pb-16">
-      <StudioAccount studio={studio} locale={locale} />
+      <StudioAccount
+        studio={studio}
+        locale={locale}
+        onSignIn={() => void signInWithSetup(actionKind || 'render')}
+      />
       <StudioSteps
         locale={locale}
         current={currentStep}
@@ -908,7 +1039,15 @@ export function ManualEditor({
               current={currentStep === 2}
               showHint={currentStep === 2 && !dismissedTips.has(2)}
               onDismissHint={() => dismissTip(2)}
-              onGenerate={() => setActionKind('design')}
+              onGenerate={() => {
+                setActionKind('design');
+                if (!studio.capabilities?.signedIn) {
+                  void signInWithSetup('design');
+                  return;
+                }
+                setLoginStep(null);
+                studio.generate(prompt);
+              }}
             />
             {design && (
               <div className="rounded-xl border p-4">
@@ -964,8 +1103,8 @@ export function ManualEditor({
               <span>{t('Saving & photo privacy', '保存与照片隐私')}</span>
               <StepHelp label={t('About saving and privacy', '保存与隐私说明')}>
                 {t(
-                  'Images are uploaded when you save a design or submit a try-on. Generated designs and results are saved to your account. Unsubmitted placement edits clear when you leave or refresh. Manual placement is free; new designs and AI try-ons are charged separately.',
-                  '保存设计或提交试戴时会上传图片，生成的设计和结果保存在账户中。未提交的摆放在离开或刷新后清空。手动摆放免费，新设计和真实试戴分别计费。'
+                  'Images are uploaded when you save a design or submit a try-on. Generated designs and results are saved to your account. Unsubmitted edits clear when you leave or refresh, except for a temporary 30-minute sign-in handoff. Manual placement is free; new designs and AI try-ons are charged separately.',
+                  '保存设计或提交试戴时会上传图片，生成的设计和结果保存在账户中。未提交的摆放在离开或刷新后清空；登录往返时临时保留30分钟。手动摆放免费，新设计和真实试戴分别计费。'
                 )}
               </StepHelp>
             </div>

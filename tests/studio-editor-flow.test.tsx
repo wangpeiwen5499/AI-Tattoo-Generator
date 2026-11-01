@@ -120,7 +120,7 @@ it('creates a design before the photo, reuses its asset, then renders one chosen
     })
   );
   render(<ManualEditor locale="en" />);
-  await waitFor(() => expect(screen.getByText('3 credits')).toBeTruthy());
+  await waitFor(() => expect(fetch).toHaveBeenCalled());
   fireEvent.change(screen.getByLabelText('Or describe a new design'), {
     target: { value: 'fern' },
   });
