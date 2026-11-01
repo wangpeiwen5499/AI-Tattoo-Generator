@@ -111,11 +111,11 @@
         "items": [
           {
             "question": "Can I try it for free?",
-            "answer": "Guests can explore the complete real interactive example. New accounts receive 3 one-time credits after email verification. Buy more when needed; your generated images remain available to view and save."
+            "answer": "Explore the interactive example and manual placement for free. New accounts receive 3 one-time credits after email verification, usable separately for design generation and realistic try-ons."
           },
           {
             "question": "What is a credit?",
-            "answer": "Credits pay for complete preview sets: 1K costs 1 credit, 2K costs 2 credits, and 4K costs 3 credits. Each set includes one tattoo design and four body placements. You can mix resolutions using the same balance."
+            "answer": "A new tattoo design costs 1 credit. One realistic 1K / 2K / 4K try-on costs 1 / 2 / 3 credits. Uploading, saving, reusing designs and manual placement are free. Output depends on your operations and resolution; no fixed set or image count is promised."
           },
           {
             "question": "Do credits expire?",
@@ -127,7 +127,7 @@
           },
           {
             "question": "Can I get a refund?",
-            "answer": "If any of the 4 body previews fails, your generation credit is returned once processing finishes. Available previews remain viewable. For payment issues, contact support@tattoovis.ink."
+            "answer": "Confirmed generation failures return the credits used for that operation. Unconfirmed provider submissions require support review. For purchase refund requests, contact support@tattoovis.ink. Completed full refunds recover only that order’s remaining unused credits; partial refunds are handled manually."
           }
         ]
       }
