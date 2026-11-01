@@ -2,25 +2,33 @@
   "en": [
     {
       "slug": "minimalist",
-      "title": "Minimalist Tattoo Ideas: Simple Designs with Personal Meaning",
-      "description": "Explore minimalist tattoo ideas with three editable prompts, practical composition tips and a photo-preview checklist before discussing a design with your artist.",
-      "intro": "A minimalist tattoo starts with a clear idea and a small number of marks. A single stem, an open circle or a short continuous line can carry a personal story without a busy composition. Use these starting points to explore a custom concept, then compare how it reads on your own photo.",
+      "title": "Minimalist Tattoo Ideas: Small Designs, Meaning & Placement",
+      "description": "Explore minimalist tattoo ideas with personal meaning, small wrist and forearm designs, size comparisons and three prompts to adapt before a photo preview.",
+      "intro": "A minimalist tattoo uses a few deliberate lines, shapes or areas of ink to express an idea. Small minimalist tattoos can start with a plant, a remembered landscape or a geometric mark. This guide helps you choose a subject, make its meaning personal and compare wrist and forearm placements before discussing the design with an artist.",
       "sections": [
         {
-          "title": "Choose one subject before choosing a style",
-          "body": "Start with something specific: a flower you grow, a coastline you remember or a shape associated with an important moment. Describe that subject first, followed by the line style and amount of detail. “Minimal design tattoo” is a useful search phrase, but a prompt needs more direction. A single olive branch with five leaves tells the image model more than “a beautiful meaningful tattoo.” Avoid combining several unrelated symbols until the main idea works on its own."
+          "title": "Minimalist tattoo ideas with meaning",
+          "body": "Choose one subject before choosing a style: a plant from a family garden, a coastline you remember or a shape tied to a turning point. An olive branch might represent a particular person to you; a mountain outline might recall a shared trip. These are possible personal associations, not universal definitions. You can also choose a minimal tattoo simply because you enjoy its shape. Write one sentence explaining your choice so later variations stay connected to it."
         },
         {
-          "title": "Small does not have to mean intricate",
-          "body": "For a small concept, compare a sparse silhouette with a version that has a few internal details. Check both at the size you expect to wear, rather than judging only a large image on a screen. Very small lettering or tightly packed lines may look convincing in an AI image without making a practical tattoo. Your artist can advise on line spacing, size and how the design might change over time; a preview cannot predict those outcomes."
+          "title": "Turn a minimal design into a useful brief",
+          "body": "Give the tattoo design generator a concrete subject and a clear limit. For example: one curved stem, five separated leaves, black outline, no lettering and no shading. Compare that with a version using three leaves and a straighter stem. Change one detail at a time. Asking only for a meaningful minimalist tattoo leaves the model to choose the subject for you; listing several unrelated symbols often makes the composition busier than intended."
         },
         {
-          "title": "Preview the composition on a clear body photo",
-          "body": "Use an evenly lit photo with the intended area visible. The Preview studio separates design from try-on: upload or generate a design, then move, resize and rotate it freely. Each try-on produces one image. Save and reuse designs free, adjusting placement before another try-on. A preview cannot measure exact physical size or replace an artist’s review."
+          "title": "Small minimalist tattoos: compare size before detail",
+          "body": "Start with two visual sizes instead of assuming smaller is better. For a botanical concept, sketch out a 3 cm and a 6 cm option as discussion references, then ask an artist what size can accommodate the leaves and gaps. These numbers are examples for comparison, not recommended minimums. Screen zoom and photo scaling do not establish physical measurements. View the whole design as well as the enlarged linework, and remove details that distract from the main shape."
         },
         {
-          "title": "Keep a reference for the artist conversation",
-          "body": "Save the design you like and note what you would change: fewer leaves, more empty space, a shorter stem or a different direction. Treat the image as a conversation starter. The tattoo artist should redraw or adapt it for your anatomy and technique. Check the original photo against the preview as well: AI can change skin, pose, proportions or background details along with the tattoo."
+          "title": "Minimalist wrist tattoo or forearm placement?",
+          "body": "A minimalist wrist tattoo can use a compact mark, a small open circle or a short horizontal line composition. Check its direction with your palm facing up and down, and compare how it sits beside a watch or bracelet. A minimalist tattoo on the forearm has room for a longer stem or a stretched landscape. Compare inner and outer forearm photos and consider how visible you want the design in everyday clothing. Neither location is automatically the right choice for every person."
+        },
+        {
+          "title": "Preview the same design before changing the prompt",
+          "body": "Upload a clear photo showing the area you want to compare. In the studio, upload, generate or reuse a design, then move, resize and rotate it for free. Keep the design fixed while testing two placements so you can tell which change you prefer. Each AI try-on generates one image and uses credits separately. A preview is a visual reference; it cannot measure exact size. Compare the original photo with the result because AI may also change skin, proportions or background details."
+        },
+        {
+          "title": "Prepare a clear reference for your artist",
+          "body": "Save the standalone design and a preferred placement preview, then note the changes you want: fewer leaves, more empty space, a shorter stem or a different direction. Ask whether the outline and spacing suit the intended size and body area. The artist can adapt the concept and linework. Bring your own explanation of the meaning rather than treating an AI-generated symbol or caption as an authoritative interpretation."
         }
       ],
       "prompts": [
@@ -43,32 +51,44 @@
     },
     {
       "slug": "geometric",
-      "title": "Geometric Tattoo Ideas: Wolf Designs, Shapes and Prompt Examples",
-      "description": "Plan a geometric tattoo with editable wolf and shape prompts. See a real saved try-on example, compare symmetry and detail, and prepare a reference for your tattoo artist.",
-      "intro": "Geometric tattoo designs use repeated shapes, angular outlines or structured spacing to build an image. They can be entirely abstract or use geometry to describe a familiar subject, such as a wolf. The choice is less about adding more triangles and more about choosing a shape language that stays readable.",
+      "title": "Geometric Tattoos: Simple Shapes, Line Designs & Ideas",
+      "description": "Explore geometric tattoo designs, from simple shapes and small line tattoos to abstract figures and wolves. Compare symmetry, size and placement with editable prompts.",
+      "intro": "Geometric tattoos use shapes, lines and repeated spacing to build a design. A geometric style tattoo can be a small arrangement of circles and triangles, an abstract composition or an animal drawn with angular facets. Choose the visual structure first, then compare the amount of detail and how the composition fits the body area.",
       "sections": [
         {
-          "title": "Decide how much geometry the subject needs",
-          "body": "Try describing the same subject in two ways: an angular silhouette with very little interior detail, and a more detailed head divided into faceted shapes. The first version emphasizes the outline; the second emphasizes the face and pattern. For a wolf, specify whether you want a front-facing symmetrical head or a side profile. Mixing both instructions often gives the model conflicting directions."
+          "title": "Choose a geometric tattoo design direction",
+          "body": "Start with one of three directions: simple geometric shapes, an abstract arrangement or a recognizable subject built from geometry. A circle with two open triangles emphasizes spacing. An offset stack of lines emphasizes rhythm. A faceted wolf emphasizes the animal silhouette. These geometric tattoo ideas ask different things of a prompt, so compare them as distinct directions before combining them."
         },
         {
-          "title": "Use the saved example as a workflow reference",
-          "body": "The homepage Gundam example follows a saved photo, an uploaded design and a preset biceps placement through to one real saved result, free to explore. The Preview studio uses free placement and single-image try-ons: reuse a design and adjust its position before submitting each comparison. Compare outline, detail and negative space at different sizes and locations."
+          "title": "Simple geometric tattoos and minimalist linework",
+          "body": "For a minimalist geometric tattoo, use a few figures and name their relationship: one open circle crossed by a short vertical line, or two triangles sharing a baseline. Geometric line tattoos depend on clear intersections and consistent visual weight. Specify whether lines should touch, overlap or stay separate. If a small geometric tattoo feels crowded, remove an intersection or an inner border before adding decoration."
         },
         {
-          "title": "Compare detail at the intended viewing size",
-          "body": "Zoom out as well as in. A dense geometric pattern may look impressive enlarged but become visually crowded when reduced. Compare the spacing between shapes, the weight of the outer outline and the amount of uninked space around the face. If the eyes or central shapes seem uneven, simplify the prompt and generate another concept rather than assuming an artist can use the image unchanged."
+          "title": "Geometric abstract tattoos: create a rule",
+          "body": "An abstract design is easier to refine when it follows a rule you can describe. Try three unequal circles aligned on one axis, or a sequence of angular figures that gradually increases in size. Leave an intentional gap rather than filling every space. A shape does not come with a guaranteed meaning: if a circle suggests continuity or a triangle recalls a place to you, describe that as your personal association. Check the context of any specific cultural or religious symbol before using it."
         },
         {
-          "title": "Separate a visual concept from a tattoo stencil",
-          "body": "An AI geometric tattoo image is a design reference, not a verified stencil. It may contain broken lines, inconsistent symmetry or details that do not wrap naturally around a limb. Ask an artist to adapt the layout and check the linework. A photo preview is also an approximation: compare it with the original to identify changes to body shape or lighting before using it to make a placement decision."
+          "title": "Wolf and animal designs: silhouette or facets?",
+          "body": "Describe the same animal in two ways: a simple angular outline with open interior space, and a head divided into larger geometric facets. The first emphasizes recognition at a glance; the second emphasizes pattern. For a wolf, choose a front-facing symmetrical head or a side profile. Check the eyes, muzzle and ears for consistency. AI can produce uneven features even when the prompt requests symmetry, so the output needs review."
+        },
+        {
+          "title": "Compare small designs, wrist layouts and forearm compositions",
+          "body": "For simple geometric tattoo designs, compare a compact wrist arrangement with an elongated forearm layout. A vertical stack of shapes and a horizontal group of the same shapes can feel very different. Use 4 cm and 8 cm sketches as comparison examples when discussing scale with an artist, not as universal sizing advice. A photo preview does not measure physical dimensions or demonstrate how a design wraps around a limb. Ask the artist to confirm proportions and spacing for your chosen location."
+        },
+        {
+          "title": "Use the saved example, then test your own composition",
+          "body": "Explore the saved interactive homepage example free to see a design and a photo result. In the studio you can reuse a design and adjust its placement freely before requesting a single AI try-on. Compare the outline, negative space and overall balance at your intended viewing size. The saved example is a workflow reference, not a promise that another prompt or photo will produce the same result."
+        },
+        {
+          "title": "Check linework before sharing it as a reference",
+          "body": "Look for broken outlines, unintended gaps, doubled edges and inconsistent intersections. Zoom out to see whether dense facets obscure the subject. Save the design with notes about what to simplify, and ask a tattoo artist to adapt it to the body area. An AI concept is not a verified stencil; a photo try-on is also an approximation. Compare the original image to identify unrelated changes in shape, clothing or light."
         }
       ],
       "prompts": [
         {
           "title": "Black-and-grey geometric wolf",
           "text": "A front-facing geometric wolf head tattoo, symmetrical angular facets, black and grey shading, clear eyes and muzzle, fine outlines with restrained dotwork, vertical composition, no text, isolated on white.",
-          "note": "This is a prompt starting point inspired by the homepage example, not a promise to reproduce that exact design."
+          "note": "Compare an outline-only version with a faceted version. This prompt is a starting point, not a guarantee of exact symmetry or a particular result."
         },
         {
           "title": "Simple geometric shapes",
@@ -84,29 +104,41 @@
     },
     {
       "slug": "first-tattoo",
-      "title": "First Tattoo Ideas: From a Personal Concept to a Photo Preview",
-      "description": "Find first tattoo ideas with a clear brief, three adaptable prompts and a practical photo-preview checklist to help you discuss design and placement with an artist.",
-      "intro": "Choosing a first tattoo is easier when you separate the decisions: what the image represents, how much detail you want, where you are considering wearing it and what you still need to ask an artist. A photo preview helps you compare visual options without making those decisions for you.",
+      "title": "First Tattoo Ideas: Designs, Size & Placement to Compare",
+      "description": "Find first tattoo ideas, from cute botanical designs to simple landscapes. Compare wrist, forearm and other placements, sizes and prompts before meeting an artist.",
+      "intro": "Good first tattoos start with a design you want to wear and a placement that fits your everyday preferences. There is no single best first tattoo or best placement for everyone. Use these first tattoo ideas to narrow down a subject, compare size and visibility, and prepare specific questions for a tattoo artist.",
       "sections": [
         {
-          "title": "Write a brief before collecting more ideas",
-          "body": "Choose one subject and write one sentence explaining why you like it. Then add a visual preference: outlined or shaded, compact or elongated, quiet or bold. You do not need to give every tattoo a deep meaning; liking the image is also a valid starting point. What matters is being specific enough to compare alternatives. Save the brief alongside the images so that later changes still connect to your original idea."
+          "title": "First tattoo ideas: start with a short personal brief",
+          "body": "Choose one subject and write down why you like it. It could be a plant connected to home, a pet silhouette, a wave from a favorite coastline or a simple abstract mark. Add two visual preferences, such as black outline and open space, or bold shape and compact composition. A tattoo does not need a profound meaning. Your brief should be specific enough to compare first tattoo designs without copying every new image you find."
         },
         {
-          "title": "Compare a few distinct directions",
-          "body": "Instead of generating many nearly identical versions, try a simple line drawing, a bolder silhouette and a more detailed interpretation of the same subject. Compare what each version emphasizes. The prompt examples below use a botanical motif, a landscape and a geometric animal so you can test different visual directions. Use your own subject rather than treating a search result as a design you must copy."
+          "title": "Cute, quiet or bold: compare three design directions",
+          "body": "For cute first tattoo ideas, try a small sprig, a rounded animal outline or a tiny sun with one curved wave. If you prefer a quieter design, compare an open circle or a single mountain line. For a bolder direction, try a leaf silhouette or a geometric bird built from a few large shapes. Nice first tattoo ideas are personal: keep a subject you like and compare line weight, detail and composition instead of assuming that one style suits every beginner."
         },
         {
-          "title": "Think about placement in your everyday context",
-          "body": "Consider visibility in everyday clothing and how the design relates to the body area. Use an evenly lit photo with the intended area visible. In the Preview studio, move, resize and rotate a design, then generate one try-on image. Reuse that design to compare another position. A photo cannot measure pain, predict healing or guarantee a real-world result."
+          "title": "Where to get your first tattoo: compare visibility and shape",
+          "body": "If you are deciding where on the body to get a first tattoo, start with everyday clothing and how often you want to see it. The inner forearm lets you compare a long vertical motif with a compact one; the outer upper arm gives a different silhouette and clothing context. A wrist design sits near watches, cuffs and bracelets. An ankle design relates to footwear and trouser length. These are visual comparisons, not a ranking of comfort or suitability."
         },
         {
-          "title": "Use AI previews to prepare questions",
-          "body": "Make a short list for your tattoo artist: Could this work at the size I want? Which details need simplifying? Would the outline need to change for this placement? Share both the standalone design and the body preview where available. Your artist can assess technique and adapt the concept; an AI image should not replace that discussion. If the AI changes your body shape, skin or surroundings, judge the design separately from those changes."
+          "title": "Is there a best placement for a first tattoo?",
+          "body": "The best placement depends on your priorities. List whether visibility, room for detail or a particular body outline matters most. Then shortlist two locations and use the same design for both previews. For a forearm, compare the direction with your arm relaxed and rotated. For the wrist, compare which way the design faces from your viewpoint. If you mean a studio rather than a body placement, look for an artist whose portfolio contains work in the style you want and discuss the design directly."
         },
         {
-          "title": "Know what the free example and credits provide",
-          "body": "Explore the saved homepage example free. Preview uses separate test credits, never real account balances: one 1K design costs 1 credit; a single 1K, 2K or 4K try-on costs 1, 2 or 3 credits. Uploading, saving, reusing and positioning are free. AI requests still incur KIE test costs and require explicit consent. Designs and history stay in this browser. The live signup offer of 3 credits after email verification keeps its existing terms; Preview offers no real purchases."
+          "title": "Choose a size range rather than a single tiny image",
+          "body": "Compare a 3 cm and a 6 cm version of a simple sprig, or a compact and an elongated version of a landscape. These are example briefs for a conversation, not fixed recommendations. Ask an artist which details fit at each size and whether any shapes should be simplified. Keep physical measurements in your notes: resizing an image on a screen cannot establish the final tattoo dimensions."
+        },
+        {
+          "title": "Use a photo preview to make the comparison concrete",
+          "body": "Use a clear, evenly lit photo with the intended area visible. Upload or create a design in the studio, then move, resize and rotate it for free. Keep the subject unchanged while comparing two placements or two visual sizes. An AI try-on creates one image per request. Compare it with your original photo, since AI may change other details. Save both the design and the preview so you can explain what you like and what still needs changing."
+        },
+        {
+          "title": "Know what is free before generating",
+          "body": "The saved homepage example and manual placement are free. New accounts receive 3 one-time welcome credits after email verification. Creating a new design costs 1 credit; one realistic try-on costs 1, 2 or 3 credits at 1K, 2K or 4K. For example, one new design plus one 1K try-on uses 2 credits. Reusing that design avoids another design-generation charge, but another AI try-on is charged separately."
+        },
+        {
+          "title": "Take specific questions to the artist",
+          "body": "Bring your brief, preferred design, alternative placement and intended size. Ask which lines need adjusting, whether the composition fits the area and what the artist would redraw. Confirm that the result is a reference for discussion rather than a ready-to-use stencil. A first tattoo decision does not have to happen during the preview session; keep the options you prefer and revisit them before choosing the final artwork."
         }
       ],
       "prompts": [
@@ -131,25 +163,33 @@
   "zh": [
     {
       "slug": "minimalist",
-      "title": "极简纹身灵感：把个人想法变成清晰的设计",
-      "description": "从植物、线条和几何符号探索极简纹身，参考可修改的英文提示词，学习如何比较照片效果并准备与纹身师沟通的设计参考。",
-      "intro": "极简纹身的重点，是用少量线条表达清楚的想法。可以从一段记忆、一种植物或一个形状开始，再比较构图与细节，而不是把许多象征元素都放进同一张设计。",
+      "title": "极简纹身灵感：小图案、个人含义与手腕前臂位置",
+      "description": "探索植物、风景与几何极简纹身，比较小图案尺寸、手腕和前臂位置，参考三组可修改提示词，为与纹身师讨论做好准备。",
+      "intro": "极简纹身用少量有意识的线条、形状或色块表达想法。小型设计可以从一株植物、一段记忆里的风景或一个几何符号开始。本指南帮助你选主题、梳理个人含义，再比较手腕与前臂的位置和大小。",
       "sections": [
         {
-          "title": "先选主题，再确定风格",
-          "body": "把“想要一个有意义的纹身”写得更具体：例如一枝五片叶子的橄榄枝，或记忆里两座高低不同的山峰。先说明主体，再说明线条、阴影和留白。第一次尝试可以只保留一个主题，等主体清晰后再加入其他元素。"
+          "title": "极简纹身的含义，从个人联系开始",
+          "body": "先选择一个具体主题，例如家人种过的植物、旅行记忆中的海岸线，或与你某个阶段有关的形状。橄榄枝可以让你想到一个人，山峰可以记录一次同行，但这些都是可能的个人联想，不是通用释义。单纯喜欢图案也足以成为选择理由。用一句话记下原因，比较不同版本时就有明确的依据。"
         },
         {
-          "title": "小图案也需要足够的空间",
-          "body": "同时比较简洁轮廓与少量内部细节两个版本。不要只看放大的屏幕图，要缩小到接近希望呈现的视觉大小。非常细小的文字、密集线条可能在 AI 图像中好看，但不能据此判断实际可纹性或长期效果，需要纹身师评估尺寸和间距。"
+          "title": "把简洁设计写成具体说明",
+          "body": "与其只输入“有意义的极简纹身”，不如写清楚一根弯曲枝干、五片分开的叶子、黑色轮廓、不要文字和阴影。再比较三片叶子、较直枝干的版本，每次只改一个因素。把多个互不相关的符号放进同一张图，会更难判断自己真正喜欢哪一个。"
         },
         {
-          "title": "用清晰的身体照片比较构图",
-          "body": "使用光线均匀、目标部位清晰可见的照片。Preview 工作室将设计与试戴分开：先上传或生成图案，再自由移动、缩放和旋转，每次试戴生成一张图片。可以免费保存和复用设计，调整位置后再次试戴。预览不是精确尺寸测量工具，也不能替代纹身师确认。"
+          "title": "小图案先比较尺寸，再增加细节",
+          "body": "不要默认越小越好。可以把一枝植物画成约 3 厘米与 6 厘米两种方案，作为与纹身师讨论的起点。这些数字只是比较示例，不是推荐的最小尺寸。屏幕缩放和照片比例不能确定真实尺寸。整体缩小查看，再放大检查线条；让纹身师判断希望的尺寸能否容纳叶片与间距。"
         },
         {
-          "title": "记录你真正想修改的部分",
-          "body": "保存喜欢的图案，并写下想减少的叶片、希望加大的留白或想改变的方向。把它作为和纹身师讨论的参考。对照原照片检查皮肤、姿势、比例和背景，因为 AI 也可能改动纹身以外的画面。"
+          "title": "手腕极简纹身与前臂位置怎么比较",
+          "body": "手腕可以比较紧凑符号、小型开放圆圈或短横向构图。分别看手心朝上、朝下时的方向，以及与手表、手链和袖口的关系。前臂则可以尝试较长的枝条或横向风景，比较内侧与外侧照片，并考虑日常穿衣时希望多大程度可见。没有适合所有人的固定最佳位置。"
+        },
+        {
+          "title": "先固定图案，再比较照片上的位置",
+          "body": "使用目标部位清晰、光线均匀的照片。在工作室上传、生成或复用图案，再免费移动、缩放和旋转。同一个设计比较两个位置，更容易判断变化来自哪里。每次 AI 真实试戴生成一张图片，单独消耗积分。照片预览不能测量真实尺寸；请对照原图，检查皮肤、身形和背景是否也被 AI 改动。"
+        },
+        {
+          "title": "带着具体修改意见与纹身师沟通",
+          "body": "保存独立图案和喜欢的位置预览，并写下希望减少的叶片、增加的留白或调整的方向。请纹身师结合真实尺寸与部位检查线条和间距，再改绘或调整。含义由你自己的经历说明，不要把 AI 生成的符号解释或文案当作权威结论。"
         }
       ],
       "prompts": [
@@ -172,32 +212,44 @@
     },
     {
       "slug": "geometric",
-      "title": "几何纹身设计：狼头、抽象形状与提示词示例",
-      "description": "用几何狼头与简洁形状探索纹身设计，参考可修改提示词，查看网站真实案例，比较对称性、留白与身体照片上的效果。",
-      "intro": "几何纹身可以用重复形状、棱角轮廓和有规律的间距组织画面。它既能表现狼头等具体主体，也可以完全抽象。关键是选择清楚的视觉语言，而不是不断增加三角形。",
+      "title": "几何纹身设计：简洁形状、线条与抽象灵感",
+      "description": "从小型几何形状、极简线条到抽象图形和狼头，比较几何纹身的对称、间距、尺寸与位置，并参考可修改提示词。",
+      "intro": "几何纹身通过形状、线条与有规律的间距组织画面。它可以是圆与三角形的小型组合、抽象构图，也可以用棱角切面表现动物。先确定视觉结构，再比较细节多少与身体部位的关系。",
       "sections": [
         {
-          "title": "先决定主体与几何的关系",
-          "body": "同一只狼可以用简洁的棱角轮廓表现，也可以用多个切面构成立体的脸部。前者重视外形，后者重视图案与面部细节。提示词应明确正面、对称狼头或侧面轮廓，避免把矛盾的角度要求写在一起。"
+          "title": "先选择几何设计的方向",
+          "body": "可以先比较三种方向：简洁几何形状、抽象排列、由几何构成的具体主体。圆与两个开放三角形强调间距；错位线条强调节奏；切面狼头强调动物轮廓。这些方向需要不同的提示词，先分开比较，再决定是否组合。"
         },
         {
-          "title": "观察首页真实保存的试戴案例",
-          "body": "首页高达案例展示从原图、上传图案、固定肱二头肌位置到一张已保存试戴结果的过程，浏览免费。Preview 工作室采用自由定位、单张试戴：复用设计并调整位置后，分别提交想比较的效果。观察不同大小与位置的轮廓、细节和留白。"
+          "title": "极简几何与线条纹身",
+          "body": "先用少量图形，并说清楚相互关系，例如一个开放圆圈穿过一条短竖线，或两个三角形共用底边。几何线条需要清楚的交点和协调的粗细。明确线条相接、交叠还是分开；小型图案显得拥挤时，可以先去掉一个交点或内框，再考虑装饰。"
         },
         {
-          "title": "放大与缩小都要看",
-          "body": "密集的几何图案在大图中可能很漂亮，缩小时却容易显得拥挤。比较形状间距、外轮廓粗细，以及狼眼和面部周围的留白。如果中心结构不对称，可以简化要求后再生成，不能默认 AI 输出已经适合直接使用。"
+          "title": "抽象几何也可以有明确规则",
+          "body": "尝试三个大小不同、沿同一轴排列的圆，或一组逐渐变大的棱角图形。保留有意的空白，不必填满每一处空间。圆让你联想到连续、三角形让你想起某个地方，都可以是个人解释，而不是通用含义。涉及具体文化或宗教符号时，应先了解其背景。"
         },
         {
-          "title": "设计参考不等于可直接使用的模板",
-          "body": "AI 图像可能存在断线、不一致的对称结构，或不适合肢体曲面的细节。纹身师需要结合具体部位调整线条与布局。照片试戴也只是近似效果，使用前应和原图对照，检查身体形状和光线有没有被一起改变。"
+          "title": "狼头与动物：比较轮廓和切面",
+          "body": "同一个动物可以先生成简洁的棱角外轮廓，再比较由较大几何切面组成的头部。前者强调辨识，后者强调图案。狼头应明确是正面、对称构图，还是侧面轮廓。检查眼睛、嘴鼻和耳朵；即使要求对称，AI 也可能输出不一致的细节。"
+        },
+        {
+          "title": "比较手腕小图案与前臂构图",
+          "body": "同一组形状可以在手腕紧凑排列，也可以沿前臂纵向展开。先比较横向和纵向构图，再决定细节。可以准备约 4 厘米与 8 厘米两种草图，作为讨论比例的示例，而不是通用尺寸建议。照片无法确定真实大小或证明图案如何环绕肢体；请纹身师确认实际部位的比例与间距。"
+        },
+        {
+          "title": "从免费案例到自己的位置预览",
+          "body": "首页保存的互动案例可免费查看设计与照片效果。在工作室复用图案，免费调整位置后，再提交单张 AI 真实试戴。比较轮廓、留白和整体平衡。保存案例用于了解流程，不代表其他提示词和照片能得到完全相同的结果。"
+        },
+        {
+          "title": "把输出当作需要检查的设计参考",
+          "body": "检查断线、意外缺口、重复边缘与不一致的交点，再缩小看密集切面是否遮住主体。保存想简化的地方，让纹身师按身体部位调整。AI 图像不是经过确认的纹身模板；照片试戴也是近似效果，需要与原图比较身形、衣物和光线变化。"
         }
       ],
       "prompts": [
         {
           "title": "黑灰几何狼头",
           "text": "A front-facing geometric wolf head tattoo, symmetrical angular facets, black and grey shading, clear eyes and muzzle, fine outlines with restrained dotwork, vertical composition, no text, isolated on white.",
-          "note": "这是参考首页案例风格的起点，不保证复现完全相同的设计。"
+          "note": "比较纯轮廓与几何切面两个版本。这是提示词起点，不保证完全对称或特定结果。"
         },
         {
           "title": "简洁的几何形状",
@@ -213,29 +265,41 @@
     },
     {
       "slug": "first-tattoo",
-      "title": "第一次纹身灵感：从个人想法到照片预览",
-      "description": "把第一次纹身的想法拆成主题、风格和位置，参考三组提示词与照片检查清单，为和纹身师讨论设计做好准备。",
-      "intro": "第一次纹身，可以分开考虑四个问题：想表达什么、喜欢多少细节、考虑哪个位置，以及还有什么需要向纹身师确认。照片预览能帮助你比较外观，但不会替你做决定。",
+      "title": "第一次纹身灵感：设计、尺寸与位置怎么选",
+      "description": "从可爱植物、简洁风景到几何动物，比较第一次纹身的设计、手腕和前臂等位置、尺寸及提示词，为与纹身师沟通做好准备。",
+      "intro": "适合自己的第一次纹身，来自想长期佩戴的图案，以及符合日常偏好的位置。没有适合所有人的最佳设计或最佳部位。本指南帮助你缩小主题范围、比较大小与可见程度，并准备向纹身师提出的具体问题。",
       "sections": [
         {
-          "title": "先写一句设计说明",
-          "body": "选一个主题，写下为什么喜欢它，再补充轮廓或阴影、紧凑或纵向、安静或醒目等偏好。纹身不一定必须有深刻意义，喜欢图案本身也可以成为起点。把说明与参考图一起保存，方便后面比较不同版本。"
+          "title": "先写一份简短的个人设计说明",
+          "body": "选一个主题并写下喜欢它的原因，例如与家有关的植物、宠物轮廓、熟悉海岸的一道浪，或一个抽象符号。再补充两项视觉偏好，如黑色轮廓与留白，或粗线条与紧凑构图。纹身不必有深刻含义，但说明越具体，比较设计时就越有依据。"
         },
         {
-          "title": "比较真正不同的方向",
-          "body": "可以针对同一个主题，比较简洁线稿、较粗的剪影和更细致的版本。不要只不断生成几乎一样的图。下面提供植物、风景和几何动物三个方向，你可以用自己喜欢的主体替换，而不是照抄搜索结果。"
+          "title": "可爱、安静或醒目：比较不同方向",
+          "body": "喜欢可爱图案，可以从小枝叶、圆润动物轮廓或太阳与一道弧形海浪开始。偏好安静的构图，可以比较开放圆圈或单线山峰；喜欢醒目的感觉，可以尝试叶片剪影或由较大几何形状构成的鸟。保留喜欢的主体，分别改变粗细、细节和构图，不必假设某种风格适合所有新手。"
         },
         {
-          "title": "把位置放进日常场景里考虑",
-          "body": "考虑平常穿衣时是否希望纹身可见，以及图案与身体部位的关系。使用目标位置清晰可见、光线均匀的照片。在 Preview 工作室中自由移动、缩放、旋转设计，再生成单张试戴；复用同一设计比较不同位置。照片不能衡量疼痛、预测愈合或保证实际效果。"
+          "title": "第一次纹在哪里：先看日常可见程度",
+          "body": "先想清楚平时穿衣时，希望多常看到它。前臂内侧可以比较纵向枝条与紧凑构图；上臂外侧有不同的轮廓和衣着关系；手腕需要考虑手表、袖口与手链；脚踝则与鞋袜及裤长有关。这些是外观比较，不是舒适程度或适合程度的排名。"
         },
         {
-          "title": "用预览准备具体的问题",
-          "body": "例如：希望的大小能容纳这些细节吗？哪些线条需要简化？这个位置需要改变轮廓吗？把独立设计和身体预览一起给纹身师参考，结合实际技术调整。如果 AI 改动了皮肤、身形或背景，应把设计本身与这些改动分开判断。"
+          "title": "有没有最佳的第一次纹身位置",
+          "body": "把可见程度、细节空间、身体轮廓等偏好排序，再选两个候选部位，用同一图案分别预览。前臂可以比较放松和旋转时的方向；手腕可以比较图案朝自己还是朝外。如果你想问的是去哪一家店而不是身体部位，应先看纹身师是否有你喜欢风格的作品，再直接讨论设计。"
         },
         {
-          "title": "了解免费案例与积分规则",
-          "body": "首页保存的互动案例可免费浏览。Preview 使用独立测试积分，不扣真实账户余额：生成一张 1K 设计为 1 积分；单张 1K、2K、4K 试戴分别为 1、2、3 积分。上传、保存、复用与自由定位免费。AI 请求仍产生 KIE 测试费用，需明确同意。设计与历史仅存当前浏览器。正式版注册验证邮箱赠送 3 积分的原权益保持不变；Preview 不提供真实购买。"
+          "title": "比较尺寸范围，不只收藏小图",
+          "body": "可以把植物枝条做成约 3 厘米与 6 厘米两种草图，或比较风景的紧凑与拉长版本。这些是沟通示例，不是固定建议。问纹身师哪些细节适合每个尺寸，哪些形状需要简化。请在笔记中记录真实尺寸，屏幕上的缩放不能确定最终大小。"
+        },
+        {
+          "title": "用照片把比较变得具体",
+          "body": "选择目标部位清晰、光线均匀的照片，在工作室上传或生成图案，免费移动、缩放和旋转。固定主体再比较两个位置或两种视觉大小。每次 AI 试戴只生成一张图片；对照原图，检查是否同时改变了其他细节。保存设计与预览，方便说明喜欢什么、还想改什么。"
+        },
+        {
+          "title": "生成前了解哪些免费",
+          "body": "首页保存案例和手动摆放免费。新账户验证邮箱后一次性获赠 3 个积分。生成新设计消耗 1 积分；单张真实试戴在 1K、2K、4K 下分别消耗 1、2、3 积分。例如，新设计加一次 1K 试戴共用 2 积分。复用已有设计不再产生新设计费用，但每次新的 AI 真实试戴仍单独计费。"
+        },
+        {
+          "title": "带着具体问题去见纹身师",
+          "body": "带上设计说明、喜欢的图案、备用位置和希望的尺寸，讨论哪些线条需要调整、构图是否适合该部位，以及哪些部分需要改绘。AI 输出用于沟通，不是可直接使用的模板。不必在一次预览中决定最终作品，可以保留候选方案，之后再比较。"
         }
       ],
       "prompts": [

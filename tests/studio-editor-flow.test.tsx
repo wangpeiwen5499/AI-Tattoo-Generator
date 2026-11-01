@@ -121,11 +121,15 @@ it('creates a design before the photo, reuses its asset, then renders one chosen
   );
   render(<ManualEditor locale="en" />);
   await waitFor(() => expect(fetch).toHaveBeenCalled());
+  fireEvent.click(screen.getAllByRole('button', { name: /^Choose design/ })[0]);
   fireEvent.change(screen.getByLabelText('Or describe a new design'), {
     target: { value: 'fern' },
   });
   fireEvent.click(
-    screen.getByRole('button', { name: 'Generate design · 1 credit' })
+    screen.getByRole('button', {
+      name: 'Generate design · 1 credit',
+      hidden: true,
+    })
   );
   await waitFor(() =>
     expect(
@@ -167,7 +171,7 @@ it('creates a design before the photo, reuses its asset, then renders one chosen
   ).toBeNull();
   expect(
     screen
-      .getByRole('button', { name: 'Generate design · 1 credit' })
+      .getByRole('button', { name: 'Generate design · 1 credit', hidden: true })
       .getAttribute('aria-busy')
   ).toBe('false');
   const chosenPhoto = document.createElement('canvas');
@@ -179,9 +183,13 @@ it('creates a design before the photo, reuses its asset, then renders one chosen
       (
         screen.getByRole('button', {
           name: 'Generate real try-on · 1 credit',
+          hidden: true,
         }) as HTMLButtonElement
       ).disabled
     ).toBe(false)
+  );
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Confirm placement — continue' })
   );
   fireEvent.change(screen.getByLabelText('Result resolution'), {
     target: { value: '2K' },

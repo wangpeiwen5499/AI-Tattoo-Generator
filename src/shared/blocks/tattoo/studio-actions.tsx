@@ -162,6 +162,7 @@ export function StudioDesigns({
 }) {
   const zh = locale === 'zh';
   const working = busy && activeOperation === 'design';
+  const [libraryPage, setLibraryPage] = useState(0);
   const [preview, setPreview] = useState<number | null>(null);
   const [libraryLoading, setLibraryLoading] = useState(false);
   const [open, setOpen] = useState(false),
@@ -187,7 +188,11 @@ export function StudioDesigns({
     return () => abort.abort();
   }, [open, studio.capabilities?.signedIn, studio.result]);
   return (
-    <div id="studio-design-step" className="border-b pb-6">
+    <div
+      id="studio-design-step"
+      className="border-b pb-6"
+      data-library-open={open || undefined}
+    >
       <p className="text-primary text-sm">02 / {zh ? '图案' : 'DESIGN'}</p>
       <div className="mt-2 flex items-center justify-between gap-2">
         <h2 className="text-2xl">
@@ -200,7 +205,7 @@ export function StudioDesigns({
         </StepHelp>
       </div>
       <div
-        className={`mt-4 grid grid-cols-2 gap-2 ${current ? 'studio-current-group' : ''}`}
+        className={`studio-design-sources mt-3 grid grid-cols-3 gap-2 ${current ? 'studio-current-group' : ''}`}
       >
         <button className={button} disabled={busy} onClick={onUpload}>
           {zh ? '上传图案' : 'Upload design'}
@@ -221,50 +226,60 @@ export function StudioDesigns({
         >
           {zh ? '已保存图案' : 'Saved designs'}
         </button>
+        <button
+          className={button}
+          disabled={busy}
+          aria-pressed={!open}
+          onClick={() => setOpen(false)}
+        >
+          {zh ? '生成新图案' : 'New design'}
+        </button>
       </div>
-      <label className="mt-5 block text-base" htmlFor="studio-prompt">
-        {zh ? '或描述一个新图案' : 'Or describe a new design'}
-      </label>
-      <textarea
-        id="studio-prompt"
-        value={prompt}
-        maxLength={1000}
-        rows={5}
-        disabled={busy}
-        onChange={(e) => setPrompt(e.target.value)}
-        placeholder={
-          zh
-            ? '例如：黑灰几何狼头，精细线条，白色背景'
-            : 'A geometric wolf, black and grey ink, fine lines on white'
-        }
-        className="bg-background mt-2 w-full rounded-xl border p-4 text-base leading-7"
-      />
-      <button
-        className={`${button} border-primary text-primary mt-3 w-full ${current && prompt.trim() ? 'studio-current-action' : ''}`}
-        aria-busy={working}
-        disabled={busy || !prompt.trim() || !!studio.pending}
-        onClick={() => {
-          if (onGenerate) onGenerate();
-          else studio.generate(prompt);
-        }}
-      >
+      <div hidden={open}>
+        <label className="mt-4 block text-base" htmlFor="studio-prompt">
+          {zh ? '或描述一个新图案' : 'Or describe a new design'}
+        </label>
+        <textarea
+          id="studio-prompt"
+          value={prompt}
+          maxLength={1000}
+          rows={4}
+          disabled={busy}
+          onChange={(e) => setPrompt(e.target.value)}
+          placeholder={
+            zh
+              ? '例如：黑灰几何狼头，精细线条，白色背景'
+              : 'A geometric wolf, black and grey ink, fine lines on white'
+          }
+          className="bg-background mt-2 w-full rounded-xl border p-4 text-base leading-7"
+        />
+        <button
+          className={`${button} border-primary text-primary mt-3 w-full ${current && prompt.trim() ? 'studio-current-action' : ''}`}
+          aria-busy={working}
+          disabled={busy || !prompt.trim() || !!studio.pending}
+          onClick={() => {
+            if (onGenerate) onGenerate();
+            else studio.generate(prompt);
+          }}
+        >
+          {working && (
+            <Loader2
+              aria-hidden="true"
+              className="mr-2 inline size-4 animate-spin motion-reduce:animate-none"
+            />
+          )}
+          {working
+            ? zh
+              ? '正在生成纹身图案…'
+              : 'Generating design…'
+            : zh
+              ? '生成纹身图案 · 1 credit'
+              : 'Generate design · 1 credit'}
+        </button>
         {working && (
-          <Loader2
-            aria-hidden="true"
-            className="mr-2 inline size-4 animate-spin motion-reduce:animate-none"
-          />
+          <OperationStatus locale={locale} phase={phase || studio.phase} />
         )}
-        {working
-          ? zh
-            ? '正在生成纹身图案…'
-            : 'Generating design…'
-          : zh
-            ? '生成纹身图案 · 1 credit'
-            : 'Generate design · 1 credit'}
-      </button>
-      {working && (
-        <OperationStatus locale={locale} phase={phase || studio.phase} />
-      )}
+      </div>
       {open && (
         <div className="mt-4 rounded-xl border p-3">
           <p className="mb-3">
@@ -280,48 +295,74 @@ export function StudioDesigns({
             </p>
           )}
           <div className="grid grid-cols-2 gap-3">
-            {records.map((record, index) => (
-              <div key={record.id} className="relative">
-                <button
-                  aria-label={`${zh ? '选择图案' : 'Select design'} ${index + 1}`}
-                  aria-pressed={selectedId === record.id}
-                  className={`saved-design-choice bg-card w-full rounded-xl border p-2 ${selectedId === record.id ? 'border-primary ring-primary ring-2' : ''}`}
-                  disabled={busy}
-                  onClick={() => {
-                    void onPick(record)
-                      .then(() => setOpen(false))
-                      .catch((reason) => setError(reason.message));
-                  }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={studioAssetUrl(record.image)}
-                    alt={
-                      zh
-                        ? `保存的纹身图案 ${index + 1}`
-                        : `Saved tattoo design ${index + 1}`
-                    }
-                    loading="lazy"
-                    className="h-28 w-full rounded object-contain"
-                  />
-                  {selectedId === record.id && (
-                    <Check
-                      aria-hidden="true"
-                      className="bg-primary text-primary-foreground absolute top-2 left-2 size-5 rounded-full p-1"
-                    />
-                  )}
-                </button>
-                <button
-                  type="button"
-                  aria-label={`${zh ? '放大图案' : 'Enlarge design'} ${index + 1}`}
-                  className="app-action bg-background absolute right-1 bottom-1 rounded-full border p-2"
-                  onClick={() => setPreview(index)}
-                >
-                  <Expand className="size-4" />
-                </button>
-              </div>
-            ))}
+            {records
+              .slice(libraryPage * 4, libraryPage * 4 + 4)
+              .map((record, offset) => {
+                const index = libraryPage * 4 + offset;
+                return (
+                  <div key={record.id} className="relative">
+                    <button
+                      aria-label={`${zh ? '选择图案' : 'Select design'} ${index + 1}`}
+                      aria-pressed={selectedId === record.id}
+                      className={`saved-design-choice bg-card w-full rounded-xl border p-2 ${selectedId === record.id ? 'border-primary ring-primary ring-2' : ''}`}
+                      disabled={busy}
+                      onClick={() => {
+                        void onPick(record)
+                          .then(() => setOpen(false))
+                          .catch((reason) => setError(reason.message));
+                      }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={studioAssetUrl(record.image)}
+                        alt={
+                          zh
+                            ? `保存的纹身图案 ${index + 1}`
+                            : `Saved tattoo design ${index + 1}`
+                        }
+                        loading="lazy"
+                        className="h-28 w-full rounded object-contain"
+                      />
+                      {selectedId === record.id && (
+                        <Check
+                          aria-hidden="true"
+                          className="bg-primary text-primary-foreground absolute top-2 left-2 size-5 rounded-full p-1"
+                        />
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`${zh ? '放大图案' : 'Enlarge design'} ${index + 1}`}
+                      className="app-action bg-background absolute right-1 bottom-1 rounded-full border p-2"
+                      onClick={() => setPreview(index)}
+                    >
+                      <Expand className="size-4" />
+                    </button>
+                  </div>
+                );
+              })}
           </div>
+          {records.length > 4 && (
+            <div className="mt-3 flex items-center justify-between gap-2 text-sm">
+              <button
+                className={button}
+                disabled={libraryPage === 0}
+                onClick={() => setLibraryPage((p) => p - 1)}
+              >
+                {zh ? '上一页' : 'Previous'}
+              </button>
+              <span>
+                {libraryPage + 1} / {Math.ceil(records.length / 4)}
+              </span>
+              <button
+                className={button}
+                disabled={(libraryPage + 1) * 4 >= records.length}
+                onClick={() => setLibraryPage((p) => p + 1)}
+              >
+                {zh ? '下一页' : 'Next'}
+              </button>
+            </div>
+          )}
         </div>
       )}
       <Lightbox

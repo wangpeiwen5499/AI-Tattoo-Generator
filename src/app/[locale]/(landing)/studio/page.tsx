@@ -12,12 +12,12 @@ export async function generateMetadata({ params }: Props) {
   return getMetadata({
     title:
       locale === 'zh'
-        ? 'AI 纹身设计与照片试戴 | TattooVis'
-        : 'AI Tattoo Design & Photo Try-on | TattooVis',
+        ? '纹身模拟器：在自己的照片上试戴设计 | TattooVis'
+        : 'Tattoo Simulator: Try a Design on Your Photo | TattooVis',
     description:
       locale === 'zh'
-        ? '上传身体部位照片，上传、生成或复用图案，免费摆放后生成单张真实纹身试戴。'
-        : 'Upload a body photo, create or reuse a tattoo design, place it freely, then generate a realistic AI try-on.',
+        ? '上传、生成或复用纹身图案，在照片上免费调整位置，再生成单张 AI 试戴。新设计 1 积分，1K/2K/4K 试戴分别为 1/2/3 积分。'
+        : 'Use the tattoo simulator to place a design on your photo for free, then generate one AI try-on. Designs cost 1 credit; 1K/2K/4K try-ons cost 1/2/3 credits.',
     canonicalUrl: '/studio',
   })({ params });
 }
@@ -26,23 +26,16 @@ export default async function StudioPage({ params, searchParams }: Props) {
   setRequestLocale(locale);
   const query = await searchParams;
   return (
-    <main className="container pt-24 sm:pt-28">
+    <main className="studio-main container pt-20">
       {!query.history && (
         <header className="max-w-3xl">
-          <p className="text-primary mb-3 text-sm">
-            {locale === 'zh'
-              ? '设计 · 摆放 · 真实试戴'
-              : 'DESIGN · PLACE · TRY ON'}
-          </p>
-          <h1 className="text-4xl font-medium sm:text-5xl">
-            {locale === 'zh'
-              ? '先看见，再决定。'
-              : 'See it on your skin, before the ink.'}
+          <h1 className="text-2xl font-medium sm:text-3xl">
+            {locale === 'zh' ? '纹身模拟器' : 'Tattoo simulator'}
           </h1>
-          <p className="text-muted-foreground mt-5 text-lg leading-8">
+          <p className="text-muted-foreground mt-2 text-sm leading-6">
             {locale === 'zh'
-              ? '上传一张局部或侧面照片，选择或创作图案，自由摆放后生成真实试戴。手动摆放免费，设计与 AI 试戴分别计费。'
-              : 'Start with a close-up or side-view photo. Choose or create a design, place it freely, then generate a realistic try-on. Placement is free; designs and AI try-ons are charged separately.'}
+              ? '在自己的照片上选择位置、摆放图案，再生成真实试戴。'
+              : 'Place a design on your own photo, then create a realistic AI try-on.'}
           </p>
         </header>
       )}

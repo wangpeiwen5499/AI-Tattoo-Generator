@@ -78,6 +78,12 @@ export default async function RootLayout({
     customerServiceBodyScripts = customerService.getBodyScripts();
   }
 
+  // Show cookie controls in development too; the provider still waits for explicit consent.
+  if (!isProduction && !isDebug) {
+    const analyticsService = await getAnalyticsService({});
+    analyticsBodyScripts = analyticsService.getBodyScripts();
+  }
+
   return (
     <html lang={locale} suppressHydrationWarning>
       <head>

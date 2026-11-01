@@ -302,3 +302,193 @@
 .tattoo-home .tattoo-hero-intro {
   padding-bottom: 0;
 }
+/* Focused, in-place workflow: only the active section is expanded. */
+.studio-accordion-item {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--background);
+  overflow: visible;
+}
+.studio-accordion-item[data-open] {
+  border-color: color-mix(in oklab, var(--primary) 50%, var(--border));
+}
+.studio-accordion-trigger {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  min-height: 54px;
+}
+.studio-accordion-trigger:disabled {
+  cursor: default;
+}
+.studio-accordion-trigger:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+  border-radius: 14px;
+}
+.studio-accordion-number {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  font-size: 11px;
+}
+.studio-accordion-item[data-open] .studio-accordion-number {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-color: var(--primary);
+}
+.studio-accordion-panel {
+  padding: 0 14px 14px;
+}
+.studio-accordion-panel[hidden] {
+  display: none;
+}
+.studio-accordion-panel #studio-photo-step,
+.studio-accordion-panel #studio-design-step {
+  border: 0;
+  padding-bottom: 0;
+}
+.studio-accordion-panel #studio-photo-step > p:first-child,
+.studio-accordion-panel #studio-design-step > p:first-child,
+.studio-accordion-panel .studio-render-actions > p:first-child {
+  display: none;
+}
+.studio-accordion-panel h2 {
+  font-size: 18px;
+  line-height: 1.5;
+}
+.studio-accordion-panel .studio-render-actions {
+  border: 0;
+  padding: 8px 0 0;
+}
+.studio-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: visible;
+}
+.studio-design-sources > button {
+  font-size: 13px;
+  padding: 8px 4px;
+}
+.studio-accordion-panel textarea {
+  min-height: 100px;
+  max-height: 160px;
+  resize: vertical;
+}
+.studio-accordion-panel .studio-current-group {
+  outline: none;
+}
+.studio-selected-design {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.studio-selected-design canvas {
+  width: 44px;
+  max-height: 44px;
+  order: -1;
+  margin: 0;
+}
+.studio-selected-design p {
+  margin: 0;
+  font-size: 12px;
+}
+.studio-selected-design p:last-child {
+  width: 100%;
+}
+.studio-accordion-panel .saved-design-choice img {
+  height: 72px;
+}
+.studio-editor .studio-progress {
+  margin-bottom: 18px;
+}
+.studio-editor .studio-controls {
+  gap: 0;
+}
+@media (min-width: 1024px) {
+  .studio-editor .studio-workspace {
+    height: max(500px, calc(100dvh - 250px));
+    gap: 24px;
+  }
+  .studio-editor .studio-options {
+    overflow: visible;
+    scrollbar-gutter: auto;
+    padding: 0;
+    flex: 0 0 auto;
+  }
+  .studio-editor .studio-photo-panel {
+    height: 100%;
+  }
+  .studio-editor .studio-controls {
+    height: 100%;
+  }
+}
+@media (min-width: 1024px) and (max-height: 800px) {
+  .studio-editor .studio-workspace {
+    height: auto;
+    align-items: stretch;
+  }
+  .studio-editor .studio-photo-panel {
+    min-height: 540px;
+  }
+}
+/* Keep contextual help in the step header without repeating its title. */
+.studio-accordion-panel #studio-photo-step > .mt-2,
+.studio-accordion-panel #studio-design-step > .mt-2,
+.studio-accordion-panel .studio-render-actions > .mt-2 {
+  position: relative;
+  height: 0;
+  margin: 0;
+}
+.studio-accordion-panel #studio-photo-step > .mt-2 h2,
+.studio-accordion-panel #studio-design-step > .mt-2 h2,
+.studio-accordion-panel .studio-render-actions > .mt-2 h2 {
+  display: none;
+}
+.studio-accordion-panel #studio-photo-step > .mt-2 .studio-help-trigger,
+.studio-accordion-panel #studio-design-step > .mt-2 .studio-help-trigger,
+.studio-accordion-panel .studio-render-actions > .mt-2 .studio-help-trigger {
+  position: absolute;
+  right: 22px;
+  top: -42px;
+  width: 28px;
+  height: 28px;
+}
+.studio-accordion-panel .mt-4 {
+  margin-top: 12px;
+}
+.studio-accordion-panel {
+  padding-bottom: 12px;
+}
+.studio-accordion-trigger {
+  padding-block: 8px;
+  font-size: 15px;
+  line-height: 22px;
+}
+.studio-accordion-trigger .text-xs {
+  line-height: 16px;
+}
+.studio-editor .studio-options {
+  gap: 8px;
+}
+.studio-selected-design p.text-primary {
+  display: none;
+}
+.studio-accordion-panel {
+  padding-bottom: 10px;
+}
+.studio-accordion-panel:has(#studio-design-step[data-library-open])
+  .studio-selected-design {
+  display: none;
+}

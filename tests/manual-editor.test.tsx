@@ -68,15 +68,35 @@ afterEach(() => {
   sample.mockClear();
 });
 
+it('returns to the design step if a placed design is removed after revisiting placement', async () => {
+  render(<ManualEditor locale="en" />);
+  fireEvent.click(screen.getAllByRole('button', { name: /^Choose design/ })[0]);
+  fireEvent.click(screen.getByRole('button', { name: 'Try sample' }));
+  await waitFor(() =>
+    expect(document.querySelector('section canvas')).toBeTruthy()
+  );
+  fireEvent.click(
+    screen.getAllByRole('button', { name: /^Confirm placement/ })[0]
+  );
+  fireEvent.keyDown(document.querySelector('section canvas')!, {
+    key: 'Delete',
+  });
+  expect(
+    document.querySelector('[aria-current="step"]')?.textContent
+  ).toContain('Choose design');
+});
+
 it('works after unmount/remount, without account, generation or storage calls', async () => {
   const store = vi.spyOn(Storage.prototype, 'setItem');
   const first = render(<ManualEditor locale="en" />);
+  fireEvent.click(screen.getAllByRole('button', { name: /^Choose design/ })[0]);
   fireEvent.click(screen.getByRole('button', { name: 'Try sample' }));
   await waitFor(() =>
     expect(
       (
         screen.getByRole('button', {
           name: 'Generate real try-on · 1 credit',
+          hidden: true,
         }) as HTMLButtonElement
       ).disabled
     ).toBe(false)
@@ -87,15 +107,18 @@ it('works after unmount/remount, without account, generation or storage calls', 
     (
       screen.getByRole('button', {
         name: 'Generate real try-on · 1 credit',
+        hidden: true,
       }) as HTMLButtonElement
     ).disabled
   ).toBe(true);
+  fireEvent.click(screen.getAllByRole('button', { name: /^Choose design/ })[0]);
   fireEvent.click(screen.getByRole('button', { name: 'Try sample' }));
   await waitFor(() =>
     expect(
       (
         screen.getByRole('button', {
           name: 'Generate real try-on · 1 credit',
+          hidden: true,
         }) as HTMLButtonElement
       ).disabled
     ).toBe(false)
@@ -123,6 +146,7 @@ it('keeps the uploaded body photo when trying a sample design', async () => {
       document.querySelector('section canvas')?.getAttribute('width')
     ).toBe('720')
   );
+  fireEvent.click(screen.getAllByRole('button', { name: /^Choose design/ })[0]);
   fireEvent.click(screen.getByRole('button', { name: 'Try sample' }));
   await waitFor(() => expect(screen.getByText('Selected design')).toBeTruthy());
   expect(document.querySelector('section canvas')?.getAttribute('width')).toBe(

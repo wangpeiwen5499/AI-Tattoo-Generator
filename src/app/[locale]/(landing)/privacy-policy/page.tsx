@@ -172,8 +172,23 @@ export default async function PrivacyPage({
             <section>
               <h2>6. Cookies</h2>
               <p>
-                We use only essential authentication cookies to keep you signed
-                in. We do not use advertising or tracking cookies.
+                Necessary authentication cookies keep you signed in. Optional
+                Google Analytics 4 loads only after you choose Accept analytics.
+                It uses _ga cookies to measure basic page visits and engagement.
+                We send only generalized page paths, without URL queries,
+                fragments, photos, prompts, email addresses or account
+                identifiers. Google also processes browser and device details
+                and pseudonymous analytics identifiers. We do not enable
+                advertising features.
+              </p>
+              <p>
+                Your versioned cookie preference is saved in this browser.
+                Choose Cookie settings in the footer at any time to change it.
+                Choosing Only necessary stops future analytics collection and
+                removes accessible _ga cookies without signing you out or
+                discarding your current studio draft. Withdrawal does not erase
+                analytics data previously collected by Google. Browser or
+                network restrictions may also prevent analytics from loading.
               </p>
             </section>
 

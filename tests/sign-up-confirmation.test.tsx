@@ -76,3 +76,30 @@ it('blocks mismatched passwords and submits only after both values match', async
   await waitFor(() => expect(mocks.signup).toHaveBeenCalledOnce());
   expect(mocks.signup.mock.calls[0][0]).not.toHaveProperty('confirmPassword');
 });
+
+it('preserves the Studio draft callback when signup requires verification', async () => {
+  mocks.signup.mockImplementationOnce(async (_body, options) =>
+    options.onSuccess({})
+  );
+  render(<SignUp configs={{}} callbackUrl="/studio?resumeStudio=1" />);
+  fireEvent.change(screen.getByLabelText('Name'), {
+    target: { value: 'New member' },
+  });
+  fireEvent.change(screen.getByLabelText('Email'), {
+    target: { value: 'new@example.com' },
+  });
+  fireEvent.change(screen.getByLabelText('Password'), {
+    target: { value: 'Example-password-123!' },
+  });
+  fireEvent.change(screen.getByLabelText('Confirm password'), {
+    target: { value: 'Example-password-123!' },
+  });
+  fireEvent.submit(
+    screen.getByRole('button', { name: 'Sign Up' }).closest('form')!
+  );
+  await waitFor(() =>
+    expect(mocks.push).toHaveBeenCalledWith(
+      '/verify-email?email=new%40example.com&callbackUrl=%2Fstudio%3FresumeStudio%3D1&sent=1'
+    )
+  );
+});

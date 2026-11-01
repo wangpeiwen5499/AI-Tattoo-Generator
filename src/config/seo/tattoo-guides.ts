@@ -1,6 +1,6 @@
 import guides from './tattoo-guides.json';
 
-/** Snapshot of the Preview-rendered articles; copy is intentionally unchanged. */
+/** Localized tattoo design guides shared by article pages and navigation cards. */
 export function getTattooGuides(locale: string) {
   return guides[locale === 'zh' ? 'zh' : 'en'];
 }

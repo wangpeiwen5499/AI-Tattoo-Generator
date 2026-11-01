@@ -1,10 +1,15 @@
 {
   "metadata": {
-    "title": "AI Tattoo Generator | TattooVis",
-    "description": "Create, save and reuse tattoo designs. Place a design on your own close-up or side-view photo, then generate one realistic AI try-on.",
-    "keywords": "ai tattoo generator, tattoo preview, tattoo design, ai tattoo, tattoo before ink"
+    "title": "AI Tattoo Generator — See Before You Ink | TattooVis",
+    "description": "Create tattoo designs with AI and preview them on your photo. Explore the saved example and manual placement free; get 3 one-time credits after email verification.",
+    "keywords": "ai tattoo generator, tattoo generator, tattoo design generator, ai tattoo, free tattoo preview"
   },
   "sign": {
+    "welcome_title": "Welcome to TattooVis",
+    "welcome_description": "Create an account and verify your email for 3 welcome credits, once per account.",
+    "verification_note": "Email verification is required. The 3-credit welcome bonus is awarded once per account.",
+    "back": "Back",
+    "signup_failed": "Unable to create your account. Please try again.",
     "sign_in_title": "Sign In",
     "sign_in_description": "Sign in to your account",
     "sign_up_title": "Sign Up",

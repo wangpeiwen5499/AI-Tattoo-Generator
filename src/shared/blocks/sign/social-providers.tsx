@@ -82,7 +82,7 @@ export function SocialProviders({
           key={provider.name}
           variant="outline"
           className={cn(
-            'h-11 w-full gap-2 rounded-[10px]',
+            'h-11 w-full gap-2 rounded-full',
             provider.name === 'google' &&
               'relative border-gray-200 bg-white text-base font-medium text-gray-900 shadow-sm hover:bg-gray-100 hover:text-gray-900 hover:shadow-md dark:border-gray-200 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100'
           )}

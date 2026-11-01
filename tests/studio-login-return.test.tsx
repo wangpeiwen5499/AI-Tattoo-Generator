@@ -148,6 +148,9 @@ it('keeps the editor in place when temporary storage fails before login', async 
   });
   await waitFor(() => expect(screen.getByText('Selected design')).toBeTruthy());
   fireEvent.click(
+    screen.getByRole('button', { name: 'Confirm placement — continue' })
+  );
+  fireEvent.click(
     screen.getByRole('button', { name: 'Generate real try-on · 1 credit' })
   );
   await waitFor(() => expect(toast.error).toHaveBeenCalled());

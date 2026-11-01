@@ -56,8 +56,8 @@ export default async function GuidePage({ params }: Props) {
         </h1>
         <p className="text-muted-foreground mt-4 text-sm">
           {zh ? 'TattooVis 团队 · 更新于 ' : 'By the TattooVis team · Updated '}
-          <time dateTime="2026-10-31">
-            {zh ? '2026 年 10 月 31 日' : 'October 31, 2026'}
+          <time dateTime="2026-11-01">
+            {zh ? '2026 年 11 月 1 日' : 'November 1, 2026'}
           </time>
         </p>
         <p className="mt-8 text-lg leading-relaxed">{guide.intro}</p>
@@ -130,8 +130,8 @@ export default async function GuidePage({ params }: Props) {
               className="text-primary underline underline-offset-4"
             >
               {zh
-                ? '打开首页互动案例（高达上臂试戴）'
-                : 'Explore the homepage interactive example (Gundam arm try-on)'}
+                ? '打开首页保存的互动案例'
+                : 'Explore the saved homepage interactive example'}
             </Link>
           </p>
         )}

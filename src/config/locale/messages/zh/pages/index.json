@@ -11,13 +11,13 @@
     "sections": {
       "hero": {
         "id": "hero",
-        "title": "在纹身之前，先看效果",
+        "title": "AI Tattoo Generator 纹身生成器：在纹身之前，先看效果",
         "highlight_text": "先看效果",
-        "description": "上传局部或侧面照片，上传、生成或复用纹身图案。免费调整位置，再生成单张真实试戴。",
+        "description": "用 AI 纹身生成器把想法变成设计。也可以上传或复用图案，在自己的照片上免费调整位置，再生成单张真实试戴。",
         "tip": "🎁 注册并验证邮箱，即可获赠 <strong>3 个免费积分</strong> · 每个账户仅赠送一次",
         "buttons": [
           {
-            "title": "免费试用",
+            "title": "打开纹身生成器",
             "icon": "Sparkles",
             "url": "/studio",
             "target": "_self",
@@ -36,7 +36,7 @@
         "tattoo_demo": true,
         "demo": {
           "eyebrow": "交互案例",
-          "title": "一张照片，一个想法，四种位置。",
+          "title": "体验已保存的纹身案例",
           "restart": "重新体验",
           "uploadTitle": "从一张照片开始",
           "samplePhoto": "无纹身原照",
@@ -67,7 +67,7 @@
           "showTattoo": "查看纹身效果",
           "enlarge": "放大预览",
           "anatomyNote": "左、右以照片中人物本人的方向为准。",
-          "startHint": "先选择示例原照，再体验四个部位的纹身效果。",
+          "startHint": "先选择示例原照，再比较已保存的位置效果。",
           "closePreview": "关闭预览",
           "previewInstructions": "按 Escape 键关闭预览。",
           "enlargeOriginal": "放大原始照片",
@@ -77,7 +77,7 @@
       "usage": {
         "block": "features-step",
         "id": "usage",
-        "title": "使用方法",
+        "title": "AI 纹身设计生成器怎么用",
         "description": "从照片到真实试戴，你来决定每一步。",
         "text_align": "center",
         "items": [
@@ -102,12 +102,12 @@
       },
       "features": {
         "id": "features",
-        "title": "为什么选择 AI 纹身生成器",
-        "description": "预览下一个纹身的最聪明方式。",
+        "title": "生成设计，再看照片上的效果",
+        "description": "从纹身灵感到大小与位置比较，准备与纹身师讨论的设计参考。",
         "items": [
           {
             "title": "你指定的位置",
-            "description": "无需固定四部位。手臂、肩膀、小腿或其他可见皮肤，由你选择。",
+            "description": "把图案移动到照片里可见的皮肤上，自由选择想比较的位置。",
             "icon": "RiBodyScanLine"
           },
           {
@@ -131,7 +131,7 @@
             "icon": "RiShieldCheckLine"
           },
           {
-            "title": "安全私密",
+            "title": "了解照片隐私规则",
             "description": "照片由 AI 和存储服务商处理，持有图片链接的人可以访问图片。上传前请阅读隐私政策。",
             "icon": "RiLockLine"
           }
@@ -174,15 +174,15 @@
       "faq": {
         "id": "faq",
         "title": "常见问题",
-        "description": "有疑问？我们有答案。",
+        "description": "了解设计、免费预览与积分费用。",
         "items": [
           {
-            "question": "如何生成纹身试戴？",
-            "answer": "上传身体照片，选择、上传或生成纹身图案，在照片上确认摆放，再生成单张 AI 真实试戴。无需全身正面照片，也不会强制生成四个部位。"
+            "question": "AI 纹身生成器可以做什么？",
+            "answer": "描述主体、风格和构图，就能生成纹身设计，例如一枝黑色轮廓橄榄枝、保留留白、不要文字。也可以上传已有图案或复用已保存设计，在照片上调整位置后生成单张 AI 真实试戴。AI 设计用于参考，需要与纹身师讨论和调整。"
           },
           {
-            "question": "免费额度和积分如何使用？",
-            "answer": "注册并验证邮箱可一次性获赠 3 credits。手动摆放免费；生成新设计 1 credit，单张真实试戴 1K / 2K / 4K 分别为 1 / 2 / 3 credits。积分永不过期。"
+            "question": "纹身生成器可以免费使用吗？",
+            "answer": "保存的互动案例与手动摆放免费。新账户验证邮箱后一次性获赠 3 个积分。生成新设计为 1 积分；单张 AI 试戴在 1K、2K、4K 下分别为 1、2、3 积分。例如，新设计加一次 1K 试戴共用 2 积分。后续 AI 生成需要可用积分。"
           },
           {
             "question": "可以复用以前的设计吗？",
@@ -209,7 +209,7 @@
       "cta": {
         "id": "cta",
         "title": "准备好预览你的下一个纹身了吗？",
-        "description": "从自己的照片开始。免费摆放，注册并验证邮箱获赠 3 credits，用于设计和真实试戴。",
+        "description": "免费浏览保存案例，或在照片上调整自己的图案。新账户验证邮箱后一次性获赠 3 个积分，可用于 AI 设计和真实试戴。",
         "buttons": [
           {
             "title": "开始生成",

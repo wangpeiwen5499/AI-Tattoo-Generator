@@ -1,0 +1,75 @@
+.banner {
+  position: fixed;
+  z-index: 100;
+  bottom: 1rem;
+  left: 1rem;
+  right: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  max-width: 72rem;
+  margin-inline: auto;
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--card);
+  color: var(--card-foreground);
+  box-shadow: 0 8px 36px #0003;
+}
+.copy {
+  flex: 1 1 26rem;
+  min-width: 0;
+}
+.copy h2 {
+  font-size: 1rem;
+  font-weight: 600;
+}
+.copy p {
+  margin-top: 0.4rem;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--muted-foreground);
+}
+.copy a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.actions {
+  display: flex;
+  flex: 1 1 20rem;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+.actions button {
+  flex: 1 1 9rem;
+  min-height: 44px;
+  padding: 0.6rem 1rem;
+  border: 1px solid var(--foreground);
+  border-radius: 0.65rem;
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.actions button:hover {
+  background: var(--accent);
+}
+.banner :is(button, a, h2):focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 3px;
+}
+@media (max-width: 480px) {
+  .banner {
+    bottom: 0.5rem;
+    left: 0.5rem;
+    right: 0.5rem;
+    padding: 1rem;
+    max-height: calc(100dvh - 1rem);
+    overflow-y: auto;
+  }
+  .actions {
+    flex-basis: 100%;
+  }
+}

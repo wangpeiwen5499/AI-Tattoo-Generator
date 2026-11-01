@@ -44,6 +44,7 @@ import {
   StudioSteps,
   studioTaskKind,
 } from './studio-guidance';
+import { StudioPanel } from './studio-panel';
 
 const button =
   'app-action rounded-xl border border-border bg-background px-4 py-3 text-sm font-medium transition hover:border-primary focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-40 disabled:cursor-not-allowed';
@@ -102,7 +103,12 @@ export function ManualEditor({
     task: studio.task?.kind,
     pending: studio.pending?.kind,
   });
+  const [selectedStep, setSelectedStep] = useState<number | null>(null);
   const currentStep =
+    (!jobKind &&
+      selectedStep &&
+      (selectedStep < 3 || (!!photo && !!design)) &&
+      selectedStep) ||
     (!jobKind && loginStep) ||
     studioStep({
       photo: !!photo,
@@ -258,6 +264,7 @@ export function ManualEditor({
   }, [studio.error, studio.gate]);
   const update = (p: Placement) => {
     if (busy) return;
+    setSelectedStep(null);
     setPlacement(constrainPlacement(p));
     setLoginStep(null);
     setAiSelected(false);
@@ -268,9 +275,11 @@ export function ManualEditor({
       const ticket = revision.current;
       const image = await assetImage(record.image);
       if (ticket !== revision.current) return;
+      setSelectedStep(null);
       setDesign(image);
       setDesignRecord(record);
       setPrompt(record.prompt || '');
+      setSelectedStep(null);
       setPlacement(defaultPlacement());
       setOriginal(false);
       setAiSelected(false);
@@ -286,9 +295,11 @@ export function ManualEditor({
       if (kind === 'design') {
         const image = await assetImage(record.image);
         if (cancelled || ticket !== revision.current) return;
+        setSelectedStep(null);
         setDesign(image);
         setDesignRecord(record);
         setPrompt(record.prompt || '');
+        setSelectedStep(null);
         setPlacement(defaultPlacement());
         setOriginal(false);
         setAiSelected(false);
@@ -323,9 +334,9 @@ export function ManualEditor({
       if (
         !cancelled &&
         ticket === revision.current &&
-        notified.current !== record.id
+        notified.current !== `${kind}:${record.id}`
       ) {
-        notified.current = record.id;
+        notified.current = `${kind}:${record.id}`;
         toast.success(
           kind === 'design'
             ? t(
@@ -374,6 +385,7 @@ export function ManualEditor({
       if (initialDesignId) {
         const image = await assetImage(record.image);
         if (cancelled || ticket !== revision.current) return;
+        setSelectedStep(null);
         setDesign(image);
         setDesignRecord(record);
         setPrompt(record.prompt || '');
@@ -474,6 +486,7 @@ export function ManualEditor({
   function choose(file: File | undefined, kind: 'photo' | 'design') {
     if (!file || busy) return;
     setLoginStep(null);
+    setSelectedStep(null);
     void run(async () => {
       const id = revision.current;
       if (kind === 'photo') {
@@ -483,6 +496,7 @@ export function ManualEditor({
       } else {
         const image = await loadDesign(file);
         if (id !== revision.current) return;
+        setSelectedStep(null);
         setDesign(image);
         setDesignRecord(null);
         if (studio.capabilities?.signedIn && studio.capabilities.verified) {
@@ -502,6 +516,7 @@ export function ManualEditor({
           }
         }
       }
+      setSelectedStep(null);
       setPlacement(defaultPlacement());
       setOriginal(false);
       setMenu(false);
@@ -705,17 +720,10 @@ export function ManualEditor({
     update(p);
   }
   function visitStep(step: number) {
+    if (busy || (step >= 3 && (!photo || !design))) return;
+    setSelectedStep(step);
     setLoginStep(null);
-    const target = document.getElementById(
-      step === 1
-        ? 'studio-photo-step'
-        : step === 2
-          ? 'studio-design-step'
-          : step === 3
-            ? 'studio-placement-step'
-            : 'studio-result-step'
-    );
-    target?.scrollIntoView?.({ block: 'nearest' });
+    // Panels unfold in place; keep the photo and editor stable.
     if (step === 3) {
       setOriginal(false);
       setAiSelected(false);
@@ -730,7 +738,9 @@ export function ManualEditor({
     'absolute flex h-11 w-11 items-center justify-center rounded-full border-2 border-white bg-primary text-white shadow-md touch-none';
 
   return (
-    <div className={`mt-10 pb-16 ${historyMode ? 'studio-history-view' : ''}`}>
+    <div
+      className={`studio-editor mt-5 pb-6 ${historyMode ? 'studio-history-view' : ''}`}
+    >
       {historyMode && !view && (
         <div className="studio-history-loading bg-background fixed inset-0 z-[60] flex flex-col items-center justify-center gap-5 p-6">
           {loading ? (
@@ -1028,155 +1038,237 @@ export function ManualEditor({
           </div>
         </section>
         <aside className="studio-controls">
-          <div className="studio-options space-y-7">
-            <div id="studio-photo-step" className="border-b pb-6">
-              <p className="text-primary text-sm">01 / {t('PHOTO', '照片')}</p>
-              <div className="mt-2 flex items-center justify-between gap-2">
-                <h2 className="text-2xl">
-                  {t('Start with your skin', '从你的照片开始')}
-                </h2>
-                <StepHelp label={t('About photo uploads', '照片上传说明')}>
-                  {t(
-                    'Close-ups and side views work too. Keep the target skin visible. Use a photo of yourself or a consenting adult. Local previews keep the whole photo and resize its long edge to at most 2560px.',
-                    '局部和侧面照片都可以，让目标皮肤清晰可见。请使用本人或已同意的成年人的照片。预览保留整张照片，长边最大 2560px。'
-                  )}
-                </StepHelp>
+          <div className="studio-options">
+            <StudioPanel
+              step={1}
+              title={t('Choose photo', '选择照片')}
+              summary={
+                photo
+                  ? t('Photo selected', '照片已选择')
+                  : t('Upload your body photo', '上传身体部位照片')
+              }
+              open={currentStep === 1}
+              complete={!!photo}
+              disabled={busy}
+              onOpen={() => visitStep(1)}
+            >
+              <div id="studio-photo-step" className="border-b pb-6">
+                <p className="text-primary text-sm">
+                  01 / {t('PHOTO', '照片')}
+                </p>
+                <div className="mt-2 flex items-center justify-between gap-2">
+                  <h2 className="text-2xl">
+                    {t('Start with your skin', '从你的照片开始')}
+                  </h2>
+                  <StepHelp label={t('About photo uploads', '照片上传说明')}>
+                    {t(
+                      'Close-ups and side views work too. Keep the target skin visible. Use a photo of yourself or a consenting adult. Local previews keep the whole photo and resize its long edge to at most 2560px.',
+                      '局部和侧面照片都可以，让目标皮肤清晰可见。请使用本人或已同意的成年人的照片。预览保留整张照片，长边最大 2560px。'
+                    )}
+                  </StepHelp>
+                </div>
+                <button
+                  className={`${button} mt-4 w-full ${currentStep === 1 ? 'studio-current-action' : ''}`}
+                  disabled={busy}
+                  onClick={() => photoInput.current?.click()}
+                >
+                  {photo
+                    ? t('Change photo', '更换照片')
+                    : t('Upload photo', '上传照片')}
+                </button>
+                <p className="text-muted-foreground mt-3 text-sm">
+                  PNG / JPEG / WebP · {t('up to 20 MB', '最大 20MB')}
+                </p>
               </div>
-              <button
-                className={`${button} mt-4 w-full ${currentStep === 1 ? 'studio-current-action' : ''}`}
-                disabled={busy}
-                onClick={() => photoInput.current?.click()}
-              >
-                {photo
-                  ? t('Change photo', '更换照片')
-                  : t('Upload photo', '上传照片')}
-              </button>
-              <p className="text-muted-foreground mt-3 text-sm">
-                PNG / JPEG / WebP · {t('up to 20 MB', '最大 20MB')}
-              </p>
-            </div>
+            </StudioPanel>
             {loading && !historyMode && (
               <OperationStatus locale={locale} phase="processing" />
             )}
-            <StudioDesigns
-              locale={locale}
-              prompt={prompt}
-              setPrompt={setPrompt}
-              onUpload={() => designInput.current?.click()}
-              onPick={pickDesign}
-              studio={studio}
-              busy={busy}
-              current={currentStep === 2}
-              activeOperation={
-                jobKind ||
-                (studio.result && studio.result !== loadedResult
-                  ? studio.result.kind
-                  : undefined)
+            <StudioPanel
+              step={2}
+              title={t('Choose design', '选择图案')}
+              summary={
+                design
+                  ? t('Design selected', '图案已选择')
+                  : t('Upload, create or reuse', '上传、生成或复用')
               }
-              selectedId={designRecord?.id}
-              phase={
-                studio.busy
-                  ? studio.phase
-                  : studio.result !== loadedResult
-                    ? 'loading'
-                    : 'processing'
-              }
-              onGenerate={() => {
-                setActionKind('design');
-                if (!studio.capabilities?.signedIn) {
-                  void signInWithSetup('design');
-                  return;
+              open={currentStep === 2}
+              complete={!!design}
+              disabled={busy}
+              onOpen={() => visitStep(2)}
+            >
+              <StudioDesigns
+                locale={locale}
+                prompt={prompt}
+                setPrompt={setPrompt}
+                onUpload={() => designInput.current?.click()}
+                onPick={pickDesign}
+                studio={studio}
+                busy={busy}
+                current={currentStep === 2}
+                activeOperation={
+                  jobKind ||
+                  (studio.result && studio.result !== loadedResult
+                    ? studio.result.kind
+                    : undefined)
                 }
-                setLoginStep(null);
-                studio.generate(prompt);
-              }}
-            />
-            {design && (
-              <div className="rounded-xl border p-4">
-                <p className="text-muted-foreground mb-3 text-sm">
-                  {t('Selected design', '当前图案')}
-                </p>
-                <DesignPreview image={design} />
-                {designRecord && (
-                  <p className="text-primary mt-3 text-sm">
-                    {t(
-                      'Saved to your account · reusable for free',
-                      '已保存到账户 · 免费复用'
-                    )}
+                selectedId={designRecord?.id}
+                phase={
+                  studio.busy
+                    ? studio.phase
+                    : studio.result !== loadedResult
+                      ? 'loading'
+                      : 'processing'
+                }
+                onGenerate={() => {
+                  setActionKind('design');
+                  if (!studio.capabilities?.signedIn) {
+                    void signInWithSetup('design');
+                    return;
+                  }
+                  setSelectedStep(null);
+                  setLoginStep(null);
+                  studio.generate(prompt);
+                }}
+              />
+              {design && (
+                <div className="studio-selected-design rounded-xl border p-3">
+                  <p className="text-muted-foreground mb-3 text-sm">
+                    {t('Selected design', '当前图案')}
                   </p>
-                )}
-              </div>
-            )}
+                  <DesignPreview image={design} />
+                  {designRecord && (
+                    <p className="text-primary mt-2 text-xs">
+                      {t(
+                        'Saved to your account · reusable for free',
+                        '已保存到账户 · 免费复用'
+                      )}
+                    </p>
+                  )}
+                </div>
+              )}
 
-            {!design && (
-              <button
-                className={`${button} w-full`}
-                disabled={busy}
-                onClick={() =>
-                  void run(async () => {
-                    const id = revision.current;
-                    const result = await loadSample();
-                    if (id !== revision.current) return;
-                    if (!photo) setPhoto(result.photo);
-                    setDesign(result.design);
-                    setDesignRecord(null);
-                    setRenderResult(null);
-                    setAiSelected(false);
-                    setPlacement(
-                      photo
-                        ? defaultPlacement()
-                        : {
-                            ...defaultPlacement(),
-                            px: 0.37,
-                            py: 0.28,
-                            scale: 0.45,
-                          }
-                    );
-                    setOriginal(false);
-                  })
-                }
-              >
-                {loading
-                  ? t('Opening image…', '正在打开图片…')
-                  : t('Try sample', '试用示例')}
-              </button>
-            )}
-            <div className="text-muted-foreground flex items-center justify-between gap-2 text-sm">
-              <span>{t('Saving & photo privacy', '保存与照片隐私')}</span>
-              <StepHelp label={t('About saving and privacy', '保存与隐私说明')}>
+              {!design && (
+                <button
+                  className={`${button} w-full`}
+                  disabled={busy}
+                  onClick={() =>
+                    void run(async () => {
+                      const id = revision.current;
+                      const result = await loadSample();
+                      if (id !== revision.current) return;
+                      if (!photo) setPhoto(result.photo);
+                      setDesign(result.design);
+                      setDesignRecord(null);
+                      setRenderResult(null);
+                      setAiSelected(false);
+                      setPlacement(
+                        photo
+                          ? defaultPlacement()
+                          : {
+                              ...defaultPlacement(),
+                              px: 0.37,
+                              py: 0.28,
+                              scale: 0.45,
+                            }
+                      );
+                      setSelectedStep(null);
+                      setOriginal(false);
+                    })
+                  }
+                >
+                  {loading
+                    ? t('Opening image…', '正在打开图片…')
+                    : t('Try sample', '试用示例')}
+                </button>
+              )}
+            </StudioPanel>
+            <StudioPanel
+              step={3}
+              title={t('Confirm placement', '确认摆放')}
+              summary={
+                photo && design
+                  ? t('Position, size and angle', '位置、大小和角度')
+                  : t('Choose a photo and design first', '先选择照片和图案')
+              }
+              open={currentStep === 3}
+              complete={!!photo && !!design}
+              disabled={busy || !photo || !design}
+              onOpen={() => visitStep(3)}
+            >
+              <p className="text-muted-foreground text-sm leading-6">
                 {t(
-                  'Images are uploaded when you save a design or submit a try-on. Generated designs and results are saved to your account. Unsubmitted edits clear when you leave or refresh, except for a temporary 30-minute sign-in handoff. Manual placement is free; new designs and AI try-ons are charged separately.',
-                  '保存设计或提交试戴时会上传图片，生成的设计和结果保存在账户中。未提交的摆放在离开或刷新后清空；登录往返时临时保留30分钟。手动摆放免费，新设计和真实试戴分别计费。'
+                  'Drag the design on your photo. Resize and rotate with the handles.',
+                  '在照片上拖动图案，用控制点缩放和旋转。'
                 )}
-              </StepHelp>
-            </div>
+              </p>
+              <button
+                type="button"
+                className={`${button} studio-current-action mt-4 w-full`}
+                disabled={busy || !photo || !design}
+                onClick={() => visitStep(4)}
+              >
+                {t('Confirm placement — continue', '确认摆放，继续')}
+              </button>
+              <p className="text-muted-foreground mt-3 text-xs">
+                {t(
+                  'Free. Review resolution and cost in the next step.',
+                  '此步骤免费，下一步确认分辨率及积分。'
+                )}
+              </p>
+            </StudioPanel>
+            <StudioPanel
+              step={4}
+              title={t('Real try-on', '真实试戴')}
+              summary={
+                renderResult
+                  ? t('Result saved', '结果已保存')
+                  : t('Choose quality and generate', '选择画质并生成')
+              }
+              open={currentStep === 4}
+              complete={!!renderResult}
+              disabled={busy || !photo || !design}
+              onOpen={() => visitStep(4)}
+            >
+              <div className="text-muted-foreground flex items-center justify-between gap-2 text-sm">
+                <span>{t('Saving & photo privacy', '保存与照片隐私')}</span>
+                <StepHelp
+                  label={t('About saving and privacy', '保存与隐私说明')}
+                >
+                  {t(
+                    'Images are uploaded when you save a design or submit a try-on. Generated designs and results are saved to your account. Unsubmitted edits clear when you leave or refresh, except for a temporary 30-minute sign-in handoff. Manual placement is free; new designs and AI try-ons are charged separately.',
+                    '保存设计或提交试戴时会上传图片，生成的设计和结果保存在账户中。未提交的摆放在离开或刷新后清空；登录往返时临时保留30分钟。手动摆放免费，新设计和真实试戴分别计费。'
+                  )}
+                </StepHelp>
+              </div>
+              <StudioRender
+                locale={locale}
+                resolution={resolution}
+                setResolution={setResolution}
+                activeOperation={
+                  jobKind ||
+                  (studio.result && studio.result !== loadedResult
+                    ? studio.result.kind
+                    : undefined)
+                }
+                phase={
+                  studio.busy
+                    ? studio.phase
+                    : studio.result !== loadedResult
+                      ? 'loading'
+                      : 'processing'
+                }
+                onRender={renderTryOn}
+                busy={busy}
+                ready={!!photo && !!design}
+                pending={!!studio.pending}
+                hasResult={!!renderResult}
+                downloading={downloading}
+                onDownload={() => void download()}
+                current={currentStep === 4 || currentStep === 3}
+              />
+            </StudioPanel>
           </div>
-          <StudioRender
-            locale={locale}
-            resolution={resolution}
-            setResolution={setResolution}
-            activeOperation={
-              jobKind ||
-              (studio.result && studio.result !== loadedResult
-                ? studio.result.kind
-                : undefined)
-            }
-            phase={
-              studio.busy
-                ? studio.phase
-                : studio.result !== loadedResult
-                  ? 'loading'
-                  : 'processing'
-            }
-            onRender={renderTryOn}
-            busy={busy}
-            ready={!!photo && !!design}
-            pending={!!studio.pending}
-            hasResult={!!renderResult}
-            downloading={downloading}
-            onDownload={() => void download()}
-            current={currentStep === 4 || currentStep === 3}
-          />
         </aside>
       </div>
       <input

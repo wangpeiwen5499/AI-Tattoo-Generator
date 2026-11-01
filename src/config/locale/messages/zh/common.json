@@ -1,10 +1,15 @@
 {
   "metadata": {
-    "title": "AI 纹身生成器 | TattooVis",
-    "description": "生成、保存和复用纹身图案，在局部或侧面照片上自由摆放，再生成单张 AI 真实试戴。",
-    "keywords": "AI纹身生成器, 纹身预览, 纹身设计, AI纹身, 纹身效果图"
+    "title": "AI 纹身生成器：在纹身之前先看效果 | TattooVis",
+    "description": "用 AI 生成纹身设计，在自己的照片上比较大小与位置。案例体验和手动摆放免费，新账户验证邮箱后一次性获赠 3 个积分。",
+    "keywords": "AI 纹身生成器, 纹身设计, 照片纹身预览, 免费纹身摆放, TattooVis"
   },
   "sign": {
+    "welcome_title": "欢迎来到 TattooVis",
+    "welcome_description": "注册并验证邮箱，即可获赠 3 个免费积分；每个账户仅赠送一次。",
+    "verification_note": "需完成邮箱验证。每个账号仅可领取一次 3 积分新用户奖励。",
+    "back": "返回",
+    "signup_failed": "创建账号失败，请重试。",
     "sign_in_title": "登录",
     "sign_in_description": "登录到您的账户",
     "sign_up_title": "注册",

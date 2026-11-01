@@ -1,5 +1,6 @@
 import { Link } from '@/core/i18n/navigation';
 import { envConfigs } from '@/config';
+import { CookieSettingsButton } from '@/extensions/analytics/google-consent';
 import {
   BrandLogo,
   Copyright,
@@ -98,6 +99,8 @@ export function Footer({ footer }: { footer: FooterType }) {
               ))}
             </div>
           ) : null}
+
+          <CookieSettingsButton />
 
           {footer.social ? (
             <div className="flex min-w-0 flex-wrap items-center gap-2">

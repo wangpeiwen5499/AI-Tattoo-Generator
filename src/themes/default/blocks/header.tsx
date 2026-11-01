@@ -13,6 +13,7 @@ import {
   SmartIcon,
   ThemeToggler,
 } from '@/shared/blocks/common';
+import { NavIcon } from '@/shared/blocks/common/nav-icon';
 import {
   Accordion,
   AccordionContent,
@@ -132,7 +133,7 @@ export function Header({ header }: { header: HeaderType }) {
                         : ''
                     }`}
                   >
-                    {item.icon && <SmartIcon name={item.icon as string} />}
+                    {item.icon && <NavIcon route={item.url || ''} />}
                     {item.title}
                   </Link>
                 </NavigationMenuLink>
@@ -231,7 +232,10 @@ export function Header({ header }: { header: HeaderType }) {
                     }}
                     className="data-[state=open]:bg-muted flex items-center justify-between px-4 py-3 text-lg **:!font-normal"
                   >
-                    {item.title}
+                    <span className="flex items-center gap-3">
+                      <NavIcon route={item.url || ''} />
+                      {item.title}
+                    </span>
                   </Link>
                 )}
               </AccordionItem>

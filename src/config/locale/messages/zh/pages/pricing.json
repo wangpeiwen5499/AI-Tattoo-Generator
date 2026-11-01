@@ -77,7 +77,7 @@
             "payment_product_id": "PROD_10hOkpFlMDiWFiqLxcWXHi"
           },
           {
-            "product_id": "PROD_1COeqPCRSNk89LbIyHYnC",
+            "product_id": "PROD_1COeqPCRSNk89LbIyHY5nC",
             "interval": "one-time",
             "group": "one-time",
             "title": "专业版",
@@ -101,7 +101,7 @@
             "payment_providers": [
               "waffo"
             ],
-            "payment_product_id": "PROD_1COeqPCRSNk89LbIyHYnC"
+            "payment_product_id": "PROD_1COeqPCRSNk89LbIyHY5nC"
           }
         ]
       },
