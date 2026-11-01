@@ -19,6 +19,11 @@ import {
 } from '@/config/db/schema';
 import { consumeCredits, refundConsumedCredits } from '@/shared/models/credit';
 
+import {
+  IMAGE_SAFETY_ERROR,
+  isProhibitedImagePrompt,
+  TATTOO_RENDER_SAFETY,
+} from './image-safety';
 import { createTask, getRecordInfo } from './kie-client';
 
 const ACTIVE_STAGES = ['design', 'fusion', 'finalizing'];
@@ -73,6 +78,8 @@ export async function startTattooGeneration(input: {
     !/^[0-9a-f-]{36}$/i.test(requestId)
   )
     throw new GenerationRequestError('Invalid generation request');
+  if (isProhibitedImagePrompt(prompt))
+    throw new GenerationRequestError(IMAGE_SAFETY_ERROR, 400);
   return db().transaction(async (tx) => {
     const [owner] = await tx
       .select({ id: user.id, emailVerified: user.emailVerified })
@@ -278,7 +285,7 @@ export async function advanceTattooJob(projectId: string): Promise<void> {
           const taskId = await createTask({
             model: 'gpt-image-2-text-to-image',
             input: {
-              prompt: `${project.prompt}, tattoo design, white background, clean bold lines, high contrast, stencil style, professional tattoo flash`,
+              prompt: `${project.prompt}, tattoo design, white background, clean bold lines, high contrast, stencil style, professional tattoo flash. Non-sexual tattoo artwork only; no intimate imagery.`,
               aspect_ratio: '1:1',
               resolution: parseTattooResolution(project.resolution),
             },
@@ -345,7 +352,7 @@ export async function advanceTattooJob(projectId: string): Promise<void> {
             task.taskId = await createTask({
               model: 'gpt-image-2-image-to-image',
               input: {
-                prompt: `Apply this tattoo design naturally on the ${BODY_PART_LABELS[task.bodyPart].toLowerCase()} of the person in the photo. Make it look real with natural skin texture, lighting, perspective, and body contour. Do not change anything else in the photo.`,
+                prompt: `Apply this tattoo design naturally on the ${BODY_PART_LABELS[task.bodyPart].toLowerCase()} of the person in the photo. Make it look real with natural skin texture, lighting, perspective, and body contour. Do not change anything else in the photo. ${TATTOO_RENDER_SAFETY}`,
                 input_urls: [project.bodyPhotoUrl, project.tattooDesignUrl!],
                 aspect_ratio: '3:4',
                 resolution: parseTattooResolution(project.resolution),

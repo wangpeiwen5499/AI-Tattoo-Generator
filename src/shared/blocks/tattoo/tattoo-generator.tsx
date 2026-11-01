@@ -255,6 +255,8 @@ export function TattooGenerator({ projectId }: { projectId?: string } = {}) {
                 disabled={outOfCredits}
               />
               <p className="text-muted-foreground mt-3 text-xs">
+                Upload only photos of consenting adults that you have permission to edit.
+                Nudification, sexualized edits and non-consensual intimate imagery are prohibited.{' '}
                 Photos are sent to our AI and storage providers. Anyone with an
                 image link can view it. Please avoid sensitive photos and read
                 our{' '}

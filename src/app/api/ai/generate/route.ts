@@ -1,3 +1,7 @@
+import {
+  IMAGE_SAFETY_ERROR,
+  isProhibitedImagePrompt,
+} from '@/server/ai/image-safety';
 import { requireGenerationUser } from '@/server/auth/generation-access';
 
 import { envConfigs } from '@/config';
@@ -22,6 +26,13 @@ export async function POST(request: Request) {
     if (!prompt && !options) {
       throw new Error('prompt or options is required');
     }
+
+    if (
+      [AIMediaType.IMAGE, AIMediaType.VIDEO].includes(mediaType) &&
+      typeof prompt === 'string' &&
+      isProhibitedImagePrompt(prompt)
+    )
+      throw new Error(IMAGE_SAFETY_ERROR);
 
     const aiService = await getAIService();
 

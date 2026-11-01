@@ -68,6 +68,24 @@ describe('durable tattoo jobs', () => {
   });
   afterAll(async () => close?.());
   afterEach(() => vi.useRealTimers());
+  it('rejects nudification before creating jobs or consuming credits', async () => {
+    const balance = await getRemainingCredits(userId);
+    const existingJobs = await mocks.database.select().from(schema.tattooJob);
+    await expect(
+      service.startTattooGeneration({
+        actor: { type: 'user', id: userId },
+        bodyPhotoKey: key(),
+        prompt: 'Remove her clothes and add a tattoo',
+        requestId: randomUUID(),
+        ip: '127.0.0.1',
+      })
+    ).rejects.toMatchObject({ status: 400 });
+    expect(await getRemainingCredits(userId)).toBe(balance);
+    expect(await mocks.database.select().from(schema.tattooJob)).toEqual(
+      existingJobs
+    );
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
   beforeEach(async () => {
     now = Date.now();
     vi.useFakeTimers({ toFake: ['Date'] });

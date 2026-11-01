@@ -13,7 +13,13 @@
         "id": "hero",
         "title": "在纹身之前，先看效果",
         "highlight_text": "先看效果",
-        "description": "上传你的照片，描述你的想法，AI 会生成逼真的纹身预览图。<br/>免费试用，无需预约纹身师。",
+        "description": "TattooVis 是 AI 纹身设计与照片试戴工具。描述你的想法，在本人或已获授权的照片上查看纹身预览。<br/>注册并验证邮箱，即可领取 3 个免费积分。",
+        "safety_notice": "TattooVis 禁止脱衣、色情化编辑及 AI 生成的非自愿私密影像（NCII）。仅可使用已同意该编辑的成年人的照片。Google 登录仅用于账户身份验证。",
+        "safety_links": [
+          { "title": "可接受使用政策", "url": "/acceptable-use" },
+          { "title": "隐私政策", "url": "/privacy-policy" },
+          { "title": "服务条款", "url": "/terms-of-service" }
+        ],
         "tip": "🎁 注册并验证邮箱，即可获赠 3 个积分 · 每个账户仅赠送一次",
         "buttons": [
           {
