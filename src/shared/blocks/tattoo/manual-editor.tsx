@@ -927,33 +927,39 @@ export function ManualEditor({
               </div>
             )}
 
-            <button
-              className={`${button} w-full`}
-              disabled={busy}
-              onClick={() =>
-                void run(async () => {
-                  const id = revision.current;
-                  const result = await loadSample();
-                  if (id !== revision.current) return;
-                  setPhoto(result.photo);
-                  setDesign(result.design);
-                  setDesignRecord(null);
-                  setRenderResult(null);
-                  setAiSelected(false);
-                  setPlacement({
-                    ...defaultPlacement(),
-                    px: 0.37,
-                    py: 0.28,
-                    scale: 0.45,
-                  });
-                  setOriginal(false);
-                })
-              }
-            >
-              {busy
-                ? t('Opening image…', '正在打开图片…')
-                : t('Try sample', '试用示例')}
-            </button>
+            {!design && (
+              <button
+                className={`${button} w-full`}
+                disabled={busy}
+                onClick={() =>
+                  void run(async () => {
+                    const id = revision.current;
+                    const result = await loadSample();
+                    if (id !== revision.current) return;
+                    if (!photo) setPhoto(result.photo);
+                    setDesign(result.design);
+                    setDesignRecord(null);
+                    setRenderResult(null);
+                    setAiSelected(false);
+                    setPlacement(
+                      photo
+                        ? defaultPlacement()
+                        : {
+                            ...defaultPlacement(),
+                            px: 0.37,
+                            py: 0.28,
+                            scale: 0.45,
+                          }
+                    );
+                    setOriginal(false);
+                  })
+                }
+              >
+                {busy
+                  ? t('Opening image…', '正在打开图片…')
+                  : t('Try sample', '试用示例')}
+              </button>
+            )}
             <div className="text-muted-foreground flex items-center justify-between gap-2 text-sm">
               <span>{t('Saving & photo privacy', '保存与照片隐私')}</span>
               <StepHelp label={t('About saving and privacy', '保存与隐私说明')}>

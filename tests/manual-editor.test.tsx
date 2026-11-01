@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import React from 'react';
+import { loadDesign, loadPhoto } from '@/lib/manual-images';
 import {
   cleanup,
   fireEvent,
@@ -106,4 +107,45 @@ it('works after unmount/remount, without account, generation or storage calls', 
       .mock.calls.every((call) => !call[1]?.method || call[1].method === 'GET')
   ).toBe(true);
   expect(store).not.toHaveBeenCalled();
+});
+
+it('keeps the uploaded body photo when trying a sample design', async () => {
+  const photo = document.createElement('canvas');
+  photo.width = 720;
+  photo.height = 960;
+  vi.mocked(loadPhoto).mockResolvedValueOnce(photo);
+  render(<ManualEditor locale="en" />);
+  fireEvent.change(screen.getByLabelText('Photo file'), {
+    target: { files: [new File(['photo'], 'body.png', { type: 'image/png' })] },
+  });
+  await waitFor(() =>
+    expect(
+      document.querySelector('section canvas')?.getAttribute('width')
+    ).toBe('720')
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Try sample' }));
+  await waitFor(() => expect(screen.getByText('Selected design')).toBeTruthy());
+  expect(document.querySelector('section canvas')?.getAttribute('width')).toBe(
+    '720'
+  );
+  expect(document.querySelector('section canvas')?.getAttribute('height')).toBe(
+    '960'
+  );
+  expect(screen.queryByRole('button', { name: 'Try sample' })).toBeNull();
+});
+
+it('does not offer a sample that would replace an uploaded design', async () => {
+  vi.mocked(loadDesign).mockResolvedValueOnce({
+    naturalWidth: 400,
+    naturalHeight: 600,
+  } as HTMLImageElement);
+  render(<ManualEditor locale="en" />);
+  fireEvent.change(screen.getByLabelText('Design file'), {
+    target: {
+      files: [new File(['design'], 'design.png', { type: 'image/png' })],
+    },
+  });
+  await waitFor(() => expect(screen.getByText('Selected design')).toBeTruthy());
+  expect(screen.queryByRole('button', { name: 'Try sample' })).toBeNull();
+  expect(sample).not.toHaveBeenCalled();
 });
