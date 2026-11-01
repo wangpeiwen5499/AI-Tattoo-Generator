@@ -3,6 +3,7 @@ import { ArrowRight } from 'lucide-react';
 
 import { Link } from '@/core/i18n/navigation';
 import { SmartIcon } from '@/shared/blocks/common';
+import { HeroResults } from '@/shared/blocks/tattoo/hero-results';
 import { WorkflowCase } from '@/shared/blocks/tattoo/preview-workflow-case';
 import { TrialCta } from '@/shared/blocks/tattoo/trial-cta';
 import { Button } from '@/shared/components/ui/button';
@@ -116,6 +117,7 @@ export function Hero({
         )}
       </div>
 
+      {section.tattoo_demo && <HeroResults />}
       {section.tattoo_demo ? (
         <div className="tattoo-hero-case mx-auto mt-10 max-w-6xl px-4 sm:mt-14 sm:px-6">
           <WorkflowCase />

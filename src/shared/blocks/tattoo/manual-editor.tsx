@@ -34,17 +34,19 @@ import {
 } from '@/lib/studio-login-draft';
 import { toast } from 'sonner';
 
+import { Link } from '@/core/i18n/navigation';
+
+import { OperationStatus } from './operation-status';
 import { StudioAccount, StudioDesigns, StudioRender } from './studio-actions';
 import {
   StepHelp,
-  StepHint,
   studioStep,
   StudioSteps,
   studioTaskKind,
 } from './studio-guidance';
 
 const button =
-  'rounded-xl border border-border bg-background px-4 py-3 text-sm font-medium transition hover:border-primary focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-40 disabled:cursor-not-allowed';
+  'app-action rounded-xl border border-border bg-background px-4 py-3 text-sm font-medium transition hover:border-primary focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-40 disabled:cursor-not-allowed';
 
 export function ManualEditor({
   locale,
@@ -80,7 +82,10 @@ export function ManualEditor({
     draft: HTMLCanvasElement;
   } | null>(null);
   const [error, setError] = useState('');
+  const [downloading, setDownloading] = useState(false);
   const [view, setView] = useState(false);
+  const [historyMode, setHistoryMode] = useState(!!initialHistoryId);
+  const notified = useRef<string | null>(null);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [actionKind, setActionKind] = useState<
@@ -88,13 +93,8 @@ export function ManualEditor({
   >();
   const [loginStep, setLoginStep] = useState<2 | 4 | null>(null);
   const redirecting = useRef(false);
-  const [dismissedTips, setDismissedTips] = useState<Set<number>>(
-    () => new Set()
-  );
   const stageBox = useRef<HTMLDivElement>(null);
   const [stageSize, setStageSize] = useState({ width: 0, height: 0 });
-  const dismissTip = (step: number) =>
-    setDismissedTips((previous) => new Set([...previous, step]));
   const jobKind = studioTaskKind({
     busy: studio.busy,
     phase: studio.phase,
@@ -252,6 +252,10 @@ export function ManualEditor({
     zoom: number;
     pan: Point;
   } | null>(null);
+  useEffect(() => {
+    if (studio.error && studio.gate !== 401)
+      toast.error(studio.error, { id: 'studio-operation-error' });
+  }, [studio.error, studio.gate]);
   const update = (p: Placement) => {
     if (busy) return;
     setPlacement(constrainPlacement(p));
@@ -315,6 +319,24 @@ export function ManualEditor({
         });
         setAiSelected(true);
         setOriginal(false);
+      }
+      if (
+        !cancelled &&
+        ticket === revision.current &&
+        notified.current !== record.id
+      ) {
+        notified.current = record.id;
+        toast.success(
+          kind === 'design'
+            ? t(
+                'Your design is ready and saved. Place it on your photo next.',
+                '纹身图案已生成并保存，可以开始摆放。'
+              )
+            : t(
+                'Your try-on is ready and saved. Compare or download it now.',
+                '真实试戴已生成并保存，可以对比或下载。'
+              )
+        );
       }
     })()
       .catch(() => {
@@ -489,7 +511,8 @@ export function ManualEditor({
     });
   }
   async function download() {
-    if (!renderResult) return;
+    if (!renderResult || downloading) return;
+    setDownloading(true);
     try {
       const out = document.createElement('canvas');
       out.width = renderResult.raw.naturalWidth;
@@ -505,6 +528,11 @@ export function ManualEditor({
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch {
       setError(t('Download failed. Please try again.', '下载失败，请重试。'));
+      toast.error(
+        t('Download failed. Please try again.', '下载失败，请重试。')
+      );
+    } finally {
+      setDownloading(false);
     }
   }
   function renderTryOn() {
@@ -702,7 +730,24 @@ export function ManualEditor({
     'absolute flex h-11 w-11 items-center justify-center rounded-full border-2 border-white bg-primary text-white shadow-md touch-none';
 
   return (
-    <div className="mt-10 pb-16">
+    <div className={`mt-10 pb-16 ${historyMode ? 'studio-history-view' : ''}`}>
+      {historyMode && !view && (
+        <div className="studio-history-loading bg-background fixed inset-0 z-[60] flex flex-col items-center justify-center gap-5 p-6">
+          {loading ? (
+            <OperationStatus locale={locale} phase="loading" />
+          ) : (
+            <p role="alert">
+              {error || t('Could not open this result.', '无法打开这张结果。')}
+            </p>
+          )}
+          <Link
+            className="app-action rounded-full border px-5 py-3"
+            href="/history"
+          >
+            {t('Back to history', '返回试戴历史')}
+          </Link>
+        </div>
+      )}
       <StudioAccount
         studio={studio}
         locale={locale}
@@ -780,16 +825,6 @@ export function ManualEditor({
               {t('Enlarge & compare', '放大与对比')}
             </button>
           </div>
-          {currentStep === 3 && !dismissedTips.has(3) && (
-            <div className="mb-4">
-              <StepHint locale={locale} onDismiss={() => dismissTip(3)}>
-                {t(
-                  'Drag to place your design. Resize with ↗, rotate with ↻, then generate when the placement feels right.',
-                  '拖动图案选择位置，用 ↗ 缩放、↻ 旋转。满意后点击生成真实试戴即可。'
-                )}
-              </StepHint>
-            </div>
-          )}
           <div
             ref={stageBox}
             className="studio-stage border-border bg-muted/40 flex items-center justify-center overflow-hidden rounded-2xl border p-6"
@@ -1019,15 +1054,10 @@ export function ManualEditor({
               <p className="text-muted-foreground mt-3 text-sm">
                 PNG / JPEG / WebP · {t('up to 20 MB', '最大 20MB')}
               </p>
-              {currentStep === 1 && !dismissedTips.has(1) && (
-                <StepHint locale={locale} onDismiss={() => dismissTip(1)}>
-                  {t(
-                    'Choose a clear photo of the area you want tattooed. A full-body photo is not required.',
-                    '先选择想纹身部位的清晰照片，不需要全身照。'
-                  )}
-                </StepHint>
-              )}
             </div>
+            {loading && !historyMode && (
+              <OperationStatus locale={locale} phase="processing" />
+            )}
             <StudioDesigns
               locale={locale}
               prompt={prompt}
@@ -1037,8 +1067,20 @@ export function ManualEditor({
               studio={studio}
               busy={busy}
               current={currentStep === 2}
-              showHint={currentStep === 2 && !dismissedTips.has(2)}
-              onDismissHint={() => dismissTip(2)}
+              activeOperation={
+                jobKind ||
+                (studio.result && studio.result !== loadedResult
+                  ? studio.result.kind
+                  : undefined)
+              }
+              selectedId={designRecord?.id}
+              phase={
+                studio.busy
+                  ? studio.phase
+                  : studio.result !== loadedResult
+                    ? 'loading'
+                    : 'processing'
+              }
               onGenerate={() => {
                 setActionKind('design');
                 if (!studio.capabilities?.signedIn) {
@@ -1094,7 +1136,7 @@ export function ManualEditor({
                   })
                 }
               >
-                {busy
+                {loading
                   ? t('Opening image…', '正在打开图片…')
                   : t('Try sample', '试用示例')}
               </button>
@@ -1113,17 +1155,27 @@ export function ManualEditor({
             locale={locale}
             resolution={resolution}
             setResolution={setResolution}
+            activeOperation={
+              jobKind ||
+              (studio.result && studio.result !== loadedResult
+                ? studio.result.kind
+                : undefined)
+            }
+            phase={
+              studio.busy
+                ? studio.phase
+                : studio.result !== loadedResult
+                  ? 'loading'
+                  : 'processing'
+            }
             onRender={renderTryOn}
             busy={busy}
             ready={!!photo && !!design}
             pending={!!studio.pending}
             hasResult={!!renderResult}
+            downloading={downloading}
             onDownload={() => void download()}
             current={currentStep === 4 || currentStep === 3}
-            showHint={
-              currentStep === 4 && !studio.busy && !dismissedTips.has(4)
-            }
-            onDismissHint={() => dismissTip(4)}
           />
         </aside>
       </div>
@@ -1159,7 +1211,11 @@ export function ManualEditor({
           ref={dialog}
           aria-label={t('Fullscreen comparison', '全屏对比')}
           className="bg-background text-foreground fixed inset-0 m-0 h-dvh max-h-none w-screen max-w-none p-0 backdrop:bg-black/70"
-          onCancel={() => setView(false)}
+          onCancel={() => {
+            if (historyMode)
+              window.location.assign(`${zh ? '/zh' : ''}/history`);
+            else setView(false);
+          }}
         >
           <div className="flex h-full flex-col">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3 sm:px-8">
@@ -1185,14 +1241,36 @@ export function ManualEditor({
               <div className="flex gap-2">
                 <button
                   className={button}
-                  disabled={!renderResult}
+                  disabled={!renderResult || downloading}
+                  aria-busy={downloading}
                   onClick={() => void download()}
                 >
-                  {t('Download AI result', '下载 AI 结果')}
+                  {downloading
+                    ? t('Preparing download…', '正在准备下载…')
+                    : t('Download AI result', '下载 AI 结果')}
                 </button>
-                <button className={button} onClick={() => setView(false)}>
-                  {t('Close', '关闭')}
-                </button>
+                {historyMode ? (
+                  <>
+                    <button
+                      className={button}
+                      onClick={() => {
+                        setHistoryMode(false);
+                        setView(false);
+                        setAiSelected(false);
+                        setOriginal(false);
+                      }}
+                    >
+                      {t('Continue editing', '继续编辑')}
+                    </button>
+                    <Link className={button} href="/history">
+                      {t('Back to history', '返回试戴历史')}
+                    </Link>
+                  </>
+                ) : (
+                  <button className={button} onClick={() => setView(false)}>
+                    {t('Close', '关闭')}
+                  </button>
+                )}
               </div>
             </div>
             <div className="flex items-center justify-center gap-4 px-4 py-3">

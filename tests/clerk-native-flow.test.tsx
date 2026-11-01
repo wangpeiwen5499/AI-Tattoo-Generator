@@ -191,8 +191,8 @@ it('starts a fresh Google attempt even when Clerk retains an unfinished sign-in'
   expect(mocks.redirect).toHaveBeenCalledWith({
     strategy: 'oauth_google',
     oidcPrompt: 'select_account',
-    redirectUrl: '/auth/google/callback?callbackUrl=%2Fgenerate',
-    redirectUrlComplete: '/auth/google/tasks?callbackUrl=%2Fgenerate',
+    redirectUrl: '/auth/google/callback?callbackUrl=%2Fstudio',
+    redirectUrlComplete: '/auth/google/tasks?callbackUrl=%2Fstudio',
   });
   expect(screen.queryByText('Connecting to Google…')).toBeNull();
   expect(screen.queryByRole('link', { name: 'Back to sign in' })).toBeNull();
@@ -225,7 +225,7 @@ it('routes real pending session requirements through Clerk tasks before completi
   mocks.authSession = { currentTask: { key: 'choose-organization' } };
   render(<ClerkGoogleFlow publishableKey="pk_test_example" step="tasks" />);
   expect(mocks.tasks).toHaveBeenCalledWith({
-    redirectUrl: '/auth/google/complete?callbackUrl=%2Fgenerate',
+    redirectUrl: '/auth/google/complete?callbackUrl=%2Fstudio',
   });
   expect(mocks.fetch).not.toHaveBeenCalled();
 });

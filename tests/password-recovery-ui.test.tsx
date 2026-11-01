@@ -47,7 +47,7 @@ it('requests a reset with a local return path and shows a neutral confirmation w
   await screen.findByRole('status');
   expect(mocks.request).toHaveBeenCalledWith({
     email: 'member@example.com',
-    redirectTo: `${window.location.origin}/reset-password?callbackUrl=%2Fgenerate`,
+    redirectTo: `${window.location.origin}/reset-password?callbackUrl=%2Fstudio`,
   });
   expect(
     (screen.getByRole('button', { name: '60s' }) as HTMLButtonElement).disabled

@@ -50,12 +50,10 @@ export function GenerationAccess() {
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <Button asChild>
-            <Link href="/sign-up?callbackUrl=%2Fgenerate">
-              {t('getCredits')}
-            </Link>
+            <Link href="/sign-up?callbackUrl=%2Fstudio">{t('getCredits')}</Link>
           </Button>
           <Button asChild variant="outline">
-            <Link href="/sign-in?callbackUrl=%2Fgenerate">{t('signIn')}</Link>
+            <Link href="/sign-in?callbackUrl=%2Fstudio">{t('signIn')}</Link>
           </Button>
         </div>
         <p className="text-muted-foreground mt-4 text-xs">

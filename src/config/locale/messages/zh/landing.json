@@ -24,13 +24,18 @@
         },
         {
           "title": "生成",
-          "url": "/generate",
+          "url": "/studio",
           "icon": "Wand"
         },
         {
           "title": "历史",
           "url": "/history",
           "icon": "History"
+        },
+        {
+          "title": "我的图案",
+          "url": "/designs",
+          "icon": "Images"
         }
       ]
     },
@@ -44,11 +49,6 @@
           "title": "账单",
           "url": "/settings/billing",
           "icon": "CreditCard"
-        },
-        {
-          "title": "活动",
-          "url": "/activity",
-          "icon": "Activity"
         }
       ]
     },
@@ -91,7 +91,7 @@
             },
             {
               "title": "生成",
-              "url": "/generate",
+              "url": "/studio",
               "target": "_self"
             }
           ]

@@ -17,7 +17,7 @@ export function TrialCta({
   const t = useTranslations('common.funnel');
   const link = (
     <Link
-      href={data?.user ? '/generate' : '/sign-up?callbackUrl=%2Fgenerate'}
+      href={data?.user ? '/studio' : '/sign-up?callbackUrl=%2Fstudio'}
       className={asButton ? undefined : className}
     >
       {data?.user ? t('createOwn') : t('getCredits')}

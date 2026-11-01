@@ -72,7 +72,7 @@ export default async function GuidePage({ params }: Props) {
           </p>
           <div className="mt-2 flex flex-wrap gap-4">
             <Link
-              href="/generate"
+              href="/studio"
               className="text-primary underline underline-offset-4"
             >
               {zh ? '当前生成工具' : 'Current generator'}
@@ -174,7 +174,7 @@ export default async function GuidePage({ params }: Props) {
           </p>
           <div className="mt-5 flex flex-wrap gap-5 text-sm">
             <Link
-              href="/generate"
+              href="/studio"
               className="text-primary font-medium underline underline-offset-4"
             >
               {zh ? '打开纹身照片生成器' : 'Open the tattoo photo generator'}

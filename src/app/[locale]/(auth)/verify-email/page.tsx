@@ -18,7 +18,7 @@ export default async function VerifyEmailPage({
   return (
     <VerifyEmail
       initialEmail={email || ''}
-      callbackUrl={callbackUrl || '/generate'}
+      callbackUrl={callbackUrl || '/studio'}
       alreadySent={sent === '1'}
     />
   );

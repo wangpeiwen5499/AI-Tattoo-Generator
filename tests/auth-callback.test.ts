@@ -12,6 +12,6 @@ it('keeps local callback paths and rejects external or encoded redirects', async
     '/\\evil.example',
     '/%2f%2fevil.example',
   ]) {
-    expect(safeAuthCallback(path, 'en')).toBe('/generate');
+    expect(safeAuthCallback(path, 'en')).toBe('/studio');
   }
 });

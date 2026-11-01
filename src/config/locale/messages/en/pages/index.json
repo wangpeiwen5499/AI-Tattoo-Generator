@@ -213,7 +213,7 @@
         "buttons": [
           {
             "title": "Start Generating",
-            "url": "/generate",
+            "url": "/studio",
             "target": "_self",
             "icon": "Sparkles"
           },

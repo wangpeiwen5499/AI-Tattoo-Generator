@@ -76,6 +76,7 @@ export function useStudio() {
           throw new Error(status.error || 'This task needs support review.');
         }
         if (status.state === 'success') {
+          setPhase('loading');
           const { records } = await studioClient.collection(
             job.kind === 'design' ? 'designs' : 'history',
             signal

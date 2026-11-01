@@ -76,7 +76,7 @@ it('sanitizes the destination before sending it to the auth server', async () =>
   fireEvent.click(screen.getByRole('button', { name: 'Sign in with Google' }));
   await waitFor(() =>
     expect(mocks.social).toHaveBeenCalledWith(
-      expect.objectContaining({ provider: 'google', callbackURL: '/generate' })
+      expect.objectContaining({ provider: 'google', callbackURL: '/studio' })
     )
   );
 });

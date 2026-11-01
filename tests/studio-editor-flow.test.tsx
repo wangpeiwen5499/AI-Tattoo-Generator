@@ -132,11 +132,48 @@ it('creates a design before the photo, reuses its asset, then renders one chosen
       screen.getByText('Saved to your account · reusable for free')
     ).toBeTruthy()
   );
+  await waitFor(() =>
+    expect(
+      (
+        screen.getByRole('button', {
+          name: 'Upload photo',
+        }) as HTMLButtonElement
+      ).disabled
+    ).toBe(false)
+  );
+  let resolvePhoto: (canvas: HTMLCanvasElement) => void = () => {};
+  vi.mocked(loadPhoto).mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        resolvePhoto = resolve;
+      })
+  );
   fireEvent.change(screen.getByLabelText('Photo file'), {
     target: {
       files: [new File(['photo'], 'photo.png', { type: 'image/png' })],
     },
   });
+  await waitFor(() =>
+    expect(
+      (
+        screen.getByRole('button', {
+          name: 'Upload photo',
+        }) as HTMLButtonElement
+      ).disabled
+    ).toBe(true)
+  );
+  expect(
+    screen.queryByRole('button', { name: /Generating design/ })
+  ).toBeNull();
+  expect(
+    screen
+      .getByRole('button', { name: 'Generate design · 1 credit' })
+      .getAttribute('aria-busy')
+  ).toBe('false');
+  const chosenPhoto = document.createElement('canvas');
+  chosenPhoto.width = 900;
+  chosenPhoto.height = 1200;
+  resolvePhoto(chosenPhoto);
   await waitFor(() =>
     expect(
       (

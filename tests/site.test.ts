@@ -11,7 +11,7 @@ describe('public metadata and private caching', () => {
   it('builds the sitemap from the configured domain and includes real product pages', async () => {
     const sitemap = (await import('@/app/sitemap')).default;
     const entries = sitemap();
-    expect(entries.some((entry) => entry.url.endsWith('/generate'))).toBe(true);
+    expect(entries.some((entry) => entry.url.endsWith('/studio'))).toBe(true);
     expect(entries.some((entry) => entry.url.endsWith('/pricing'))).toBe(true);
     expect(
       entries.some(

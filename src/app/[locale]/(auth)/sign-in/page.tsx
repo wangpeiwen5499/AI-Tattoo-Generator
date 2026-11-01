@@ -37,7 +37,7 @@ export default async function SignInPage({
   return (
     <SignIn
       configs={configs}
-      callbackUrl={callbackUrl || '/generate'}
+      callbackUrl={callbackUrl || '/studio'}
       socialError={Boolean(error)}
     />
   );

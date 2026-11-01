@@ -2,8 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Menu, X } from 'lucide-react';
+import { useLocale } from 'next-intl';
+import { toast } from 'sonner';
 
-import { Link, usePathname } from '@/core/i18n/navigation';
+import { Link, usePathname, useRouter } from '@/core/i18n/navigation';
 import {
   BrandLogo,
   LocaleSelector,
@@ -25,6 +27,7 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger as RawNavigationMenuTrigger,
 } from '@/shared/components/ui/navigation-menu';
+import { useAppContext } from '@/shared/contexts/app';
 import { useMedia } from '@/shared/hooks/use-media';
 import { cn } from '@/shared/lib/utils';
 import { NavItem } from '@/shared/types/blocks/common';
@@ -50,6 +53,34 @@ export function Header({ header }: { header: HeaderType }) {
   const scrollRafRef = useRef<number | null>(null);
   const isLarge = useMedia('(min-width: 64rem)');
   const pathname = usePathname();
+  const locale = useLocale();
+  const router = useRouter();
+  const { user, isCheckSign } = useAppContext();
+  function accountNav(
+    event: React.MouseEvent<HTMLAnchorElement>,
+    url?: string
+  ) {
+    if (url !== '/designs' || user) return;
+    event.preventDefault();
+    const zh = locale === 'zh';
+    if (isCheckSign) {
+      toast.info(
+        zh
+          ? '正在确认登录状态，请稍候。'
+          : 'Checking your sign-in. Please wait.'
+      );
+      return;
+    }
+    toast.info(zh ? '登录后查看我的图案。' : 'Sign in to view your designs.', {
+      action: {
+        label: zh ? '登录' : 'Sign in',
+        onClick: () =>
+          router.push(
+            `/sign-in?callbackUrl=${encodeURIComponent(`${zh ? '/zh' : ''}/designs`)}`
+          ),
+      },
+    });
+  }
 
   useEffect(() => {
     // Listen to scroll event to enable header styles on scroll
@@ -93,6 +124,7 @@ export function Header({ header }: { header: HeaderType }) {
                 <NavigationMenuLink key={idx} asChild>
                   <Link
                     href={item.url || ''}
+                    onClick={(event) => accountNav(event, item.url)}
                     target={item.target || '_self'}
                     className={`flex flex-row items-center gap-2 px-4 py-1.5 text-sm ${
                       item.is_active || pathname.endsWith(item.url as string)
@@ -193,7 +225,10 @@ export function Header({ header }: { header: HeaderType }) {
                 ) : (
                   <Link
                     href={item.url || ''}
-                    onClick={closeMenu}
+                    onClick={(event) => {
+                      accountNav(event, item.url);
+                      closeMenu();
+                    }}
                     className="data-[state=open]:bg-muted flex items-center justify-between px-4 py-3 text-lg **:!font-normal"
                   >
                     {item.title}

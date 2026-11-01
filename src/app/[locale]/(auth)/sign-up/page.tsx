@@ -34,5 +34,5 @@ export default async function SignUpPage({
 
   const configs = await getPublicConfigs();
 
-  return <SignUp configs={configs} callbackUrl={callbackUrl || '/generate'} />;
+  return <SignUp configs={configs} callbackUrl={callbackUrl || '/studio'} />;
 }

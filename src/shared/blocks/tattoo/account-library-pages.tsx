@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { Loader2 } from 'lucide-react';
+import { useLocale, useTranslations } from 'next-intl';
 
 /** Delete button for account library records; the server re-verifies ownership. */
 export function DeleteRecordButton({
@@ -17,6 +18,7 @@ export function DeleteRecordButton({
   confirmLabel: string;
 }) {
   const t = useTranslations('common');
+  const zh = useLocale() === 'zh';
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -26,7 +28,8 @@ export function DeleteRecordButton({
       <button
         type="button"
         disabled={busy}
-        className="text-muted-foreground hover:text-destructive inline-flex min-h-11 items-center rounded-full border px-4 text-sm transition-colors disabled:opacity-50"
+        className="text-muted-foreground hover:text-destructive focus-visible:outline-primary inline-flex min-h-11 cursor-pointer items-center rounded-full border px-4 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 disabled:cursor-not-allowed disabled:opacity-50"
+        aria-busy={busy}
         onClick={async () => {
           if (!confirming) {
             setConfirming(true);
@@ -53,7 +56,16 @@ export function DeleteRecordButton({
         }}
         onBlur={() => setConfirming(false)}
       >
-        {busy ? '…' : confirming ? confirmLabel : label}
+        {busy && (
+          <Loader2 className="mr-2 size-4 animate-spin" aria-hidden="true" />
+        )}
+        {busy
+          ? zh
+            ? '正在删除…'
+            : 'Deleting…'
+          : confirming
+            ? confirmLabel
+            : label}
       </button>
       {error && (
         <span className="text-destructive ml-2 text-xs" role="alert">

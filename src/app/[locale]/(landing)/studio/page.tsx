@@ -27,23 +27,25 @@ export default async function StudioPage({ params, searchParams }: Props) {
   const query = await searchParams;
   return (
     <main className="container pt-24 sm:pt-28">
-      <header className="max-w-3xl">
-        <p className="text-primary mb-3 text-sm">
-          {locale === 'zh'
-            ? '设计 · 摆放 · 真实试戴'
-            : 'DESIGN · PLACE · TRY ON'}
-        </p>
-        <h1 className="text-4xl font-medium sm:text-5xl">
-          {locale === 'zh'
-            ? '先看见，再决定。'
-            : 'See it on your skin, before the ink.'}
-        </h1>
-        <p className="text-muted-foreground mt-5 text-lg leading-8">
-          {locale === 'zh'
-            ? '上传一张局部或侧面照片，选择或创作图案，自由摆放后生成真实试戴。手动摆放免费，设计与 AI 试戴分别计费。'
-            : 'Start with a close-up or side-view photo. Choose or create a design, place it freely, then generate a realistic try-on. Placement is free; designs and AI try-ons are charged separately.'}
-        </p>
-      </header>
+      {!query.history && (
+        <header className="max-w-3xl">
+          <p className="text-primary mb-3 text-sm">
+            {locale === 'zh'
+              ? '设计 · 摆放 · 真实试戴'
+              : 'DESIGN · PLACE · TRY ON'}
+          </p>
+          <h1 className="text-4xl font-medium sm:text-5xl">
+            {locale === 'zh'
+              ? '先看见，再决定。'
+              : 'See it on your skin, before the ink.'}
+          </h1>
+          <p className="text-muted-foreground mt-5 text-lg leading-8">
+            {locale === 'zh'
+              ? '上传一张局部或侧面照片，选择或创作图案，自由摆放后生成真实试戴。手动摆放免费，设计与 AI 试戴分别计费。'
+              : 'Start with a close-up or side-view photo. Choose or create a design, place it freely, then generate a realistic try-on. Placement is free; designs and AI try-ons are charged separately.'}
+          </p>
+        </header>
+      )}
       <ManualEditor
         key={`${query.design || ''}:${query.history || ''}`}
         locale={locale}

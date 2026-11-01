@@ -24,13 +24,18 @@
         },
         {
           "title": "Generate",
-          "url": "/generate",
+          "url": "/studio",
           "icon": "Wand"
         },
         {
           "title": "History",
           "url": "/history",
           "icon": "History"
+        },
+        {
+          "title": "My designs",
+          "url": "/designs",
+          "icon": "Images"
         }
       ]
     },
@@ -44,11 +49,6 @@
           "title": "Billing",
           "url": "/settings/billing",
           "icon": "CreditCard"
-        },
-        {
-          "title": "Activity",
-          "url": "/activity",
-          "icon": "Activity"
         }
       ]
     },
@@ -91,7 +91,7 @@
             },
             {
               "title": "Generate",
-              "url": "/generate",
+              "url": "/studio",
               "target": "_self"
             }
           ]

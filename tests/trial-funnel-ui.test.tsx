@@ -38,7 +38,7 @@ it('lets guests explore the actual example and routes signup back to generation'
     screen
       .getByRole('link', { name: 'Get 3 free credits' })
       .getAttribute('href')
-  ).toBe('/sign-up?callbackUrl=%2Fgenerate');
+  ).toBe('/sign-up?callbackUrl=%2Fstudio');
 });
 it('asks existing unverified users to verify instead of awarding another signup trial', () => {
   state.session = {

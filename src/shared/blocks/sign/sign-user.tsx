@@ -137,16 +137,6 @@ export function SignUser({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              <DropdownMenuItem asChild>
-                <Link href="/designs">{zh ? '我的图案' : 'My designs'}</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/history">{zh ? '试戴历史' : 'History'}</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/pricing">{zh ? '购买积分' : 'Get credits'}</Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
               {userNav?.show_name && (
                 <>
                   <DropdownMenuItem asChild>

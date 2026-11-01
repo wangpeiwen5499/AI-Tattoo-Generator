@@ -25,21 +25,11 @@ export default async function BlogPage({ params }: Props) {
   return (
     <main className="pt-24 sm:pt-28">
       <header className="container">
-        <p className="text-primary mb-3 text-xs tracking-widest">
-          TATTOOVIS / JOURNAL
-        </p>
         <h1 className="text-4xl font-medium sm:text-5xl">
-          {locale === 'zh'
-            ? '纹身灵感，慢慢探索。'
-            : 'Ideas worth exploring, before the ink.'}
+          {locale === 'zh' ? '博客列表' : 'Blog'}
         </h1>
-        <p className="text-muted-foreground mt-6 max-w-2xl text-lg leading-8">
-          {locale === 'zh'
-            ? '从一个想法到适合自己的设计。阅读风格、提示词和照片试戴指南，为下一次创作找到方向。'
-            : 'From a first idea to a design that feels personal. Explore styles, prompts and photo try-on guides for your next concept.'}
-        </p>
       </header>
-      <TattooGuideLinks locale={locale} showAllLink={false} />
+      <TattooGuideLinks locale={locale} showAllLink={false} cardsOnly />
     </main>
   );
 }

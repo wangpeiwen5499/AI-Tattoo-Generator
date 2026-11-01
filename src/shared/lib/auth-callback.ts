@@ -1,5 +1,5 @@
 export function safeAuthCallback(value?: string, locale = 'en'): string {
-  let path = value || '/generate';
+  let path = value || '/studio';
   try {
     const decoded = decodeURIComponent(path);
     if (
@@ -9,16 +9,16 @@ export function safeAuthCallback(value?: string, locale = 'en'): string {
       new URL(path, 'https://callback.local').origin !==
         'https://callback.local'
     )
-      path = '/generate';
+      path = '/studio';
   } catch {
-    path = '/generate';
+    path = '/studio';
   }
   if (locale === 'zh' && !/^\/(en|zh)(\/|\?|$)/.test(path)) path = `/zh${path}`;
   return path;
 }
 export function emailVerificationUrl(
   email: string,
-  callbackUrl = '/generate',
+  callbackUrl = '/studio',
   sent = false
 ): string {
   const query = new URLSearchParams({ email, callbackUrl });

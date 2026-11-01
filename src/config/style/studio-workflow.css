@@ -196,3 +196,109 @@
     height: 28px;
   }
 }
+.app-action {
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
+}
+.app-action:hover:not(:disabled) {
+  border-color: var(--primary);
+  background-color: color-mix(in oklab, var(--primary) 8%, var(--background));
+}
+.app-action-primary:hover:not(:disabled) {
+  background-color: var(--primary);
+  filter: brightness(0.92);
+}
+.app-action:focus-visible,
+.saved-design-choice:focus-visible,
+.hero-result:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 4px;
+}
+.app-action:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.app-action:disabled {
+  cursor: not-allowed;
+}
+.saved-design-choice {
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+.saved-design-choice:hover:not(:disabled) {
+  border-color: var(--primary);
+  background: var(--muted);
+}
+.blog-guide-card {
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+.blog-guide-card:hover,
+.blog-guide-card:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 5px 18px -12px var(--primary);
+}
+.hero-results-strip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+.hero-result {
+  height: 250px;
+  min-width: 0;
+  cursor: zoom-in;
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--muted);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+.hero-result:hover {
+  border-color: var(--primary);
+  box-shadow: 0 4px 18px -10px var(--primary);
+}
+.studio-history-view > :not(dialog):not(.studio-history-loading) {
+  display: none;
+}
+@media (max-width: 767px) {
+  .hero-results-strip {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding: 4px 2px 14px;
+  }
+  .hero-result {
+    flex: 0 0 65%;
+    height: 300px;
+    scroll-snap-align: start;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-action,
+  .saved-design-choice,
+  .blog-guide-card,
+  .hero-result {
+    transition: none;
+  }
+  .app-action:active:not(:disabled) {
+    transform: none;
+  }
+}
+.app-action.bg-primary:hover:not(:disabled) {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  filter: brightness(0.92);
+}
+/* The proof strip belongs immediately below the welcome offer. */
+.tattoo-home .tattoo-hero-intro {
+  padding-bottom: 0;
+}

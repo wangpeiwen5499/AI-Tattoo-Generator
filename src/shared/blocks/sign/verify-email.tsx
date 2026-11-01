@@ -13,7 +13,7 @@ import { safeAuthCallback } from '@/shared/lib/auth-callback';
 
 export function VerifyEmail({
   initialEmail = '',
-  callbackUrl = '/generate',
+  callbackUrl = '/studio',
   alreadySent = false,
 }: {
   initialEmail?: string;

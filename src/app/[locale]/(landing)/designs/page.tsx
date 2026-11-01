@@ -42,9 +42,6 @@ export default async function DesignsPage({
     return (
       <main className="pt-28 pb-20">
         <div className="container max-w-3xl">
-          <p className="text-primary mb-4 text-sm">
-            {zh ? '我的图案' : 'MY DESIGNS'}
-          </p>
           <h1 className="text-4xl font-medium">
             {zh ? '我的图案' : 'My Designs'}
           </h1>
@@ -56,7 +53,7 @@ export default async function DesignsPage({
           <div className="mt-8">
             <Link
               href="/sign-in?callbackUrl=/designs"
-              className="bg-primary text-primary-foreground inline-flex rounded-full px-7 py-3 text-sm font-medium"
+              className="app-action app-action-primary bg-primary text-primary-foreground inline-flex rounded-full px-7 py-3 text-sm font-medium"
             >
               {zh ? '登录' : 'Sign in'}
             </Link>
@@ -79,9 +76,6 @@ export default async function DesignsPage({
   return (
     <main className="pt-28 pb-20">
       <div className="container">
-        <p className="text-primary mb-4 text-sm">
-          {zh ? '我的图案' : 'MY DESIGNS'}
-        </p>
         <h1 className="text-4xl font-medium">
           {zh ? '我的图案' : 'My Designs'}
         </h1>
@@ -140,14 +134,14 @@ export default async function DesignsPage({
                 <div className="mt-auto flex flex-wrap items-center gap-3 pt-5">
                   <Link
                     href={`/studio?design=${record.id}`}
-                    className="bg-primary text-primary-foreground inline-flex min-h-11 items-center rounded-full px-5 text-sm font-medium"
+                    className="app-action app-action-primary bg-primary text-primary-foreground inline-flex min-h-11 items-center rounded-full px-5 text-sm font-medium"
                   >
                     {zh ? '在工作室使用' : 'Use in studio'}
                   </Link>
                   <a
                     href={`/api/studio?asset=${encodeURIComponent(record.image)}`}
                     download
-                    className="inline-flex min-h-11 items-center rounded-full border px-5 text-sm"
+                    className="app-action inline-flex min-h-11 items-center rounded-full border px-5 text-sm"
                   >
                     {zh ? '下载' : 'Download'}
                   </a>
@@ -178,15 +172,6 @@ function AccountLibraryUnavailable({
   return (
     <main className="pt-28 pb-20">
       <div className="container max-w-3xl">
-        <p className="text-primary mb-4 text-sm">
-          {kind === 'designs'
-            ? zh
-              ? '我的图案'
-              : 'MY DESIGNS'
-            : zh
-              ? '试戴历史'
-              : 'TRY-ON HISTORY'}
-        </p>
         <h1 className="text-4xl font-medium">
           {kind === 'designs'
             ? zh

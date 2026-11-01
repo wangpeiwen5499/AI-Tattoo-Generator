@@ -14,7 +14,7 @@ export function PasswordRecovery({
   mode,
   token = '',
   invalid = false,
-  callbackUrl = '/generate',
+  callbackUrl = '/studio',
 }: {
   mode: 'request' | 'reset';
   token?: string;

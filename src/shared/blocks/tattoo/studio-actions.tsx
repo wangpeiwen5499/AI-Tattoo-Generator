@@ -7,14 +7,17 @@ import {
   studioClient,
   type StudioRecord,
 } from '@/lib/studio-client';
+import { Check, Expand, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Link } from '@/core/i18n/navigation';
 
-import { StepHelp, StepHint } from './studio-guidance';
+import { Lightbox } from './lightbox';
+import { OperationStatus } from './operation-status';
+import { StepHelp } from './studio-guidance';
 
 const button =
-  'min-h-11 rounded-xl border border-border px-4 py-3 text-base transition hover:border-primary disabled:cursor-not-allowed disabled:opacity-40';
+  'app-action min-h-11 rounded-xl border border-border px-4 py-3 text-base transition hover:border-primary disabled:cursor-not-allowed disabled:opacity-40';
 export function StudioAccount({
   studio,
   locale,
@@ -55,8 +58,7 @@ export function StudioAccount({
   }, [studio.gate, studio.error]);
   if (
     (!studio.error || studio.gate === 401) &&
-    !studio.busy &&
-    !studio.pending &&
+    (!studio.pending || studio.busy) &&
     (!studio.gate || studio.gate === 401) &&
     (!caps || caps.configured)
   )
@@ -85,13 +87,9 @@ export function StudioAccount({
           </button>
         </div>
       )}
-      {((studio.error && studio.gate !== 401) || studio.busy) && (
+      {studio.error && studio.gate !== 401 && !studio.busy && (
         <p role="status" className="text-primary w-full">
-          {studio.busy
-            ? zh
-              ? `正在处理${studio.phase === 'uploading' ? '图片上传' : studio.task?.kind === 'design' ? '纹身图案' : '真实试戴'}… 任务提交后可离开页面，回来后继续查看。`
-              : `${studio.phase === 'uploading' ? 'Preparing images' : studio.task?.kind === 'design' ? 'Generating your design' : 'Preparing your try-on'}… Once submitted, your task continues if you leave this page.`
-            : studio.error}
+          {studio.error}
         </p>
       )}
       {studio.gate && studio.gate !== 401 && (
@@ -142,14 +140,18 @@ export function StudioDesigns({
   studio,
   busy,
   current = false,
-  showHint = false,
-  onDismissHint = () => {},
   onGenerate,
+  activeOperation,
+  selectedId,
+  phase,
 }: {
   current?: boolean;
   showHint?: boolean;
   onDismissHint?: () => void;
   onGenerate?: () => void;
+  activeOperation?: 'design' | 'render';
+  selectedId?: string;
+  phase?: string;
   locale: string;
   prompt: string;
   setPrompt: (value: string) => void;
@@ -159,6 +161,9 @@ export function StudioDesigns({
   busy: boolean;
 }) {
   const zh = locale === 'zh';
+  const working = busy && activeOperation === 'design';
+  const [preview, setPreview] = useState<number | null>(null);
+  const [libraryLoading, setLibraryLoading] = useState(false);
   const [open, setOpen] = useState(false),
     [records, setRecords] = useState<StudioRecord[]>([]),
     [error, setError] = useState('');
@@ -167,9 +172,17 @@ export function StudioDesigns({
     const abort = new AbortController();
     studioClient
       .collection('designs', abort.signal)
-      .then((value) => setRecords(value.records))
+      .then((value) => {
+        if (!abort.signal.aborted) {
+          setRecords(value.records);
+          setLibraryLoading(false);
+        }
+      })
       .catch((reason) => {
-        if (!abort.signal.aborted) setError(reason.message);
+        if (!abort.signal.aborted) {
+          setError(reason.message);
+          setLibraryLoading(false);
+        }
       });
     return () => abort.abort();
   }, [open, studio.capabilities?.signedIn, studio.result]);
@@ -186,13 +199,6 @@ export function StudioDesigns({
             : 'New designs are saved automatically. Reusing designs and manual placement are free. Upload a transparent PNG or a design on white for best results.'}
         </StepHelp>
       </div>
-      {showHint && (
-        <StepHint locale={locale} onDismiss={onDismissHint}>
-          {zh
-            ? '上传图案、描述一个新想法，或选择账户中的图案。任选一种即可。'
-            : 'Upload a design, describe a new idea, or choose a saved design. Pick whichever works for you.'}
-        </StepHint>
-      )}
       <div
         className={`mt-4 grid grid-cols-2 gap-2 ${current ? 'studio-current-group' : ''}`}
       >
@@ -204,7 +210,13 @@ export function StudioDesigns({
           disabled={busy}
           aria-expanded={open}
           onClick={() => {
-            if (studio.access()) setOpen(!open);
+            if (studio.access()) {
+              if (!open) {
+                setLibraryLoading(true);
+                setError('');
+              }
+              setOpen(!open);
+            }
           }}
         >
           {zh ? '已保存图案' : 'Saved designs'}
@@ -229,54 +241,98 @@ export function StudioDesigns({
       />
       <button
         className={`${button} border-primary text-primary mt-3 w-full ${current && prompt.trim() ? 'studio-current-action' : ''}`}
+        aria-busy={working}
         disabled={busy || !prompt.trim() || !!studio.pending}
         onClick={() => {
           if (onGenerate) onGenerate();
           else studio.generate(prompt);
         }}
       >
-        {zh ? '生成纹身图案 · 1 credit' : 'Generate design · 1 credit'}
+        {working && (
+          <Loader2
+            aria-hidden="true"
+            className="mr-2 inline size-4 animate-spin motion-reduce:animate-none"
+          />
+        )}
+        {working
+          ? zh
+            ? '正在生成纹身图案…'
+            : 'Generating design…'
+          : zh
+            ? '生成纹身图案 · 1 credit'
+            : 'Generate design · 1 credit'}
       </button>
+      {working && (
+        <OperationStatus locale={locale} phase={phase || studio.phase} />
+      )}
       {open && (
         <div className="mt-4 rounded-xl border p-3">
           <p className="mb-3">
             {zh ? '选择账户中的图案' : 'Choose from your account'}
           </p>
           {error && <p role="alert">{error}</p>}
-          {!records.length && (
+          {libraryLoading && (
+            <OperationStatus locale={locale} phase="processing" />
+          )}
+          {!libraryLoading && !error && !records.length && (
             <p className="text-muted-foreground">
               {zh ? '暂无保存的图案。' : 'No saved designs yet.'}
             </p>
           )}
           <div className="grid grid-cols-2 gap-3">
-            {records.map((record) => (
-              <button
-                key={record.id}
-                className="bg-card rounded-lg border p-2 text-left"
-                disabled={busy}
-                onClick={() => {
-                  void onPick(record)
-                    .then(() => setOpen(false))
-                    .catch((reason) => setError(reason.message));
-                }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={studioAssetUrl(record.image)}
-                  alt={record.name || record.prompt || 'Tattoo design'}
-                  loading="lazy"
-                  className="h-24 w-full rounded object-contain"
-                />
-                <span className="mt-2 line-clamp-2 block text-sm">
-                  {record.prompt ||
-                    record.name ||
-                    (zh ? '纹身图案' : 'Tattoo design')}
-                </span>
-              </button>
+            {records.map((record, index) => (
+              <div key={record.id} className="relative">
+                <button
+                  aria-label={`${zh ? '选择图案' : 'Select design'} ${index + 1}`}
+                  aria-pressed={selectedId === record.id}
+                  className={`saved-design-choice bg-card w-full rounded-xl border p-2 ${selectedId === record.id ? 'border-primary ring-primary ring-2' : ''}`}
+                  disabled={busy}
+                  onClick={() => {
+                    void onPick(record)
+                      .then(() => setOpen(false))
+                      .catch((reason) => setError(reason.message));
+                  }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={studioAssetUrl(record.image)}
+                    alt={
+                      zh
+                        ? `保存的纹身图案 ${index + 1}`
+                        : `Saved tattoo design ${index + 1}`
+                    }
+                    loading="lazy"
+                    className="h-28 w-full rounded object-contain"
+                  />
+                  {selectedId === record.id && (
+                    <Check
+                      aria-hidden="true"
+                      className="bg-primary text-primary-foreground absolute top-2 left-2 size-5 rounded-full p-1"
+                    />
+                  )}
+                </button>
+                <button
+                  type="button"
+                  aria-label={`${zh ? '放大图案' : 'Enlarge design'} ${index + 1}`}
+                  className="app-action bg-background absolute right-1 bottom-1 rounded-full border p-2"
+                  onClick={() => setPreview(index)}
+                >
+                  <Expand className="size-4" />
+                </button>
+              </div>
             ))}
           </div>
         </div>
       )}
+      <Lightbox
+        images={records.map((record, i) => ({
+          url: studioAssetUrl(record.image),
+          alt: zh ? `保存的纹身图案 ${i + 1}` : `Saved tattoo design ${i + 1}`,
+        }))}
+        index={preview}
+        onIndexChange={setPreview}
+        onClose={() => setPreview(null)}
+      />
     </div>
   );
 }
@@ -291,10 +347,13 @@ export function StudioRender({
   pending,
   hasResult,
   onDownload,
+  downloading = false,
   current = false,
-  showHint = false,
-  onDismissHint = () => {},
+  activeOperation,
+  phase = '',
 }: {
+  activeOperation?: 'design' | 'render';
+  phase?: string;
   locale: string;
   resolution: string;
   setResolution: (value: string) => void;
@@ -304,11 +363,13 @@ export function StudioRender({
   pending: boolean;
   hasResult: boolean;
   onDownload: () => void;
+  downloading?: boolean;
   current?: boolean;
   showHint?: boolean;
   onDismissHint?: () => void;
 }) {
   const zh = locale === 'zh';
+  const working = busy && activeOperation === 'render';
   const cost = resolution === '4K' ? 3 : resolution === '2K' ? 2 : 1;
   return (
     <div id="studio-result-step" className="studio-render-actions">
@@ -343,35 +404,50 @@ export function StudioRender({
       </label>
       <button
         className={`${button} border-primary bg-primary text-primary-foreground mt-4 w-full ${current ? 'studio-current-action' : ''}`}
+        aria-busy={working}
         disabled={!ready || busy || pending}
         onClick={onRender}
       >
-        {zh
-          ? `生成真实试戴 · ${cost} credit${cost > 1 ? 's' : ''}`
-          : `Generate real try-on · ${cost} credit${cost > 1 ? 's' : ''}`}
+        {working && (
+          <Loader2
+            aria-hidden="true"
+            className="mr-2 inline size-4 animate-spin motion-reduce:animate-none"
+          />
+        )}
+        {working
+          ? zh
+            ? '正在准备真实试戴…'
+            : 'Preparing try-on…'
+          : zh
+            ? `生成真实试戴 · ${cost} credit${cost > 1 ? 's' : ''}`
+            : `Generate real try-on · ${cost} credit${cost > 1 ? 's' : ''}`}
       </button>
+      {working && <OperationStatus locale={locale} phase={phase} />}
       <p className="text-muted-foreground mt-3 text-sm">
         {zh
           ? '单张试戴，设计生成另行计费。'
           : 'One try-on. Design generation is charged separately.'}
       </p>
-      {showHint && (
-        <StepHint locale={locale} onDismiss={onDismissHint}>
-          {hasResult
-            ? zh
-              ? '结果已保存。对比原图、手动摆放和AI结果，或下载图片。'
-              : 'Your result is saved. Compare the original, placement and AI result, or download it.'
-            : zh
-              ? '确认照片上的位置和大小后，点击生成。只会按按钮所示消耗本次积分。'
-              : 'Happy with the placement? Generate one try-on for the credits shown on the button.'}
-        </StepHint>
-      )}
       {hasResult && (
         <button
           className={`${button} mt-4 w-full ${current ? 'studio-current-action' : ''}`}
+          disabled={downloading}
+          aria-busy={downloading}
           onClick={onDownload}
         >
-          {zh ? '下载 AI 结果' : 'Download AI result'}
+          {downloading && (
+            <Loader2
+              aria-hidden="true"
+              className="mr-2 inline size-4 animate-spin"
+            />
+          )}
+          {downloading
+            ? zh
+              ? '正在准备下载…'
+              : 'Preparing download…'
+            : zh
+              ? '下载 AI 结果'
+              : 'Download AI result'}
         </button>
       )}
     </div>
