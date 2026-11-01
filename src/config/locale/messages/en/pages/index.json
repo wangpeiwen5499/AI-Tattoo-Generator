@@ -14,12 +14,6 @@
         "title": "See Your Tattoo Before You Ink",
         "highlight_text": "Before You Ink",
         "description": "TattooVis is an AI tattoo design and photo preview tool. Describe your idea and see a tattoo preview on your own photo, or a photo you have permission to edit.<br/>Sign up and verify your email for 3 free credits.",
-        "safety_notice": "TattooVis prohibits nudification, sexually explicit edits, and AI-generated non-consensual intimate imagery (NCII). Use only photos of adults who consent to the edit. Google Sign-In is used only for account authentication.",
-        "safety_links": [
-          { "title": "Acceptable Use", "url": "/acceptable-use" },
-          { "title": "Privacy Policy", "url": "/privacy-policy" },
-          { "title": "Terms of Service", "url": "/terms-of-service" }
-        ],
         "tip": "🎁 Sign up and verify your email for 3 free credits · One-time welcome gift",
         "buttons": [
           {

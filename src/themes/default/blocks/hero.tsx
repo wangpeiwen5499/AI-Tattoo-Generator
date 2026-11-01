@@ -111,28 +111,6 @@ export function Hero({
           />
         )}
 
-        {section.safety_notice && (
-          <div className="bg-muted/40 mx-auto mt-8 max-w-3xl rounded-xl border px-5 py-4 text-base leading-7">
-            <p>{section.safety_notice}</p>
-            <nav
-              aria-label="Usage and privacy"
-              className="mt-3 flex flex-wrap justify-center gap-x-5 gap-y-2"
-            >
-              {section.safety_links?.map(
-                (link: { title: string; url: string }) => (
-                  <Link
-                    key={link.url}
-                    href={link.url}
-                    className="text-primary underline underline-offset-4"
-                  >
-                    {link.title}
-                  </Link>
-                )
-              )}
-            </nav>
-          </div>
-        )}
-
         {section.show_avatars && (
           <SocialAvatars tip={section.avatars_tip || ''} />
         )}
