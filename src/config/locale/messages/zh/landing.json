@@ -13,6 +13,11 @@
           "icon": "Sparkles"
         },
         {
+          "title": "博客",
+          "url": "/blog",
+          "icon": "BookOpenText"
+        },
+        {
           "title": "定价",
           "url": "/pricing",
           "icon": "DollarSign"
@@ -89,6 +94,11 @@
         {
           "title": "资源",
           "children": [
+            {
+              "title": "博客",
+              "url": "/blog",
+              "target": "_self"
+            },
             {
               "title": "可接受使用政策",
               "url": "/acceptable-use",
