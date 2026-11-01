@@ -8,15 +8,30 @@ export class StudioError extends Error {
     super(message);
   }
 }
-export function assertStudioProduction() {
-  if (process.env.VERCEL_ENV !== 'production')
+
+/**
+ * Account studio access requires either the production deployment or a
+ * Preview deployment whose owner has certified — by setting
+ * PREVIEW_STUDIO_ISOLATED=1 — that the attached DATABASE_URL, R2 bucket and
+ * KIE_API_KEY point at isolated Preview resources, never production data.
+ * Without the flag every account surface stays explicitly unavailable instead
+ * of silently falling back to browser-local storage or simulated credits.
+ */
+export function previewStudioIsolated() {
+  return process.env.PREVIEW_STUDIO_ISOLATED === '1';
+}
+export function accountStudioAllowed() {
+  return process.env.VERCEL_ENV === 'production' || previewStudioIsolated();
+}
+export function assertAccountStudio() {
+  if (!accountStudioAllowed())
     throw new StudioError(
-      'Account studio is available only in production.',
+      'The account studio is not enabled in this environment.',
       503
     );
 }
 export async function studioConfigured() {
-  if (process.env.VERCEL_ENV !== 'production') return false;
+  if (!accountStudioAllowed()) return false;
   const { getAllConfigs } = await import('@/shared/models/config');
   const configs = await getAllConfigs();
   return (

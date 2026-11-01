@@ -9,15 +9,15 @@ import {
   PreviewBanner,
   PreviewHome,
   PreviewPricing,
-  PreviewPricingCard,
   ProductionHome,
 } from '@/shared/blocks/tattoo/preview-product';
+import { PricingCardData } from '@/shared/blocks/tattoo/pricing-cards';
 
 vi.mock('@/shared/blocks/tattoo/tattoo-case-demo', () => ({
   TattooCaseDemo: () => <div />,
 }));
 
-function cardsFor(locale: string): PreviewPricingCard[] {
+function cardsFor(locale: string): PricingCardData[] {
   const copy =
     locale === 'zh' ? zhPricingCopy : (pricingCopy as typeof zhPricingCopy);
   return copy.page.sections.pricing.items.map(
@@ -40,9 +40,10 @@ it('enables product changes exclusively on Vercel Preview', () => {
   }
   vi.stubEnv('VERCEL_ENV', 'preview');
   expect(isProductPreview()).toBe(true);
-  expect(studioUrl()).toBe('/try-on-lab/index.html');
-  expect(studioUrl('history')).toBe('/try-on-lab/index.html?panel=history');
-  expect(studioUrl('designs')).toBe('/try-on-lab/index.html?panel=designs');
+  expect(studioUrl()).toBe('/studio');
+  expect(studioUrl('history')).toBe('/history');
+  expect(studioUrl('designs')).toBe('/designs');
+  expect(studioUrl('designs', 'zh')).toBe('/zh/designs');
 });
 it.each(['en', 'zh'])(
   'renders %s draft credits without a checkout or fixed image promise',
@@ -104,7 +105,7 @@ it.each(['en', 'zh'])(
     expect(html).toContain(
       locale === 'zh'
         ? '退款资格由支持团队另行审核'
-        : 'Support reviews refund eligibility separately'
+        : 'support reviews refund eligibility separately'
     );
     expect(html).not.toMatch(
       /only for entirely unused|仅全部未使用|partially used packs require manual/
@@ -166,26 +167,30 @@ vi.mock('@/server/db/tattoo-queries', () => ({
 }));
 vi.mock('@/lib/r2', () => ({ getPublicUrl: vi.fn() }));
 
-it('routes Preview Generate, History and Designs to the correct local studio panels before account access', async () => {
+it('routes Generate to the studio page and old studio panels to the standalone pages', async () => {
   vi.stubEnv('VERCEL_ENV', 'preview');
   const { default: generate } =
     await import('@/app/[locale]/(landing)/generate/page');
-  const { default: history } =
-    await import('@/app/[locale]/(landing)/history/page');
-  const { default: designs } =
-    await import('@/app/[locale]/(landing)/designs/page');
   await expect(
     generate({ params: Promise.resolve({ locale: 'en' }) })
-  ).rejects.toThrow('REDIRECT:/try-on-lab/index.html');
+  ).rejects.toThrow('REDIRECT:/studio');
   await expect(
-    history({
+    generate({ params: Promise.resolve({ locale: 'zh' }) })
+  ).rejects.toThrow('REDIRECT:/zh/studio');
+  const { default: studio } =
+    await import('@/app/[locale]/(landing)/studio/page');
+  await expect(
+    studio({
       params: Promise.resolve({ locale: 'zh' }),
-      searchParams: Promise.resolve({}),
+      searchParams: Promise.resolve({ panel: 'history' }),
     })
-  ).rejects.toThrow('REDIRECT:/try-on-lab/index.html?panel=history');
+  ).rejects.toThrow('REDIRECT:/zh/history');
   await expect(
-    designs({ params: Promise.resolve({ locale: 'en' }) })
-  ).rejects.toThrow('REDIRECT:/try-on-lab/index.html?panel=designs&lang=en');
+    studio({
+      params: Promise.resolve({ locale: 'en' }),
+      searchParams: Promise.resolve({ panel: 'designs' }),
+    })
+  ).rejects.toThrow('REDIRECT:/designs');
 });
 it('renders proposed Preview pricing before reading any live subscription or account', async () => {
   vi.stubEnv('VERCEL_ENV', 'preview');
@@ -196,18 +201,13 @@ it('renders proposed Preview pricing before reading any live subscription or acc
   );
   expect(html).toContain('No real purchases');
 });
-it('routes production generation and designs into the account studio', async () => {
+it('routes production generation into the account studio', async () => {
   vi.stubEnv('VERCEL_ENV', 'production');
   const { default: generate } =
     await import('@/app/[locale]/(landing)/generate/page');
-  const { default: designs } =
-    await import('@/app/[locale]/(landing)/designs/page');
   await expect(
     generate({ params: Promise.resolve({ locale: 'en' }) })
   ).rejects.toThrow(`REDIRECT:${studioUrl(undefined, 'en')}`);
-  await expect(
-    designs({ params: Promise.resolve({ locale: 'zh' }) })
-  ).rejects.toThrow(`REDIRECT:${studioUrl('designs', 'zh')}`);
 });
 it.each(['en', 'zh'])(
   'updates Preview guides while preserving production guide copy in %s',
@@ -227,20 +227,33 @@ it.each(['en', 'zh'])(
 );
 
 it.each(['en', 'zh'])(
-  'renders the %s home workflow with direct studio access and local/test disclosures',
+  'renders the %s home with account storage and isolated-preview disclosures',
   (locale) => {
-    const home = renderToStaticMarkup(<PreviewHome locale={locale} />);
+    const zh = locale === 'zh';
+    const home = renderToStaticMarkup(
+      <PreviewHome locale={locale} accountsEnabled />
+    );
     const banner = renderToStaticMarkup(<PreviewBanner locale={locale} />);
     expect(home).toContain(`href="${studioUrl(undefined, locale)}"`);
     expect(home).toContain('1K / 2K / 4K');
     expect(home).toContain(
-      locale === 'zh' ? '自由移动' : 'Move, resize and rotate'
+      zh ? '自由移动' : 'Move, resize and rotate'
     );
-    expect(home).toContain(locale === 'zh' ? '当前浏览器' : 'this browser');
-    expect(banner).toContain('KIE');
+    // Storage now lives in the account, never in this browser.
+    expect(home).toContain(zh ? '保存在你的账户中' : 'saved to your account');
+    expect(home).not.toMatch(
+      /仅保存在当前浏览器|stay in this browser|test credits|测试积分/
+    );
+    expect(home).toContain(zh ? '注册领取 3 积分' : 'Sign up — get 3 free credits');
+    // Without the isolation flag, sign-up waits and the note says so.
+    const waiting = renderToStaticMarkup(
+      <PreviewHome locale={locale} accountsEnabled={false} />
+    );
+    expect(waiting).toContain('PREVIEW_STUDIO_ISOLATED');
     expect(banner).toContain(
-      locale === 'zh' ? '不扣真实账户积分' : 'never real account credits'
+      zh ? '隔离数据库' : 'isolated database'
     );
+    expect(banner).not.toMatch(/test credits|测试积分/);
   }
 );
 

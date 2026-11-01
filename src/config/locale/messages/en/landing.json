@@ -24,13 +24,18 @@
         },
         {
           "title": "Studio",
-          "url": "/try-on-lab/index.html?lang=en",
+          "url": "/studio",
           "icon": "Wand"
         },
         {
           "title": "History",
           "url": "/history",
           "icon": "History"
+        },
+        {
+          "title": "My Designs",
+          "url": "/designs",
+          "icon": "Images"
         }
       ]
     },
@@ -86,7 +91,17 @@
             },
             {
               "title": "Studio",
-              "url": "/try-on-lab/index.html?lang=en",
+              "url": "/studio",
+              "target": "_self"
+            },
+            {
+              "title": "History",
+              "url": "/history",
+              "target": "_self"
+            },
+            {
+              "title": "My Designs",
+              "url": "/designs",
               "target": "_self"
             }
           ]

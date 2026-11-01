@@ -3,7 +3,8 @@ import { after } from 'next/server';
 import { readBoundedBody } from '@/server/storage/file-proxy';
 import { proxyAsset, uploadAsset } from '@/server/studio/assets';
 import {
-  assertStudioProduction,
+  accountStudioAllowed,
+  assertAccountStudio,
   MAX_UPLOAD_BYTES,
   sameOrigin,
   studioConfigured,
@@ -36,19 +37,23 @@ async function handle(request: Request) {
   const url = new URL(request.url),
     mutation = request.method !== 'GET';
   if (mutation) sameOrigin(request);
-  // Preview must never read live sessions, balances, assets, or write billing data.
-  if (process.env.VERCEL_ENV !== 'production') {
+  // Account mode runs in production or in a Preview deployment whose owner has
+  // certified isolation via PREVIEW_STUDIO_ISOLATED=1. Otherwise every account
+  // surface reports itself explicitly unavailable — it never falls back to
+  // browser-local storage or simulated credits.
+  if (!accountStudioAllowed()) {
     if (!mutation && !url.search)
       return json({
         mode: 'account',
         configured: false,
+        reason: 'isolation',
         signedIn: false,
         verified: false,
         credits: 0,
         resolutions: ['1K', '2K', '4K'],
         pending: [],
       });
-    assertStudioProduction();
+    assertAccountStudio();
   }
   const owner = await getSignUser();
   const mode = url.searchParams.get('mode'),
@@ -73,9 +78,11 @@ async function handle(request: Request) {
           await advanceStudioJob(job.id).catch(() => {});
         }
       });
+    const configured = await studioConfigured().catch(() => false);
     return json({
       mode: 'account',
-      configured: await studioConfigured(),
+      configured,
+      ...(configured ? {} : { reason: 'configuration' }),
       signedIn: !!owner,
       verified: !!owner?.emailVerified,
       userId: owner?.id,

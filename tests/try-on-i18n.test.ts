@@ -1,102 +1,58 @@
 // @vitest-environment jsdom
-import { readFileSync } from 'node:fs';
 import { beforeEach, expect, it } from 'vitest';
 
 import { createStudioI18n } from '../public/try-on-lab/i18n.mjs';
+import { STUDIO_BODY_HTML } from '@/shared/blocks/tattoo/studio-markup';
 
 beforeEach(() => {
-  document.documentElement.innerHTML = readFileSync(
-    'public/try-on-lab/index.html',
-    'utf8'
-  );
-  history.replaceState({}, '', '/try-on-lab/');
+  document.body.innerHTML = STUDIO_BODY_HTML;
 });
 
-it('uses Chinese by default and English only when requested', () => {
-  expect(createStudioI18n().t('我的图案')).toBe('我的图案');
-  history.replaceState({}, '', '?lang=en');
-  const i18n = createStudioI18n();
-  expect(i18n.t('我的图案')).toBe('My designs');
-  i18n.apply();
-  expect(document.documentElement.lang).toBe('en');
-  expect(document.title).toBe('TattooVis · Try-on Studio Preview');
-  expect(document.getElementById('nav-history')?.textContent).toBe('History');
-});
-
-it('translates explicit labels and attributes while preserving input and saved names', () => {
-  const prompt = document.getElementById('prompt') as HTMLTextAreaElement;
-  prompt.value = '我的图案 <script>stays a prompt</script>';
-  const name = document.getElementById('design-name')!;
-  name.removeAttribute('data-i18n');
-  name.textContent = '我的图案';
-  const arbitrary = document.createElement('p');
-  arbitrary.textContent = '我的图案';
-  document.body.append(arbitrary);
-  createStudioI18n('en').apply();
-  expect(prompt.value).toBe('我的图案 <script>stays a prompt</script>');
-  expect(prompt.placeholder).toContain('Subject');
-  expect(name.textContent).toBe('我的图案');
-  expect(arbitrary.textContent).toBe('我的图案');
+it('keeps Chinese content in zh and translates the account studio to English', () => {
+  const zh = createStudioI18n('zh', { account: true });
+  expect(zh.t('选择图案')).toBe('选择图案');
   expect(
-    document.getElementById('stage')?.getAttribute('aria-label')
-  ).toContain('Drag');
-  expect(
-    document.querySelector('#authorization-summary span')?.textContent
-  ).toBe('Complete before generating');
-  expect(document.querySelector('#flip-design kbd')?.textContent).toBe('F');
-  expect(document.getElementById('ink-value')?.textContent).toBe('85%');
-});
+    zh.t('设计与试戴历史保存在你的 TattooVis 账户中，可跨设备查看与复用。')
+  ).toBe('设计与试戴历史保存在你的 TattooVis 账户中，可跨设备查看与复用。');
 
-it('translates core rates, balances, progress, placement and readiness templates', () => {
-  const { t } = createStudioI18n('en');
-  expect(t('可用测试积分 3 credits · 预留 1')).toBe(
-    'Available test credits: 3 · Reserved: 1'
-  );
-  expect(t('生成真实试戴效果 · 3 测试 credits')).toBe(
-    'Generate try-on · 3 test credits'
-  );
-  expect(t('4K · 3 测试 credits')).toBe('4K · 3 test credits');
-  expect(t('大小 120% · 旋转 -30° · 深浅 85%')).toBe(
-    'Size 120% · Rotation -30° · Ink 85%'
-  );
-  expect(t('还需完成：上传部位照片；补充测试积分。')).toBe(
-    'Still needed: upload a body photo; add test credits.'
+  const en = createStudioI18n('en', { account: true });
+  expect(en.t('正在读取账户积分…')).toBe('Loading account credits…');
+  expect(en.t('照片与结果保存在你的账户中，不会公开。')).toBe(
+    'Photos and results are saved to your account and stay private.'
   );
   expect(
-    t('已准备好。成功后结算 2 测试 credits，失败释放预留。不使用网站真实积分。')
-  ).toBe(
-    'Ready. 2 test credits are charged on success; failed tasks release the reservation. Your website credits are not used.'
+    en.t(
+      '生成设计消耗 1 积分；单张试戴按 1K / 2K / 4K 消耗 1 / 2 / 3 积分；上传、摆放、保存与复用免费。'
+    )
+  ).toContain('A design costs 1 credit');
+  expect(en.t('账户服务未就绪，稍后刷新重试')).toContain(
+    'account service is not ready'
   );
-  expect(t('正在创作图案…')).toBe('Creating your design…');
-  expect(t('已经是English / 未知用户内容')).toBe(
-    '已经是English / 未知用户内容'
+  expect(en.t('已准备好。成功后结算 2 积分，失败自动退回。')).toBe(
+    'Ready. 2 credits settle after success; failures are returned automatically.'
+  );
+  expect(en.t('可用测试积分 3 credits')).toBe('Available credits: 3');
+  expect(en.t('生成真实试戴效果 · 3 测试 credits')).toBe(
+    'Generate try-on · 3 credits'
   );
 });
 
-it('can restore static Chinese labels without overwriting user input', () => {
+it('translates every static label in the account studio without leaking Chinese', () => {
+  const { apply } = createStudioI18n('en', { account: true });
+  apply();
+  const untranslated: string[] = [];
+  for (const node of document.querySelectorAll('[data-i18n]')) {
+    if (/[\u3400-\u9fff]/.test(node.textContent || ''))
+      untranslated.push(node.getAttribute('data-i18n')!);
+  }
+  expect(untranslated).toEqual([]);
+});
+
+it('restores Chinese labels without touching user input', () => {
   const input = document.getElementById('prompt') as HTMLTextAreaElement;
   input.value = 'dragon';
-  createStudioI18n('en').apply();
-  createStudioI18n('zh').apply();
+  createStudioI18n('en', { account: true }).apply();
+  createStudioI18n('zh', { account: true }).apply();
   expect(document.documentElement.lang).toBe('zh-CN');
-  expect(document.getElementById('nav-designs')?.textContent).toBe('我的设计');
   expect(input.value).toBe('dragon');
-});
-
-it('covers all explicitly marked static text and preserves status details safely', () => {
-  const { t, apply } = createStudioI18n('en');
-  apply();
-  for (const node of document.querySelectorAll('[data-i18n]')) {
-    expect(node.textContent, node.getAttribute('data-i18n')!).not.toMatch(
-      /[\u3400-\u9fff]/
-    );
-  }
-  expect(
-    t('正在生成单张真实试戴…\n可离开此页，回来后输入测试口令并点击继续查看。')
-  ).toContain('resume the saved task');
-  expect(
-    t(
-      '图案已生成，但浏览器保存失败：Quota exceeded。请先下载图案，稍后可免费重试保存。 本次未结算测试积分。'
-    )
-  ).toContain('No test credits were charged');
 });

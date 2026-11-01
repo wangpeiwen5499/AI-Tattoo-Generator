@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
 import { BODY_PART_LABELS, BODY_PARTS, type BodyPart } from '@/lib/constants';
 import { getPublicUrl } from '@/lib/r2';
 import {
@@ -8,7 +7,6 @@ import {
 } from '@/server/db/tattoo-queries';
 import { setRequestLocale } from 'next-intl/server';
 
-import { isProductPreview, studioUrl } from '@/config/preview/product';
 import { getMetadata } from '@/shared/lib/seo';
 import { getUserInfo } from '@/shared/models/user';
 
@@ -31,8 +29,6 @@ export default async function HistoryPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  if (isProductPreview()) redirect(studioUrl('history', locale));
-
   const user = await getUserInfo();
   if (!user?.id) {
     return (

@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { isProductPreview } from '@/config/preview/product';
+import { previewStudioIsolated } from '@/server/studio/policy';
 import {
   PreviewHome,
   ProductionHome,
@@ -19,6 +20,15 @@ export default async function LandingPage({
   setRequestLocale(locale);
 
   const t = await getTranslations('pages.index');
-  const Home = isProductPreview() ? PreviewHome : ProductionHome;
-  return <Home locale={locale} reviews={t.raw('page.sections.testimonials')} />;
+  if (isProductPreview())
+    return (
+      <PreviewHome
+        locale={locale}
+        reviews={t.raw('page.sections.testimonials')}
+        accountsEnabled={previewStudioIsolated()}
+      />
+    );
+  return (
+    <ProductionHome locale={locale} reviews={t.raw('page.sections.testimonials')} />
+  );
 }

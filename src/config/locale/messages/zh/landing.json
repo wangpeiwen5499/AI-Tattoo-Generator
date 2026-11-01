@@ -24,13 +24,18 @@
         },
         {
           "title": "工作室",
-          "url": "/try-on-lab/index.html",
+          "url": "/studio",
           "icon": "Wand"
         },
         {
           "title": "历史",
           "url": "/history",
           "icon": "History"
+        },
+        {
+          "title": "我的设计",
+          "url": "/designs",
+          "icon": "Images"
         }
       ]
     },
@@ -86,7 +91,17 @@
             },
             {
               "title": "工作室",
-              "url": "/try-on-lab/index.html",
+              "url": "/studio",
+              "target": "_self"
+            },
+            {
+              "title": "历史",
+              "url": "/history",
+              "target": "_self"
+            },
+            {
+              "title": "我的设计",
+              "url": "/designs",
               "target": "_self"
             }
           ]

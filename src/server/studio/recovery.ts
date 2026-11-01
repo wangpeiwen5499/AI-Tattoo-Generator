@@ -4,7 +4,7 @@ import { db } from '@/core/db';
 import { studioJob, user } from '@/config/db/schema';
 import { refundConsumedCredits } from '@/shared/models/credit';
 
-import { assertStudioProduction, StudioError } from './policy';
+import { assertAccountStudio, StudioError } from './policy';
 
 // Call only after admin access + credit write permission. Provider IDs are supplied
 // from a manual provider-console review; this operation never submits new work.
@@ -14,7 +14,7 @@ export async function resolveStudioReview(
   action: 'attach' | 'refund',
   providerTaskId?: string
 ) {
-  assertStudioProduction();
+  assertAccountStudio();
   if (
     action === 'attach' &&
     (!providerTaskId || !/^[a-zA-Z0-9_-]{1,180}$/.test(providerTaskId))

@@ -3,12 +3,12 @@ import { and, asc, inArray, lte } from 'drizzle-orm';
 import { db } from '@/core/db';
 import { studioJob } from '@/config/db/schema';
 
-import { assertStudioProduction } from './policy';
+import { assertAccountStudio } from './policy';
 import { ensureStudioWorkflow } from './scheduler';
 import { ACTIVE, advanceStudioJob } from './service';
 
 export async function advanceDueStudioJobs(limit = 3) {
-  assertStudioProduction();
+  assertAccountStudio();
   const now = new Date();
   const jobs = await db()
     .select({ id: studioJob.id })

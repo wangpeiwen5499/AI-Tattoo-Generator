@@ -3,6 +3,7 @@ import { getLocale, getTranslations } from 'next-intl/server';
 
 import { getThemeLayout } from '@/core/theme';
 import { isProductPreview } from '@/config/preview/product';
+import { previewStudioIsolated } from '@/server/studio/policy';
 import { LocaleDetector, TopBanner } from '@/shared/blocks/common';
 import { ActiveGenerationNotice } from '@/shared/blocks/tattoo/active-generation-notice';
 import { PreviewBanner } from '@/shared/blocks/tattoo/preview-product';
@@ -22,46 +23,20 @@ export default async function LandingLayout({
   // load layout component
   const Layout = await getThemeLayout('landing');
 
-  // header and footer to display
+  // header and footer to display (shared with the live site). In Preview the
+  // account entry stays hidden until the owner certifies isolated account
+  // resources via PREVIEW_STUDIO_ISOLATED — before that, sign-in would touch
+  // non-isolated data and must not be offered.
   const preview = isProductPreview();
   const locale = await getLocale();
-  const zh = locale === 'zh';
   const header: HeaderType = structuredClone(t.raw('header'));
   const footer: FooterType = structuredClone(t.raw('footer'));
   if (preview) {
-    header.show_sign = false;
-    header.user_nav = undefined;
     header.topbanner = undefined;
-    header.nav = {
-      ...header.nav,
-      items: [
-        ...(header.nav?.items ?? []),
-        {
-          title: zh ? '我的设计' : 'My Designs',
-          url: '/designs',
-          icon: 'Images',
-        },
-      ],
-    };
-    if (footer.brand)
-      footer.brand.description = zh
-        ? '先设计，再自由定位。Preview 设计库与试戴历史仅保存在当前浏览器。'
-        : 'Create a design, place it freely. Preview designs and try-on history stay in this browser.';
-    footer.nav = {
-      ...footer.nav,
-      items: (footer.nav?.items ?? []).map((item, i) =>
-        i === 0
-          ? {
-              ...item,
-              children: [
-                ...(item.children ?? []),
-                { title: zh ? '我的设计' : 'My Designs', url: '/designs' },
-                { title: zh ? '试戴历史' : 'Try-on history', url: '/history' },
-              ],
-            }
-          : item
-      ),
-    };
+    if (!previewStudioIsolated()) {
+      header.show_sign = false;
+      header.user_nav = undefined;
+    }
   }
 
   return (

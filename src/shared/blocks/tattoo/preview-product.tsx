@@ -1,11 +1,10 @@
-import { Check } from 'lucide-react';
-
 import { Link } from '@/core/i18n/navigation';
-import {
-  previewNotice,
-  studioUrl,
-} from '@/config/preview/product';
+import { previewNotice, studioUrl } from '@/config/preview/product';
 import { Section } from '@/shared/types/blocks/landing';
+import {
+  PricingCardData,
+  PricingCards,
+} from '@/shared/blocks/tattoo/pricing-cards';
 import { Testimonials } from '@/themes/default/blocks/testimonials';
 
 import { PreviewWorkflowCase } from './preview-workflow-case';
@@ -13,15 +12,6 @@ import { TattooGuideLinks } from './tattoo-guide-links';
 
 const linkClass =
   'bg-primary text-primary-foreground inline-flex rounded-full px-7 py-3 text-sm font-medium';
-
-export type PreviewPricingCard = {
-  title?: string;
-  price?: string;
-  credits?: number;
-  description?: string;
-  label?: string;
-  features?: string[];
-};
 
 export function PreviewBanner({ locale }: { locale: string }) {
   return (
@@ -42,9 +32,11 @@ export function PreviewBanner({ locale }: { locale: string }) {
 function FreeCreditsBlock({
   locale,
   preview = false,
+  accountsEnabled = true,
 }: {
   locale: string;
   preview?: boolean;
+  accountsEnabled?: boolean;
 }) {
   const zh = locale === 'zh';
   return (
@@ -63,34 +55,29 @@ function FreeCreditsBlock({
         </h2>
         <p className="text-muted-foreground mx-auto mt-3 max-w-2xl text-base leading-7">
           {zh
-            ? '新账户一次性赠送 3 积分，验证邮箱后即可使用；重复登录不会再次发放。生成一张 1K 设计消耗 1 积分，单张试戴按 1K / 2K / 4K 消耗 1 / 2 / 3 积分。上传、定位与复用设计始终免费；这是一次性积分，不是永久免费或无限生成。'
+            ? '新账户一次性赠送 3 积分，验证邮箱后即可使用；重复登录不会再次发放。生成一张 1K 设计消耗 1 积分，单张试戴按 1K / 2K / 4K 消耗 1 / 2 / 3 积分。上传、定位与复用设计始终免费——这是一次性积分，不是永久免费或无限生成。'
             : 'New accounts receive 3 credits once, usable after you verify your email; signing in again does not re-grant them. A 1K design costs 1 credit and a single try-on costs 1 / 2 / 3 credits at 1K / 2K / 4K. Uploading, positioning and reusing designs stay free — this is a one-time balance, not permanent free or unlimited generation.'}
         </p>
         {preview ? (
           <>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
-              <a href={studioUrl(undefined, locale)} className={linkClass}>
-                {zh ? '打开测试工作室' : 'Open the test studio'}
-              </a>
-              <a
-                href={
-                  zh
-                    ? 'https://tattoovis.ink/zh/sign-up'
-                    : 'https://tattoovis.ink/sign-up'
-                }
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-full border px-7 py-3 text-sm"
-              >
-                {zh
-                  ? '到正式站注册领取 ↗'
-                  : 'Sign up on the live site ↗'}
+              {accountsEnabled ? (
+                <Link href="/sign-up" className={linkClass}>
+                  {zh ? '注册领取 3 积分' : 'Sign up — get 3 free credits'}
+                </Link>
+              ) : null}
+              <a href={studioUrl(undefined, locale)} className="rounded-full border px-7 py-3 text-sm">
+                {zh ? '打开工作室' : 'Open the studio'}
               </a>
             </div>
             <p className="text-muted-foreground mt-4 text-sm leading-6">
-              {zh
-                ? 'Preview 工作室使用独立的测试积分（另附测试说明），不代表真实余额。'
-                : 'The Preview studio uses separate test credits (see its own note); this is not a real balance.'}
+              {accountsEnabled
+                ? zh
+                  ? '预发环境使用隔离数据库中的账户与积分，与正式站数据完全隔离。'
+                  : 'This Preview uses accounts and credits from an isolated database, fully separated from the live site.'
+                : zh
+                  ? '账户服务等待隔离的预发数据库配置（PREVIEW_STUDIO_ISOLATED），配置完成前暂不可注册。'
+                  : 'Accounts are waiting for the isolated Preview database configuration (PREVIEW_STUDIO_ISOLATED); sign-up opens once it is set.'}
             </p>
           </>
         ) : (
@@ -111,111 +98,61 @@ function FreeCreditsBlock({
   );
 }
 
-function HomeFaq({
-  locale,
-  preview = false,
-}: {
-  locale: string;
-  preview?: boolean;
-}) {
+function HomeFaq({ locale }: { locale: string }) {
   const zh = locale === 'zh';
   const faqs = (
-    preview
-      ? zh
-        ? [
-            [
-              '会扣真实积分吗？',
-              '不会。Preview 使用独立测试积分，不读取或扣除真实账户余额；AI 生成仍产生 KIE 测试费用，需要明确授权。',
-            ],
-            [
-              '设计和历史保存在哪里？',
-              '设计库与试戴历史仅保存在当前浏览器，不与账户或其他设备同步。清理浏览器数据会删除记录，请下载重要图片备份。',
-            ],
-            [
-              '一次会生成几个部位？',
-              '新流程每次只生成一张试戴图片，位置由你自由调整。需要比较其他位置时，复用设计、调整位置，再提交一次试戴。',
-            ],
-            [
-              'AI 图片能直接作为纹身稿吗？',
-              '结果是视觉参考。AI 可能改变皮肤、体型或背景；实际纹身前，请让专业纹身师确认线条、大小和位置。',
-            ],
-          ]
-        : [
-            [
-              'Will this charge my real credits?',
-              'No. Preview uses separate test credits and does not read or debit live balances. AI generation still incurs KIE test costs and requires explicit consent.',
-            ],
-            [
-              'Where are my designs and history saved?',
-              'The design library and try-on history stay in this browser, without account or device sync. Clearing browser data removes them. Download important images as backups.',
-            ],
-            [
-              'How many placements does one task create?',
-              'Each new try-on generates one image at your chosen position. Reuse the design, adjust its placement and submit another try-on to compare positions.',
-            ],
-            [
-              'Can I use the image as a tattoo stencil?',
-              'Treat it as a visual reference. AI may change skin, body shape or background details. Ask a professional tattoo artist to review linework, size and placement.',
-            ],
-          ]
-      : zh
-        ? [
-            [
-              '如何使用积分？',
-              '生成一张 1K 设计消耗 1 积分；单张 1K / 2K / 4K 试戴分别消耗 1 / 2 / 3 积分。上传、保存、复用与定位免费。生成前会显示费用。',
-            ],
-            [
-              '设计和历史保存在哪里？',
-              '设计库与试戴历史保存在你的账户中。登录后可查看、下载与复用已保存的设计，也可继续查看已有历史结果。',
-            ],
-            [
-              '一次会生成几张试戴图片？',
-              '新流程每次只生成一张试戴图片，位置由你自由调整。需要比较其他位置时，复用设计、调整位置，再提交一次试戴。',
-            ],
-            [
-              '生成失败会怎样？',
-              '生成失败后，本次操作消耗的积分会退还一次。购买退款请联系支持团队，部分退款人工处理。',
-            ],
-            [
-              'AI 图片能直接作为纹身稿吗？',
-              '结果是视觉参考。AI 可能改变皮肤、体型或背景；实际纹身前，请让专业纹身师确认线条、大小和位置。',
-            ],
-          ]
-        : [
-            [
-              'How do credits work?',
-              'One 1K design costs 1 credit. A single 1K / 2K / 4K try-on costs 1 / 2 / 3 credits. Uploading, saving, reusing and positioning are free. Review the cost before generating.',
-            ],
-            [
-              'Where are my designs and history saved?',
-              'Your design library and try-on history are saved to your account. Sign in to view, download and reuse saved designs, and revisit existing results.',
-            ],
-            [
-              'How many placements does one task create?',
-              'Each new try-on generates one image at your chosen position. Reuse the design, adjust its placement and submit another try-on to compare positions.',
-            ],
-            [
-              'What happens if generation fails?',
-              'The credits consumed for a failed operation are returned once. Contact support for purchase refund requests; partial refunds require manual handling.',
-            ],
-            [
-              'Can I use the image as a tattoo stencil?',
-              'Treat it as a visual reference. AI may change skin, body shape or background details. Ask a professional tattoo artist to review linework, size and placement.',
-            ],
-          ]
+    zh
+      ? [
+          [
+            '如何使用积分？',
+            '生成一张 1K 设计消耗 1 积分；单张 1K / 2K / 4K 试戴分别消耗 1 / 2 / 3 积分。上传、保存、复用与定位免费。生成前会显示费用。',
+          ],
+          [
+            '设计和历史保存在哪里？',
+            '设计库与试戴历史保存在你的账户中。登录后可查看、下载与复用已保存的设计，也可继续查看已有历史结果。',
+          ],
+          [
+            '一次会生成几张试戴图片？',
+            '新流程每次只生成一张试戴图片，位置由你自由调整。需要比较其他位置时，复用设计、调整位置，再提交一次试戴。',
+          ],
+          [
+            '生成失败会怎样？',
+            '生成失败后，本次操作消耗的积分会退还一次。购买退款请联系支持团队，部分退款人工处理。',
+          ],
+          [
+            'AI 图片能直接作为纹身稿吗？',
+            '结果是视觉参考。AI 可能改变皮肤、体型或背景；实际纹身前，请让专业纹身师确认线条、大小和位置。',
+          ],
+        ]
+      : [
+          [
+            'How do credits work?',
+            'One 1K design costs 1 credit. A single 1K / 2K / 4K try-on costs 1 / 2 / 3 credits. Uploading, saving, reusing and positioning are free. Review the cost before generating.',
+          ],
+          [
+            'Where are my designs and history saved?',
+            'Your design library and try-on history are saved to your account. Sign in to view, download and reuse saved designs, and revisit existing results.',
+          ],
+          [
+            'How many placements does one task create?',
+            'Each new try-on generates one image at your chosen position. Reuse the design, adjust its placement and submit another try-on to compare positions.',
+          ],
+          [
+            'What happens if generation fails?',
+            'The credits consumed for a failed operation are returned once. Contact support for purchase refund requests; partial refunds require manual handling.',
+          ],
+          [
+            'Can I use the image as a tattoo stencil?',
+            'Treat it as a visual reference. AI may change skin, body shape or background details. Ask a professional tattoo artist to review linework, size and placement.',
+          ],
+        ]
   ) as [string, string][];
   return (
     <section className="tattoo-section" aria-labelledby="home-faq-heading">
       <div className="tattoo-container">
         <div className="mx-auto max-w-3xl">
           <h2 id="home-faq-heading" className="tattoo-heading">
-            {preview
-              ? zh
-                ? '测试前需要了解'
-                : 'Before you try it'
-              : zh
-                ? '开始前需要了解'
-                : 'Before you try it'}
+            {zh ? '开始前需要了解' : 'Before you try it'}
           </h2>
           <div className="mt-8">
             {faqs.map(([question, answer]) => (
@@ -235,86 +172,44 @@ function HomeFaq({
   );
 }
 
-function HomeSteps({
-  locale,
-  preview = false,
-}: {
-  locale: string;
-  preview?: boolean;
-}) {
+function HomeSteps({ locale }: { locale: string }) {
   const zh = locale === 'zh';
   const steps = (
-    preview
-      ? zh
-        ? [
-            [
-              '01 / 设计',
-              '上传或生成设计',
-              '上传已有图案免费；也可以输入提示词，以 1 测试积分生成一张 1K 设计。成功生成后自动存入本机设计库。',
-            ],
-            [
-              '02 / 定位',
-              '在自己的照片上自由摆放',
-              '上传照片，选择新设计或复用已保存设计，自由移动、缩放和旋转。上传、保存、复用与定位均免费。',
-            ],
-            [
-              '03 / 试戴',
-              '确认位置，生成单张效果',
-              '每次试戴生成一张图片。1K / 2K / 4K 分别消耗 1 / 2 / 3 测试积分；生成前确认清晰度、费用和测试授权。',
-            ],
-          ]
-        : [
-            [
-              '01 / DESIGN',
-              'Upload or create a design',
-              'Upload an existing design free, or describe a new idea and generate one 1K design for 1 test credit. Successful new designs save automatically to this browser’s library.',
-            ],
-            [
-              '02 / POSITION',
-              'Place it freely on your photo',
-              'Upload your photo and choose a new or saved design. Move, resize and rotate it. Uploading, saving, reusing and positioning designs are free.',
-            ],
-            [
-              '03 / TRY ON',
-              'Confirm placement. Generate one image.',
-              'Each try-on creates one image. Choose 1K / 2K / 4K for 1 / 2 / 3 test credits. Review resolution, cost and test consent before generating.',
-            ],
-          ]
-      : zh
-        ? [
-            [
-              '01 / 设计',
-              '上传或生成设计',
-              '上传已有图案免费；也可以输入提示词，以 1 积分生成一张 1K 设计。成功生成后自动存入账户设计库。',
-            ],
-            [
-              '02 / 定位',
-              '在自己的照片上自由摆放',
-              '上传照片，选择新设计或复用已保存设计，自由移动、缩放和旋转。上传、保存、复用与定位均免费。',
-            ],
-            [
-              '03 / 试戴',
-              '确认位置，生成单张效果',
-              '每次试戴生成一张图片。1K / 2K / 4K 分别消耗 1 / 2 / 3 积分；生成前确认清晰度和费用。',
-            ],
-          ]
-        : [
-            [
-              '01 / DESIGN',
-              'Upload or create a design',
-              'Upload an existing design free, or describe a new idea and generate one 1K design for 1 credit. Successful new designs save automatically to your account library.',
-            ],
-            [
-              '02 / POSITION',
-              'Place it freely on your photo',
-              'Upload your photo and choose a new or saved design. Move, resize and rotate it. Uploading, saving, reusing and positioning designs are free.',
-            ],
-            [
-              '03 / TRY ON',
-              'Confirm placement. Generate one image.',
-              'Each try-on creates one image. Choose 1K / 2K / 4K for 1 / 2 / 3 credits. Review resolution and cost before generating.',
-            ],
-          ]
+    zh
+      ? [
+          [
+            '01 / 设计',
+            '上传或生成设计',
+            '上传已有图案免费；也可以输入提示词，以 1 积分生成一张 1K 设计。成功生成后自动存入账户设计库。',
+          ],
+          [
+            '02 / 定位',
+            '在自己的照片上自由摆放',
+            '上传照片，选择新设计或复用已保存设计，自由移动、缩放和旋转。上传、保存、复用与定位均免费。',
+          ],
+          [
+            '03 / 试戴',
+            '确认位置，生成单张效果',
+            '每次试戴生成一张图片。1K / 2K / 4K 分别消耗 1 / 2 / 3 积分；生成前确认清晰度和费用。',
+          ],
+        ]
+      : [
+          [
+            '01 / DESIGN',
+            'Upload or create a design',
+            'Upload an existing design free, or describe a new idea and generate one 1K design for 1 credit. Successful new designs save automatically to your account library.',
+          ],
+          [
+            '02 / POSITION',
+            'Place it freely on your photo',
+            'Upload your photo and choose a new or saved design. Move, resize and rotate it. Uploading, saving, reusing and positioning designs are free.',
+          ],
+          [
+            '03 / TRY ON',
+            'Confirm placement. Generate one image.',
+            'Each try-on creates one image. Choose 1K / 2K / 4K for 1 / 2 / 3 credits. Review resolution and cost before generating.',
+          ],
+        ]
   ) as [string, string, string][];
   return (
     <section
@@ -383,8 +278,8 @@ function HomeHero({
         <p className="text-muted-foreground mt-5 text-sm leading-6">
           {preview
             ? zh
-              ? '测试积分与正式账户余额分开；不提供真实购买。正式版注册验证邮箱赠送 3 积分的权益保持原规则。'
-              : 'Test credits are separate from live balances; no real purchases. The live signup offer of 3 credits after email verification keeps its existing terms.'
+              ? '预发环境使用隔离数据库中的账户、积分与图片存储，与正式站完全隔离；购买暂未开放。'
+              : 'This Preview keeps accounts, credits and image storage in an isolated database, fully separated from the live site; purchasing is not available yet.'
             : zh
               ? '积分永不过期；已有账户余额保持不变。'
               : 'Credits never expire; existing account balances stay unchanged.'}
@@ -397,19 +292,21 @@ function HomeHero({
 export function PreviewHome({
   locale,
   reviews,
+  accountsEnabled = true,
 }: {
   locale: string;
   reviews?: Section;
+  accountsEnabled?: boolean;
 }) {
   return (
     <main>
       <HomeHero locale={locale} preview />
-      <FreeCreditsBlock locale={locale} preview />
-      <HomeSteps locale={locale} preview />
+      <FreeCreditsBlock locale={locale} preview accountsEnabled={accountsEnabled} />
+      <HomeSteps locale={locale} />
       <PreviewWorkflowCase locale={locale} />
       <TattooGuideLinks locale={locale} />
       {reviews && <Testimonials section={reviews} />}
-      <HomeFaq locale={locale} preview />
+      <HomeFaq locale={locale} />
     </main>
   );
 }
@@ -434,18 +331,16 @@ export function ProductionHome({
   );
 }
 
+export type { PricingCardData };
+
 export function PreviewPricing({
   locale,
   cards,
 }: {
   locale: string;
-  cards: PreviewPricingCard[];
+  cards: PricingCardData[];
 }) {
   const zh = locale === 'zh';
-  const featuredIndex = Math.max(
-    0,
-    cards.findIndex((card) => card.label)
-  );
   return (
     <main className="tattoo-section">
       <div className="tattoo-container">
@@ -460,56 +355,22 @@ export function PreviewPricing({
           </h1>
           <p className="tattoo-section-body">
             {zh
-              ? '仅展示拟议积分包，不提供真实购买。工作室使用独立测试积分，不扣真实余额。'
-              : 'Proposed credit packs for testing only. No real purchases. The studio uses separate test credits, never live balances.'}
+              ? '预发环境暂不提供真实购买；积分与套餐规则与正式站一致。'
+              : 'No real purchases in this Preview; credits and pack rules match the live site.'}
           </p>
         </div>
-        <div className="mt-12 grid items-stretch gap-6 md:grid-cols-3">
-          {cards.map((card, index) => (
-            <article
-              key={card.title}
-              className={`bg-card flex flex-col rounded-2xl border p-7 ${
-                index === featuredIndex
-                  ? 'border-primary ring-primary/30 shadow-lg ring-2'
-                  : ''
-              }`}
-            >
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="text-lg font-medium">{card.title}</h2>
-                {index === featuredIndex && card.label ? (
-                  <span className="bg-primary text-primary-foreground rounded-full px-3 py-1 text-xs font-medium">
-                    {card.label}
-                  </span>
-                ) : null}
-              </div>
-              <p className="mt-5 text-4xl font-semibold">{card.price}</p>
-              <p className="mt-2 text-base">
-                {card.credits}{' '}
-                {zh ? '积分（拟议）' : 'credits (proposed)'}
-              </p>
-              <p className="text-muted-foreground mt-4 text-sm leading-6">
-                {card.description}
-              </p>
-              <ul className="mt-6 mb-8 space-y-3">
-                {(card.features ?? []).map((feature) => (
-                  <li key={feature} className="flex items-start gap-2.5">
-                    <Check
-                      size={17}
-                      className="text-primary mt-0.5 shrink-0"
-                      aria-hidden="true"
-                    />
-                    <span className="text-sm leading-6">{feature}</span>
-                  </li>
-                ))}
-              </ul>
+        <div className="mt-12">
+          <PricingCards
+            cards={cards}
+            renderCta={() => (
               <a
                 href={studioUrl(undefined, locale)}
-                className={`${linkClass} mt-auto w-full`}
+                className={`${linkClass} w-full`}
               >
-                {zh ? '打开测试工作室' : 'Open the test studio'}
+                {zh ? '打开工作室' : 'Open the studio'}
               </a>
-            </article>
-          ))}
+            )}
+          />
         </div>
         <div className="bg-muted/40 mx-auto mt-10 max-w-2xl rounded-2xl border p-7 leading-8">
           <h2 className="mb-4 text-xl font-medium">
@@ -530,18 +391,18 @@ export function PreviewPricing({
           </p>
           <p className="text-muted-foreground mt-4 text-sm">
             {zh
-              ? '拟议规则：积分永不过期。积分包不承诺固定图片数量，总用量取决于操作和分辨率。设计与历史仅保存在当前浏览器，不与账户同步。'
-              : 'Proposed rule: Credits never expire. Packs do not promise a fixed image count: usage depends on operations and resolution. Designs and history stay in this browser without account sync.'}
+              ? '积分永不过期。积分包不承诺固定图片数量，总用量取决于操作和分辨率。设计与试戴历史保存在账户中，可跨设备查看。'
+              : 'Credits never expire. Packs do not promise a fixed image count: usage depends on operations and resolution. Designs and try-on history are saved to your account across devices.'}
           </p>
         </div>
         <p className="text-muted-foreground mx-auto mt-6 max-w-2xl text-sm leading-7">
           {zh
-            ? '拟议退款处理规则：全额退款完成后，仅自动收回该订单剩余未用积分；已用积分不追扣，不扣赠送积分或其他订单余额。部分退款人工处理。退款资格由支持团队另行审核，不能仅因积分部分使用而断言不支持全额退款。此规则尚未生效，历史已购权益另行确认。'
-            : 'Draft refund handling: after a full refund, automatically recover only that order’s remaining unused credits. Do not claw back spent credits or deduct gifts or other orders’ balances. Partial refunds require manual handling. Support reviews refund eligibility separately; partial credit use alone does not determine full-refund eligibility. This rule is not live. Existing purchased entitlements need a separate decision.'}
+            ? '退款规则：全额退款完成后，仅自动收回该订单剩余未用积分；已用积分不追扣，不扣赠送积分或其他订单余额。部分退款人工处理。退款资格由支持团队另行审核。'
+            : 'Refund rules: after a full refund, only that order’s remaining unused credits are recovered. Spent credits, gifts and other orders’ balances are not deducted. Partial refunds require manual handling, and support reviews refund eligibility separately.'}
         </p>
         <p className="text-muted-foreground mt-4 text-center text-sm">
           {zh
-            ? '测试展示 · 购买未开放'
+            ? '预发展示 · 购买未开放'
             : 'Preview only · Purchasing unavailable'}
         </p>
       </div>

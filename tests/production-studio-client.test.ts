@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { readFileSync } from 'node:fs';
 import { waitFor } from '@testing-library/dom';
+import { STUDIO_BODY_HTML } from '@/shared/blocks/tattoo/studio-markup';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 let accountRecords: any[] = [];
@@ -48,10 +48,7 @@ vi.mock('../public/try-on-lab/library.mjs', () => ({
 
 beforeEach(async () => {
   vi.resetModules();
-  document.documentElement.innerHTML = readFileSync(
-    'public/try-on-lab/index.html',
-    'utf8'
-  );
+  document.body.innerHTML = STUDIO_BODY_HTML;
   sessionStorage.clear();
   localStorage.clear();
   saved.designs = [];
@@ -120,8 +117,8 @@ beforeEach(async () => {
     vi.fn(async (input: string, options: any) => {
       const url = new URL(input, 'https://local');
       const mode = url.searchParams.get('mode');
-      if (url.pathname === '/api/preview/try-on')
-        return new Response('', { status: 404 });
+      if (!url.pathname.startsWith('/api/studio'))
+        throw new Error('Unexpected request outside the account studio API');
       if (url.searchParams.has('collection'))
         return new Response(JSON.stringify({ records: accountRecords }));
       if (!options?.method && !url.searchParams.has('asset'))
@@ -200,18 +197,18 @@ afterEach(() => {
 
 it('uses account credits and explicit production copy without constructing a test wallet', () => {
   expect(localStorage.getItem('tattoovis-preview-wallet-v1')).toBeNull();
-  expect(element('grant-test-credits').hidden).toBe(true);
-  expect(document.querySelector('.test-config')?.hasAttribute('hidden')).toBe(
-    true
-  );
+  expect(document.getElementById('grant-test-credits')).toBeNull();
+  expect(document.querySelector('.test-config')).toBeNull();
+  expect(document.querySelector('.consent')).toBeNull();
+
   expect(element('credit-balance').textContent).toContain('20');
   expect(element('credit-balance').textContent).not.toContain('测试');
   expect(document.querySelector('footer')?.textContent).not.toContain(
     'Preview'
   );
-  expect(document.querySelector('.site-account')?.getAttribute('href')).toBe(
-    '/zh/settings/profile'
-  );
+  expect(
+    document.querySelector('#pricing-link')?.getAttribute('href')
+  ).toBe('/zh/pricing');
 });
 
 it('submits a design operation ID and resolves the server saved design without uploading twice', async () => {
@@ -250,14 +247,14 @@ it('resumes a server pending job from another device without local test authoriz
     source: 'generated',
     createdAt: Date.now(),
   });
-  await element('check-configuration').onclick();
-  expect(element('resume-task').hidden).toBe(false);
+  window.dispatchEvent(new Event('focus'));
+  await waitFor(() => expect(element('resume-task').hidden).toBe(false));
   await element('resume-task').onclick();
   expect(requests.find((item) => item.mode === 'status')?.data.task).toBe(
     'cross-device-task'
   );
   expect(element('save-design').disabled).toBe(true);
-  expect(element('access-token').value).toBe('');
+  expect(document.getElementById('access-token')).toBeNull();
 });
 
 it('reuses the owned asset of a saved design when rendering with its design ID', async () => {
@@ -293,7 +290,8 @@ it('retains ambiguous tasks without claiming a refund or polling forever', async
   await element('generate-design').onclick();
   expect(requests.filter((item) => item.mode === 'status')).toHaveLength(1);
   expect(element('status').textContent).toContain('Credit held');
-  expect(element('resume-task').hidden).toBe(false);
+  window.dispatchEvent(new Event('focus'));
+  await waitFor(() => expect(element('resume-task').hidden).toBe(false));
   expect(element('status').textContent).not.toContain('退回');
 });
 
@@ -322,8 +320,8 @@ it('still resumes authoritative pending work when browser storage is blocked', a
     source: 'generated',
     createdAt: Date.now(),
   });
-  await element('check-configuration').onclick();
-  expect(element('resume-task').hidden).toBe(false);
+  window.dispatchEvent(new Event('focus'));
+  await waitFor(() => expect(element('resume-task').hidden).toBe(false));
   await element('resume-task').onclick();
   expect(requests.find((item) => item.mode === 'status')?.data.task).toBe(
     'server-task'

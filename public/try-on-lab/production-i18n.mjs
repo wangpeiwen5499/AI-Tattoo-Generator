@@ -15,6 +15,59 @@ const COPY = {
     'Generation is unavailable. Reload to retry later.',
   ],
   测试数据说明: ['数据保存说明', 'How your data is stored'],
+  账户数据说明: ['账户数据说明', 'How your account data is handled'],
+  账户积分: ['账户积分', 'Account credits'],
+  查看积分价格: ['查看积分价格', 'See credit pricing'],
+  '正在读取账户积分…': ['正在读取账户积分…', 'Loading account credits…'],
+  '照片与结果保存在你的账户中，不会公开。': [
+    '照片与结果保存在你的账户中，不会公开。',
+    'Photos and results are saved to your account and stay private.',
+  ],
+  '设计与试戴历史保存在你的 TattooVis 账户中，可跨设备查看与复用。': [
+    '设计与试戴历史保存在你的 TattooVis 账户中，可跨设备查看与复用。',
+    'Designs and try-on history are saved to your TattooVis account, available across devices.',
+  ],
+  '生成设计消耗 1 积分；单张试戴按 1K / 2K / 4K 消耗 1 / 2 / 3 积分；上传、摆放、保存与复用免费。': [
+    '生成设计消耗 1 积分；单张试戴按 1K / 2K / 4K 消耗 1 / 2 / 3 积分；上传、摆放、保存与复用免费。',
+    'A design costs 1 credit; a single try-on costs 1 / 2 / 3 credits at 1K / 2K / 4K. Uploading, placing, saving and reusing are free.',
+  ],
+  '生成失败会退回本次积分；手动叠放属于普通叠图，AI 原始结果与局部融合结果会分别展示。': [
+    '生成失败会退回本次积分；手动叠放属于普通叠图，AI 原始结果与局部融合结果会分别展示。',
+    'Failed generations restore their credits. The manual overlay is a plain composite; the raw AI result and the local blend are shown separately.',
+  ],
+  '账户服务未就绪，稍后刷新重试': [
+    '账户服务未就绪，稍后刷新重试',
+    'account service is not ready yet — retry shortly',
+  ],
+  '积分不足，可在 Pricing 补充': [
+    '积分不足，可在 Pricing 补充',
+    'not enough credits — top up on Pricing',
+  ],
+  '任务仍在执行。请等待结果，避免重复提交。': [
+    '任务仍在执行。请等待结果，避免重复提交。',
+    'A task is still running. Wait for its result instead of resubmitting.',
+  ],
+  '正在处理任务，请勿重复提交。': [
+    '正在处理任务，请勿重复提交。',
+    'A task is in progress; do not submit another one.',
+  ],
+  '当前没有保存的任务。': [
+    '当前没有保存的任务。',
+    'There is no saved task right now.',
+  ],
+  '请填写提示词并完成账户登录。': [
+    '请填写提示词并完成账户登录。',
+    'Enter a prompt and sign in with a verified account.',
+  ],
+  '请先上传照片并选择图案。': [
+    '请先上传照片并选择图案。',
+    'Upload a photo and choose a design first.',
+  ],
+  '积分服务不可用。': [
+    '积分服务不可用。',
+    'The credit service is unavailable.',
+  ],
+
   '图案和试戴历史仅保存在当前浏览器：不上传正式账户存储，也不跨设备或 Preview 地址同步。':
     [
       '图案与 AI 结果保存到账户，可跨设备查看。',
@@ -140,6 +193,8 @@ export function productionCopy(source, english) {
     );
   if (COPY[normalized]) return COPY[normalized][english ? 1 : 0];
   let match;
+  if ((match = /^已准备好。成功后结算 (\d+) 积分，失败自动退回。$/.exec(normalized)))
+    return `Ready. ${match[1]} credit${match[1] === '1' ? '' : 's'} settle after success; failures are returned automatically.`;
   if ((match = /^可用测试积分 (\d+) credits/.exec(normalized)))
     return english ? `Available credits: ${match[1]}` : `可用积分 ${match[1]}`;
   if ((match = /^(1K|2K|4K) · (\d+) 测试 credits?$/.exec(normalized)))

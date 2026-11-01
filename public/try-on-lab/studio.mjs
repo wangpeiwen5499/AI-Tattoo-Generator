@@ -1,7 +1,6 @@
 import {
   createAccountLibrary,
   createAccountWallet,
-  detectStudioRuntime,
 } from './account.mjs';
 import { createDetailViewer } from './detail-viewer.mjs';
 import { createStudioGallery } from './gallery.mjs';
@@ -14,67 +13,48 @@ import {
 } from './geometry.mjs';
 import { createStudioI18n } from './i18n.mjs';
 import { createStudioLibrary } from './library.mjs';
-import { initStudioNavigation } from './navigation.mjs';
-import { createPreviewWallet, previewCreditCost } from './wallet.mjs';
+
+const creditCost = (kind, resolution) =>
+  kind === 'design'
+    ? 1
+    : ({ '1K': 1, '2K': 2, '4K': 3 }[resolution] || 1);
 
 const $ = (id) => document.getElementById(id);
-const studioLocale =
-  new URLSearchParams(location.search).get('lang') === 'en' ? 'en' : 'zh';
-let runtime;
+const params = new URLSearchParams(location.search);
+const studioLocale = (() => {
+  const query = params.get('lang');
+  if (query === 'en' || query === 'zh') return query;
+  const root = document.getElementById('studio-root');
+  if (root?.dataset.locale === 'en' || root?.dataset.locale === 'zh')
+    return root.dataset.locale;
+  return 'zh';
+})();
+let accountConfig;
 let bootError;
 try {
-  runtime = await detectStudioRuntime();
+  const response = await fetch('/api/studio', { cache: 'no-store' });
+  if (!response.ok)
+    throw new Error('Studio is unavailable. Please reload to try again.');
+  const capabilities = await response.json();
+  if (capabilities.mode !== 'account')
+    throw new Error('Invalid studio capabilities.');
+  accountConfig = capabilities;
 } catch (error) {
   bootError = error;
-  runtime = {
-    account: true,
-    api: '/api/studio',
-    capabilities: {
-      configured: false,
-      signedIn: false,
-      verified: false,
-      credits: 0,
-      pending: [],
-    },
+  accountConfig = {
+    configured: false,
+    signedIn: false,
+    verified: false,
+    credits: 0,
+    pending: [],
   };
 }
-const accountMode = runtime.account;
-let accountConfig = runtime.capabilities;
-const i18n = createStudioI18n(studioLocale, { account: accountMode });
+const i18n = createStudioI18n(studioLocale, { account: true });
 i18n.apply();
-initStudioNavigation({ locale: studioLocale, t: i18n.t });
+$('pricing-link').href = `${studioLocale === 'zh' ? '/zh' : ''}/pricing`;
 const canvas = $('stage'),
   ctx = canvas.getContext('2d');
-const api = runtime.api;
-if (accountMode) {
-  $('grant-test-credits').hidden = true;
-  document.querySelector('.test-config').hidden = true;
-  document.querySelector('.consent').hidden = true;
-  const link = document.createElement('a');
-  link.className = 'site-nav-link site-account';
-  link.href = `${studioLocale === 'zh' ? '/zh' : ''}${accountConfig.signedIn ? '/settings/profile' : '/sign-in'}`;
-  link.textContent =
-    studioLocale === 'zh'
-      ? accountConfig.signedIn
-        ? '账户'
-        : '登录'
-      : accountConfig.signedIn
-        ? 'Account'
-        : 'Sign in';
-  $('site-navigation-links').insertBefore(link, document.querySelector('.site-language'));
-  const base = studioLocale === 'zh' ? '/zh' : '';
-  document.querySelector('[data-site-path="#features"]').href = `${base || '/'}#features`;
-  $('nav-studio').href = '#stage';
-  for (const collection of ['history', 'designs']) {
-    const previous = $(`nav-${collection}`);
-    const anchor = document.createElement('a');
-    anchor.id = previous.id;
-    anchor.className = previous.className;
-    anchor.textContent = previous.textContent;
-    anchor.href = `${base}/${collection}`;
-    previous.replaceWith(anchor);
-  }
-}
+const api = '/api/studio';
 const editorSession = crypto.randomUUID();
 const state = {
   photo: null,
@@ -113,68 +93,43 @@ const state = {
   resultOperationId: null,
   comparisonSnapshots: null,
 };
-const library = accountMode
-  ? createAccountLibrary({
-      pendingLibrary: accountConfig.userId
-        ? createStudioLibrary({
-            dbName: `tattoovis-account-drafts-${accountConfig.userId}`,
-          })
-        : undefined,
-    })
-  : createStudioLibrary();
-const taskKey = accountMode
-  ? `tattoovis-account-task-${accountConfig.userId || 'guest'}`
-  : 'try-on-lab-task';
+const library = createAccountLibrary({
+  pendingLibrary: accountConfig.userId
+    ? createStudioLibrary({
+        dbName: `tattoovis-account-drafts-${accountConfig.userId}`,
+      })
+    : undefined,
+});
+const taskKey = `tattoovis-account-task-${accountConfig.userId || 'guest'}`;
 let accountTask = null;
 // Only signed task references and prompt metadata, never the lab access token.
 const taskStorage = {
-  getItem(key) {
-    key = taskKey;
-    if (accountMode) {
-      try {
-        const value = localStorage.getItem(key) || accountTask;
-        const parsed = JSON.parse(value || 'null');
-        return parsed?.task && ['design', 'render'].includes(parsed.kind)
-          ? value
-          : null;
-      } catch {
-        return accountTask;
-      }
+  getItem() {
+    try {
+      const value = localStorage.getItem(taskKey) || accountTask;
+      const parsed = JSON.parse(value || 'null');
+      return parsed?.task && ['design', 'render'].includes(parsed.kind)
+        ? value
+        : null;
+    } catch {
+      return accountTask;
     }
-    const current = localStorage.getItem(key),
-      legacy = sessionStorage.getItem(key);
-    if (legacy) sessionStorage.removeItem(key);
-    if (current) return current;
-    if (legacy) localStorage.setItem(key, legacy);
-    return legacy;
   },
   setItem(key, value) {
-    key = taskKey;
-    if (accountMode) {
-      accountTask = value;
-      try {
-        localStorage.setItem(key, value);
-      } catch {
-        /* Server jobs remain authoritative. */
-      }
-      return;
+    accountTask = value;
+    try {
+      localStorage.setItem(taskKey, value);
+    } catch {
+      /* Server jobs remain authoritative. */
     }
-    localStorage.setItem(key, value);
-    sessionStorage.removeItem(key);
   },
-  removeItem(key) {
-    key = taskKey;
-    if (accountMode) {
-      accountTask = null;
-      try {
-        localStorage.removeItem(key);
-      } catch {
-        /* Browser drafts are optional. */
-      }
-      return;
+  removeItem() {
+    accountTask = null;
+    try {
+      localStorage.removeItem(taskKey);
+    } catch {
+      /* Browser drafts are optional. */
     }
-    localStorage.removeItem(key);
-    sessionStorage.removeItem(key);
   },
 };
 function hasPendingTask() {
@@ -195,13 +150,7 @@ let wallet = null,
   walletError = '',
   historySources = null;
 try {
-  wallet = accountMode
-    ? createAccountWallet(accountConfig, { locale: studioLocale })
-    : navigator.locks?.request
-      ? await navigator.locks.request('tattoovis-preview-test-wallet', () =>
-          createPreviewWallet()
-        )
-      : createPreviewWallet();
+  wallet = createAccountWallet(accountConfig, { locale: studioLocale });
 } catch (error) {
   walletError = error.message;
 }
@@ -225,19 +174,7 @@ const gallery = createStudioGallery({
   library,
   locale: studioLocale,
   isBusy: () => state.busy,
-  onUseDesign: async (record) => {
-    if (state.busy) return;
-    const image = await imageFromBlob(record.image);
-    if (state.busy) return;
-    await setDesign(image, record.name, accountMode ? record.assetId : null, {
-      id: record.id,
-      prompt: record.prompt,
-      source: record.source,
-    });
-    $('prompt').value = record.prompt;
-    status('已复用保存的图案，不消耗测试积分。');
-    $('canvas-shell').scrollIntoView?.({ block: 'center', behavior: 'smooth' });
-  },
+  onUseDesign: applySavedDesign,
   onReusePrompt: (prompt) => {
     if (state.busy) return;
     $('prompt').value = prompt;
@@ -245,16 +182,7 @@ const gallery = createStudioGallery({
     $('prompt').focus();
     update();
   },
-  onOpenHistory: async (record) => {
-    if (state.busy) return;
-    const [raw, original, draft] = await Promise.all([
-      imageFromBlob(record.image),
-      record.original ? imageFromBlob(record.original) : null,
-      record.draft ? imageFromBlob(record.draft) : null,
-    ]);
-    historySources = { raw, original, draft };
-    detailViewer.open('raw');
-  },
+  onOpenHistory: openSavedHistory,
 });
 const editingContext = () => `${editorSession}:${state.revision}`;
 
@@ -278,7 +206,7 @@ function update() {
   const balance = testBalance();
   const pending = hasPendingTask();
   $('resume-task').hidden = !pending;
-  const renderCost = previewCreditCost('render', $('render-resolution').value);
+  const renderCost = creditCost('render', $('render-resolution').value);
   $('credit-balance').textContent = balance
     ? `可用测试积分 ${balance.available} credits${balance.reserved ? ` · 预留 ${balance.reserved}` : ''}`
     : `测试积分不可用：${walletError}`;
@@ -287,18 +215,13 @@ function update() {
     'design',
     'sample-photo',
     'sample-design',
-    'access-token',
-    'consent',
     'prompt',
     'upload-photo',
     'choose-photo',
     'choose-design',
     'new-design',
     'open-design-library',
-    'nav-designs',
-    'nav-history',
     'render-resolution',
-    'grant-test-credits',
   ])
     $(id).disabled = state.busy;
   const placed = !!(state.photo && state.design);
@@ -308,28 +231,15 @@ function update() {
   $('inspect-result').hidden = !state.raw;
   $('inspect-result').disabled = state.busy;
   $('fit-design').disabled = !placed || state.busy;
-  const access =
-    state.configured &&
-    (accountMode ||
-      ($('access-token').value.length >= 24 && $('consent').checked));
+  const access = state.configured;
   $('generate-design').disabled =
     !access ||
     state.busy ||
     $('prompt').value.trim().length < 3 ||
     !balance ||
-    (!accountMode && balance.available < 1) ||
-    pending ||
-    balance.reserved > 0;
+    pending;
   $('render').disabled =
-    !placed ||
-    !access ||
-    state.busy ||
-    !balance ||
-    (!accountMode && balance.available < renderCost) ||
-    pending ||
-    balance.reserved > 0;
-  $('release-orphaned-credit').hidden =
-    accountMode || !balance?.reserved || pending || state.busy;
+    !placed || !access || state.busy || !balance || pending;
   $('render').textContent =
     state.busy && state.activity === 'render'
       ? '正在生成真实效果…'
@@ -350,24 +260,19 @@ function update() {
   const missing = [];
   if (!state.photo) missing.push('上传部位照片');
   if (!state.design) missing.push('选择纹身图案');
-  if (!state.configured) missing.push('完成 Preview 测试服务配置');
-  if (!accountMode && $('access-token').value.length < 24)
-    missing.push('在本页输入至少 24 个字符的测试访问口令');
-  if (!accountMode && !$('consent').checked) missing.push('勾选同意调用 KIE');
-  if (!balance || balance.available < renderCost) missing.push('补充测试积分');
-  if (accountMode && !accountConfig.signedIn)
+  if (!state.configured) missing.push('账户服务未就绪，稍后刷新重试');
+  if (!balance || balance.available < renderCost)
+    missing.push('积分不足，可在 Pricing 补充');
+  if (!accountConfig.signedIn)
     missing.push(studioLocale === 'zh' ? '登录账户' : 'Sign in');
-  else if (accountMode && !accountConfig.verified)
+  else if (!accountConfig.verified)
     missing.push(studioLocale === 'zh' ? '验证邮箱' : 'Verify your email');
   if (pending) missing.push('先继续查看上次测试任务');
-  if (balance?.reserved && !pending && !state.busy)
-    missing.push('处理未确认的测试任务预留');
   $('render-requirements').textContent = state.busy
-    ? '正在处理测试任务，请勿重复提交。'
+    ? '正在处理任务，请勿重复提交。'
     : missing.length
       ? `还需完成：${missing.map(i18n.t).join('；')}。`
-      : `已准备好。成功后结算 ${renderCost} 测试 credit${renderCost > 1 ? 's' : ''}，失败释放预留。不使用网站真实积分。`;
-  $('check-configuration').disabled = state.busy || state.checking;
+      : `已准备好。成功后结算 ${renderCost} 积分，失败自动退回。`;
 
   $('download').hidden = !(state.photo || state.raw);
   $('download').disabled = state.busy;
@@ -422,9 +327,6 @@ function update() {
   if (!placed || state.busy || state.view !== 'draft') closeInk(false);
   $('ink-opacity').value = String(Math.round(state.opacity * 100));
   $('ink-value').textContent = `${Math.round(state.opacity * 100)}%`;
-  $('authorization-summary').querySelector('span').textContent = access
-    ? '已准备好'
-    : '展开完成授权';
   $('empty').hidden = !!(state.photo || state.raw);
   canvas.dataset.placement = JSON.stringify({
     px: state.px,
@@ -463,7 +365,6 @@ function update() {
     'workflow-description',
     'placement-status',
     'view-caption',
-    'configuration',
     'design-save-status',
     'photo-hint',
     'download',
@@ -471,8 +372,6 @@ function update() {
   ]) {
     $(id).textContent = i18n.t($(id).textContent);
   }
-  const authorization = $('authorization-summary').querySelector('span');
-  authorization.textContent = i18n.t(authorization.textContent);
   canvas.className = state.view === 'draft' && state.design ? 'moving' : '';
   const dimensions = viewDimensions();
   canvas.style.maxWidth = `${((innerWidth < 760 ? 560 : 760) * dimensions.width) / dimensions.height}px`;
@@ -1106,53 +1005,13 @@ canvas.onkeydown = (event) => {
   event.preventDefault();
   edited();
 };
-for (const id of ['access-token', 'prompt', 'consent'])
-  $(id).addEventListener('input', update);
+$('prompt').addEventListener('input', update);
 $('render-resolution').addEventListener('change', update);
-$('grant-test-credits').onclick = async () => {
-  if (accountMode || state.busy || !wallet) return;
-  try {
-    await walletMutation('grant', 10);
-    status('已免费补充 10 测试积分，不产生购买交易。');
-    update();
-  } catch (error) {
-    status(error.message, true);
-  }
-};
-$('release-orphaned-credit').onclick = async () => {
-  if (accountMode || state.busy || hasPendingTask() || !wallet) return;
-  if (
-    !window.confirm(
-      i18n.t(
-        '这只释放没有任务编号的本地测试预留，不会取消可能已创建的 KIE 任务。请先检查 KIE 后台，避免重复付费提交。是否继续？'
-      )
-    )
-  )
-    return;
-  try {
-    for (const id of wallet.snapshot().reservations) {
-      await walletMutation('release', id);
-      await library.deletePending(id);
-    }
-    status('已释放无任务编号的测试预留。请检查 KIE 后台后再提交。');
-    update();
-  } catch (error) {
-    status(error.message, true);
-  }
-};
 $('new-design').onclick = () => {
   $('new-design-panel').hidden = false;
   $('prompt').focus();
 };
 $('open-design-library').onclick = () => gallery.open('designs');
-$('nav-designs').onclick = (event) => {
-  event?.preventDefault();
-  if (!state.busy) gallery.open('designs');
-};
-$('nav-history').onclick = (event) => {
-  event?.preventDefault();
-  if (!state.busy) gallery.open('history');
-};
 $('save-design').onclick = async () => {
   if (state.busy || !state.design || state.designId) return;
   const design = state.designSource,
@@ -1210,12 +1069,9 @@ function sourceBlob(source) {
   target.getContext('2d').drawImage(source, 0, 0);
   return imageBlob(target, 'image/png');
 }
-async function walletMutation(method, ...args) {
-  if (!wallet) throw new Error(walletError || '测试积分不可用。');
-  const action = () => wallet[method](...args);
-  return navigator.locks?.request
-    ? navigator.locks.request('tattoovis-preview-test-wallet', action)
-    : action();
+function walletMutation(method, ...args) {
+  if (!wallet) throw new Error(walletError || '积分服务不可用。');
+  return wallet[method](...args);
 }
 async function completeOperation(id) {
   if (wallet?.hasReservation(id)) await walletMutation('confirm', id);
@@ -1225,7 +1081,7 @@ async function completeOperation(id) {
     taskStorage.removeItem('try-on-lab-task');
     $('resume-task').hidden = true;
   }
-  if (accountMode) await refreshAccount().catch(() => {});
+  await refreshAccount().catch(() => {});
 }
 async function saveCurrentResult(
   id,
@@ -1280,9 +1136,7 @@ $('save-result').onclick = async () => {
   update();
 };
 function headers() {
-  return accountMode
-    ? {}
-    : { Authorization: `Bearer ${$('access-token').value}` };
+  return {};
 }
 async function request(mode, data, form = false) {
   const response = await fetch(`${api}?mode=${mode}`, {
@@ -1294,9 +1148,9 @@ async function request(mode, data, form = false) {
     body: form ? data : JSON.stringify(data),
   });
   const result = await response.json();
-  if (accountMode && ['design', 'render', 'status'].includes(mode))
+  if (['design', 'render', 'status'].includes(mode))
     await refreshAccount().catch(() => {});
-  if (accountMode && [401, 402, 403].includes(response.status))
+  if ([401, 402, 403].includes(response.status))
     location.assign(
       `${studioLocale === 'zh' ? '/zh' : ''}${response.status === 401 ? '/sign-in' : response.status === 402 ? '/pricing' : '/verify-email?callbackUrl=/generate'}`
     );
@@ -1377,7 +1231,7 @@ async function waitForTask(task, kind, context = null, details = {}) {
         }
         throw error;
       }
-      if (accountMode && result.state === 'review_required')
+      if (result.state === 'review_required')
         throw new Error(
           result.error ||
             'Submission is under review. Your credit is held; contact support before generating again.'
@@ -1388,7 +1242,7 @@ async function waitForTask(task, kind, context = null, details = {}) {
         if (details.operationId)
           await library.deletePending(details.operationId).catch(() => {});
         clearPendingTask(task);
-        if (accountMode) await refreshAccount().catch(() => {});
+        await refreshAccount().catch(() => {});
         throw new Error(
           'KIE 返回生成失败，已释放测试积分预留；不扣网站真实积分。'
         );
@@ -1447,12 +1301,7 @@ async function waitForTask(task, kind, context = null, details = {}) {
               pending
             );
             state.resultId = record.id;
-            if (
-              accountMode &&
-              !state.comparisonSnapshots &&
-              record.original &&
-              record.draft
-            ) {
+            if (!state.comparisonSnapshots && record.original && record.draft) {
               state.comparisonSnapshots = {
                 raw: image,
                 original: await imageFromBlob(record.original),
@@ -1548,9 +1397,9 @@ async function showResult(image, matches = false) {
 }
 async function billable(kind, action) {
   if (state.busy) return;
-  if (accountMode && kind !== 'resume') {
+  if (kind !== 'resume') {
     try {
-      const cost = previewCreditCost(kind, $('render-resolution').value);
+      const cost = creditCost(kind, $('render-resolution').value);
       wallet.requireAccess(cost);
       if (
         !globalThis.confirm(
@@ -1586,15 +1435,8 @@ $('generate-design').onclick = () =>
   billable('design', async () => {
     if (hasPendingTask())
       throw new Error('请先继续查看上次测试任务，不要重复提交。');
-    if (
-      !state.configured ||
-      (!accountMode &&
-        (!$('consent').checked || $('access-token').value.length < 24)) ||
-      $('prompt').value.trim().length < 3
-    )
-      throw new Error('请填写提示词并完成测试授权。');
-    if (!accountMode && (await library.listDesigns()).length >= 100)
-      throw new Error('图案库已满，请先下载并删除不需要的图案，再生成新图案。');
+    if (!state.configured || $('prompt').value.trim().length < 3)
+      throw new Error('请填写提示词并完成账户登录。');
     const details = {
       operationId: crypto.randomUUID(),
       prompt: $('prompt').value.trim(),
@@ -1627,16 +1469,8 @@ $('render').onclick = () =>
     if (hasPendingTask())
       throw new Error('请先继续查看上次测试任务，不要重复提交。');
     const context = editingContext();
-    if (
-      !state.photo ||
-      !state.design ||
-      !state.configured ||
-      (!accountMode &&
-        (!$('consent').checked || $('access-token').value.length < 24))
-    )
-      throw new Error('请先上传照片、选择图案并完成测试授权。');
-    if (!accountMode && (await library.listHistory()).length >= 100)
-      throw new Error('试戴历史已满，请先下载并删除不需要的结果，再生成。');
+    if (!state.photo || !state.design || !state.configured)
+      throw new Error('请先上传照片并选择图案。');
     const details = {
       operationId: crypto.randomUUID(),
       resolution: $('render-resolution').value,
@@ -1646,7 +1480,7 @@ $('render').onclick = () =>
     await walletMutation(
       'reserve',
       details.operationId,
-      previewCreditCost('render', details.resolution)
+      creditCost('render', details.resolution)
     );
     update();
     let submitted = false;
@@ -1700,13 +1534,8 @@ $('render').onclick = () =>
   });
 $('resume-task').onclick = () =>
   billable('resume', async () => {
-    if (
-      !accountMode &&
-      (!state.configured || $('access-token').value.length < 24)
-    )
-      throw new Error('请输入预览测试访问口令。');
     const saved = JSON.parse(taskStorage.getItem('try-on-lab-task') || 'null');
-    if (!saved) throw new Error('当前没有保存的测试任务。');
+    if (!saved) throw new Error('当前没有保存的任务。');
     await waitForTask(saved.task, saved.kind, saved.context, saved);
   });
 $('download').onclick = async () => {
@@ -1765,15 +1594,18 @@ canvas.ondblclick = () => {
 };
 $('reset').onclick = () => {
   if (state.busy) {
-    status('测试任务仍在 KIE 执行。请等待结果，避免重复提交。', true);
+    status('任务仍在执行。请等待结果，避免重复提交。', true);
     return;
   }
   location.reload();
 };
 window.addEventListener('resize', update);
 window.addEventListener('storage', update);
+// Returning to the tab re-reads account state (credits/pending jobs).
+window.addEventListener('focus', () => {
+  refreshAccount().catch(() => {});
+});
 async function refreshAccount() {
-  if (!accountMode) return;
   const response = await fetch(api, { cache: 'no-store' });
   if (!response.ok) throw new Error('Could not refresh account.');
   accountConfig = await response.json();
@@ -1786,50 +1618,69 @@ async function refreshAccount() {
   update();
 }
 async function checkConfiguration() {
-  if (accountMode) {
-    try {
-      await refreshAccount();
-      state.configured = accountConfig.configured === true;
-    } catch (error) {
-      status(error.message, true);
-    }
-    update();
-    return;
-  }
-  state.checking = true;
-  $('configuration').textContent = '正在检查预览环境配置…';
-  state.configured = false;
-  update();
   try {
-    const response = await fetch(api, { cache: 'no-store' });
-    if (
-      response.redirected ||
-      !response.headers.get('content-type')?.includes('application/json')
-    )
-      throw new Error(
-        '测试接口返回了登录页面。请先完成 Vercel 访问验证，再重新检查。'
-      );
-    const config = await response.json();
-    if (!response.ok)
-      throw new Error('此部署未启用测试接口，请使用最新 Preview 地址。');
-    state.configured = config.configured === true;
-    $('configuration').dataset.ready = String(state.configured);
-    $('configuration').textContent = state.configured
-      ? 'Preview 测试服务已配置。请在上方输入对应的测试访问口令。'
-      : `当前部署配置不完整：${Array.isArray(config.missing) && config.missing.length ? config.missing.join('、') : 'KIE_LAB_API_KEY 或 KIE_LAB_ACCESS_TOKEN（至少 24 个字符）'}。请在 Vercel Preview 环境配置后重新部署，旧部署不会自动读取新增变量。`;
+    await refreshAccount();
+    state.configured = accountConfig.configured === true;
   } catch (error) {
-    $('configuration').dataset.ready = 'false';
-    $('configuration').textContent =
-      error.message || '未连接测试服务。请稍后重新检查。';
-  } finally {
-    state.checking = false;
-    update();
+    status(error.message, true);
+  }
+  update();
+}
+async function applySavedDesign(record) {
+  const image = await imageFromBlob(record.image);
+  if (state.busy) return;
+  await setDesign(image, record.name, record.assetId, {
+    id: record.id,
+    prompt: record.prompt,
+    source: record.source,
+  });
+  $('prompt').value = record.prompt;
+  status('已复用保存的图案，不消耗测试积分。');
+  $('canvas-shell').scrollIntoView?.({ block: 'center', behavior: 'smooth' });
+}
+async function openSavedHistory(record) {
+  const [raw, original, draft] = await Promise.all([
+    imageFromBlob(record.image),
+    record.original ? imageFromBlob(record.original) : null,
+    record.draft ? imageFromBlob(record.draft) : null,
+  ]);
+  historySources = { raw, original, draft };
+  detailViewer.open('raw');
+}
+const bootDesignId = params.get('design');
+const bootHistoryId = params.get('history');
+await checkConfiguration();
+if (bootDesignId || bootHistoryId) {
+  try {
+    if (bootDesignId) {
+      const record = (await library.listDesigns()).find(
+        (item) => item.id === bootDesignId
+      );
+      if (record) await applySavedDesign(await library.loadRecord(record));
+      else
+        status(
+          studioLocale === 'zh'
+            ? '未找到该图案，可能已被删除。'
+            : 'That design was not found; it may have been deleted.',
+          true
+        );
+    } else if (bootHistoryId) {
+      const record = (await library.listHistory()).find(
+        (item) => item.id === bootHistoryId
+      );
+      if (record) await openSavedHistory(await library.loadRecord(record));
+      else
+        status(
+          studioLocale === 'zh'
+            ? '未找到该试戴记录，可能已被删除。'
+            : 'That try-on record was not found; it may have been deleted.',
+          true
+        );
+    }
+  } catch (error) {
+    status(error.message, true);
   }
 }
-$('check-configuration').onclick = checkConfiguration;
-const panel = new URLSearchParams(location.search).get('panel');
-if (panel === 'history' || panel === 'designs') gallery.open(panel);
-await checkConfiguration();
 if (bootError && !state.configured)
   status(
     studioLocale === 'zh'

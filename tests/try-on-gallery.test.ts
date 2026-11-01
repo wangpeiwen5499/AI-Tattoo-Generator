@@ -11,18 +11,9 @@ const design = {
   source: 'upload',
   createdAt: 1000,
   image,
-};
-const history = {
-  id: 'result',
-  resolution: '4K',
-  createdAt: 2000,
-  image,
-  original: image,
-  draft: image,
-  prompt: 'rose',
+  imageUrl: '/api/studio?asset=rose-image',
 };
 let library: any;
-let urls: number;
 const NativeURL = URL;
 const click = async (label: string) => {
   const button = [...document.querySelectorAll('button')].find(
@@ -35,11 +26,10 @@ const click = async (label: string) => {
 
 beforeEach(() => {
   document.body.replaceChildren();
-  urls = 0;
   vi.stubGlobal(
     'URL',
     class extends NativeURL {
-      static createObjectURL = vi.fn(() => `blob:test-${++urls}`);
+      static createObjectURL = vi.fn(() => 'blob:test-1');
       static revokeObjectURL = vi.fn();
     }
   );
@@ -51,10 +41,9 @@ beforeEach(() => {
     this.dispatchEvent(new Event('close'));
   };
   library = {
+    account: true,
     listDesigns: vi.fn(async () => [design]),
-    listHistory: vi.fn(async () => [history]),
     deleteDesign: vi.fn(async () => {}),
-    deleteHistory: vi.fn(async () => {}),
   };
 });
 afterEach(() => {
@@ -65,7 +54,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-it('shows a labelled dialog, plain text metadata, keyboard tabs and Escape close', async () => {
+it('is a design picker: titled dialog, plain text metadata, no history tab', async () => {
   const gallery = createStudioGallery({ library, locale: 'en' });
   await gallery.open();
   const dialog = document.querySelector('dialog')!;
@@ -73,49 +62,33 @@ it('shows a labelled dialog, plain text metadata, keyboard tabs and Escape close
   expect(
     document.getElementById(dialog.getAttribute('aria-labelledby')!)
       ?.textContent
-  ).toContain('library');
+  ).toBe('Choose a design');
+  // Full browsing lives on the standalone pages, not inside the editor.
+  expect(dialog.querySelector('[role=tab]')).toBeNull();
+  const browse = dialog.querySelector('a.gallery-note') as HTMLAnchorElement;
+  expect(browse.getAttribute('href')).toBe('/designs');
+  expect(browse.textContent).toContain('Browse all designs');
   expect(dialog.textContent).toContain(design.name);
   expect(dialog.querySelector('script')).toBeNull();
-  expect(dialog.querySelector('img')?.getAttribute('src')).toBe('blob:test-1');
-  const tab = dialog.querySelector('[role=tab]')!;
-  tab.dispatchEvent(
-    new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })
+  // Account records use authenticated asset URLs, not object URLs.
+  expect(dialog.querySelector('img')?.getAttribute('src')).toBe(
+    design.imageUrl
   );
-  await new Promise((resolve) => setTimeout(resolve, 0));
-  expect(dialog.querySelector('[aria-selected=true]')?.textContent).toBe(
-    'History'
-  );
-  expect(dialog.textContent).toContain('4K');
   dialog.dispatchEvent(
     new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
   );
   expect(dialog.open).toBe(false);
-  expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:test-1');
-  expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:test-2');
 });
 
-it('closes before opening a design or complete historical snapshot', async () => {
+it('closes before handing the chosen design to the editor', async () => {
   const onUseDesign = vi.fn(async (record) => {
     expect(document.querySelector('dialog')!.open).toBe(false);
     expect(record).toBe(design);
   });
-  const onOpenHistory = vi.fn(async (record) => {
-    expect(document.querySelector('dialog')!.open).toBe(false);
-    expect(record.original).toBe(image);
-    expect(record.draft).toBe(image);
-  });
-  const gallery = createStudioGallery({
-    library,
-    onUseDesign,
-    onOpenHistory,
-    locale: 'en',
-  });
+  const gallery = createStudioGallery({ library, onUseDesign, locale: 'en' });
   await gallery.open();
   await click('Use design');
   expect(onUseDesign).toHaveBeenCalledOnce();
-  await gallery.open('history');
-  await click('Open result');
-  expect(onOpenHistory).toHaveBeenCalledOnce();
 });
 
 it('guards use, prompt reuse and deletion while busy', async () => {
@@ -162,7 +135,6 @@ it('revokes thumbnails on refresh and ignores a load completing after close', as
   const gallery = createStudioGallery({ library, locale: 'en' });
   await gallery.open();
   await gallery.refresh();
-  expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:test-1');
   let finish: any;
   library.listDesigns.mockImplementation(
     () =>
@@ -175,23 +147,22 @@ it('revokes thumbnails on refresh and ignores a load completing after close', as
   finish([design]);
   await loading;
   expect(document.querySelector('.gallery-grid')?.children).toHaveLength(0);
-  expect(URL.createObjectURL).toHaveBeenCalledTimes(2);
 });
 
-it('shows actionable empty and unavailable storage states without saved claims', async () => {
+it('shows actionable empty and account-unavailable states', async () => {
   library.listDesigns.mockResolvedValue([]);
   const gallery = createStudioGallery({ library, locale: 'en' });
   await gallery.open();
   expect(
     document.querySelector('.gallery-status')?.textContent?.toLowerCase()
-  ).toContain('upload');
-  library.listDesigns.mockRejectedValue(new Error('Storage unavailable'));
+  ).toContain('no saved designs');
+  library.listDesigns.mockRejectedValue(new Error('Sign in required'));
   await gallery.refresh();
   expect(document.querySelector('.gallery-status')?.textContent).toContain(
-    'Storage unavailable'
+    'Sign in required'
   );
   expect(document.querySelector('.gallery-status')?.textContent).toContain(
-    'download'
+    'Sign in or retry'
   );
 });
 
@@ -203,6 +174,8 @@ it('allows downloads while busy and keeps their URLs alive until the browser can
   ) {
     downloaded = this;
   });
+  const blobDesign = { ...design, image, imageUrl: undefined };
+  library.listDesigns.mockResolvedValue([blobDesign]);
   const gallery = createStudioGallery({
     library,
     isBusy: () => true,
@@ -212,24 +185,23 @@ it('allows downloads while busy and keeps their URLs alive until the browser can
   [...document.querySelectorAll('button')]
     .find((button) => button.textContent === 'Download')!
     .click();
-  expect(downloaded?.href).toBe('blob:test-2');
+  expect(downloaded?.href).toBe('blob:test-1');
   expect(downloaded?.download).toBe('tattoovis-design-rose.png');
-  expect(URL.revokeObjectURL).not.toHaveBeenCalledWith('blob:test-2');
+  expect(URL.revokeObjectURL).not.toHaveBeenCalledWith('blob:test-1');
   gallery.close();
-  expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:test-1');
   await vi.advanceTimersByTimeAsync(30000);
-  expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:test-2');
+  expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:test-1');
 });
 
 it('does not replace a post-delete storage failure with a success status', async () => {
   const gallery = createStudioGallery({ library, locale: 'en' });
   await gallery.open();
   library.listDesigns.mockRejectedValue(
-    new Error('Browser storage disconnected')
+    new Error('Account storage disconnected')
   );
   await click('Delete');
   await click('Confirm delete');
   expect(document.querySelector('.gallery-status')?.textContent).toContain(
-    'Browser storage disconnected'
+    'Account storage disconnected'
   );
 });

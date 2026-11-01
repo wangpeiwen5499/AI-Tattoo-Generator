@@ -9,7 +9,7 @@ import { consumeCredits, refundConsumedCredits } from '@/shared/models/credit';
 
 import { ownedAsset, providerResultUrl } from './assets';
 import {
-  assertStudioProduction,
+  assertAccountStudio,
   placementPrompt,
   StudioError,
   validateStudioInput,
@@ -30,7 +30,7 @@ export async function startStudioJob(
   kind: 'design' | 'render',
   raw: unknown
 ) {
-  assertStudioProduction();
+  assertAccountStudio();
   const { input, resolution, credits } = validateStudioInput(kind, raw);
   return db().transaction(async (tx) => {
     // Serialize even cross-account attempts at the same globally unique operation
@@ -168,7 +168,7 @@ export async function removeStudioRecord(
 // The lease serializes status/workflow requests; the persisted submitting marker prevents
 // reissuing a paid create even after process death or lease expiration.
 export async function advanceStudioJob(id: string) {
-  assertStudioProduction();
+  assertAccountStudio();
   const token = randomUUID(),
     now = new Date();
   const [job] = await db()

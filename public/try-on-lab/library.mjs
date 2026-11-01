@@ -1,4 +1,4 @@
-const DB_NAME = 'tattoovis-preview-studio-v1';
+const DB_NAME = 'tattoovis-account-drafts';
 const MAX_RECORDS = 100;
 const MAX_IMAGE_BYTES = 48 * 1024 * 1024;
 const IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp']);
@@ -63,9 +63,9 @@ function record(input, store) {
   return value;
 }
 
-/** Browser-local Blob storage. Every mutation resolves only after IDB commits.
- * Errors intentionally propagate: callers must offer retry or image download.
- * Metadata is plain text; consumers must render it with textContent, never HTML.
+/** Browser-local pending-snapshot storage for the account studio. Optional
+ * resume aids only — never the library, history, or any balance. Every
+ * mutation resolves only after IDB commits; errors propagate to the caller.
  */
 export function createStudioLibrary({
   indexedDB = globalThis.indexedDB,
@@ -225,14 +225,9 @@ export function createStudioLibrary({
   }
 
   return {
-    listDesigns: () => list('designs'),
-    saveDesign: (value) => save('designs', value),
-    deleteDesign: (id) => remove('designs', id),
-    listHistory: () => list('history'),
-    saveHistory: (value) => save('history', value),
-    deleteHistory: (id) => remove('history', id),
-    // Pending snapshots are separate from finished history and never shown in
-    // the gallery. Their IDs match the operation being resumed after refresh.
+    // Pending snapshots are optional resume aids for the account studio. They
+    // are never the design library, try-on history or credit ledger: the
+    // account service owns all business data.
     savePending: (value) => save('pending', value),
     getPending: (id) => get('pending', id),
     deletePending: (id) => remove('pending', id),

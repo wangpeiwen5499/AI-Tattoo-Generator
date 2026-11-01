@@ -2,10 +2,10 @@ import type { KieCreateTaskBody, KieRecordInfoData } from '@/server/ai/types';
 
 import { getAllConfigs } from '@/shared/models/config';
 
-import { assertStudioProduction, StudioError } from './policy';
+import { assertAccountStudio, StudioError } from './policy';
 
 async function request(path: string, body?: KieCreateTaskBody) {
-  assertStudioProduction();
+  assertAccountStudio();
   const configs = await getAllConfigs();
   const key = process.env.KIE_API_KEY || configs.kie_api_key;
   if (!key) throw new StudioError('Studio provider is not configured', 503);

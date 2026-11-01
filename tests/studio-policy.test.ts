@@ -1,14 +1,22 @@
 import {
-  assertStudioProduction,
+  assertAccountStudio,
   sameOrigin,
   validateStudioInput,
 } from '@/server/studio/policy';
 import { describe, expect, it, vi } from 'vitest';
 
 describe('production studio boundary', () => {
-  it('rejects preview before persistence or billing', () => {
+  it('rejects un-isolated preview before persistence or billing', () => {
     vi.stubEnv('VERCEL_ENV', 'preview');
-    expect(() => assertStudioProduction()).toThrow();
+    expect(() => assertAccountStudio()).toThrow();
+    vi.unstubAllEnvs();
+  });
+  it('admits an explicitly isolated preview deployment', () => {
+    vi.stubEnv('VERCEL_ENV', 'preview');
+    vi.stubEnv('PREVIEW_STUDIO_ISOLATED', '1');
+    expect(() => assertAccountStudio()).not.toThrow();
+    vi.stubEnv('PREVIEW_STUDIO_ISOLATED', '0');
+    expect(() => assertAccountStudio()).toThrow();
     vi.unstubAllEnvs();
   });
   it('requires matching origin on all mutations', () => {

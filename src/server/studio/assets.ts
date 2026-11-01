@@ -11,7 +11,7 @@ import { db } from '@/core/db';
 import { studioAsset, user } from '@/config/db/schema';
 
 import {
-  assertStudioProduction,
+  assertAccountStudio,
   MAX_UPLOAD_BYTES,
   StudioError,
 } from './policy';
@@ -25,7 +25,7 @@ export async function ownedAsset(userId: string, id: string, database = db()) {
   return asset;
 }
 export async function uploadAsset(userId: string, file: File) {
-  assertStudioProduction();
+  assertAccountStudio();
   if (
     !file ||
     !isAllowedImageType(file.type) ||

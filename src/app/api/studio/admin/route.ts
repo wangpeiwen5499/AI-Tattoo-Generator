@@ -1,7 +1,7 @@
 import { after } from 'next/server';
 import { readBoundedBody } from '@/server/storage/file-proxy';
 import {
-  assertStudioProduction,
+  assertAccountStudio,
   sameOrigin,
   StudioError,
 } from '@/server/studio/policy';
@@ -13,7 +13,7 @@ import { hasPermission } from '@/shared/services/rbac';
 
 export async function POST(request: Request) {
   try {
-    assertStudioProduction();
+    assertAccountStudio();
     sameOrigin(request);
     const admin = await getSignUser();
     if (!admin) throw new StudioError('Sign in required', 401);

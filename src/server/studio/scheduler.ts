@@ -4,12 +4,12 @@ import { getRun, start } from 'workflow/api';
 import { db } from '@/core/db';
 import { studioJob } from '@/config/db/schema';
 
-import { assertStudioProduction } from './policy';
+import { assertAccountStudio } from './policy';
 import { ACTIVE } from './service';
 import { studioWorkflow } from './workflow';
 
 export async function ensureStudioWorkflow(id: string) {
-  assertStudioProduction();
+  assertAccountStudio();
   await db().transaction(async (tx) => {
     const [job] = await tx
       .select()
