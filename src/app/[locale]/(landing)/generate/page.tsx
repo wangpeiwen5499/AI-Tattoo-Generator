@@ -1,5 +1,6 @@
 import { setRequestLocale } from 'next-intl/server';
 
+import { Link } from '@/core/i18n/navigation';
 import { getThemePage } from '@/core/theme';
 import { GenerationAccess } from '@/shared/blocks/tattoo/generation-access';
 import { getMetadata } from '@/shared/lib/seo';
@@ -35,5 +36,19 @@ export default async function GeneratePage({
 
   const Page = await getThemePage('dynamic-page');
 
-  return <Page locale={locale} page={page} />;
+  return (
+    <>
+      <div className="container pt-24 text-center">
+        <Link
+          href="/studio"
+          className="text-primary border-primary/30 hover:bg-primary/5 inline-block rounded-xl border px-6 py-3 text-base"
+        >
+          {locale === 'zh'
+            ? '已有纹身图案？免费在照片上手动试戴 →'
+            : 'Already have a design? Try it on your photo for free →'}
+        </Link>
+      </div>
+      <Page locale={locale} page={page} />
+    </>
+  );
 }

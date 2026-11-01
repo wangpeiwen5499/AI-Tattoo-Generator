@@ -75,6 +75,11 @@
           "title": "产品",
           "children": [
             {
+              "title": "免费纹身试戴",
+              "url": "/studio",
+              "target": "_self"
+            },
+            {
               "title": "功能",
               "url": "/#features",
               "target": "_self"

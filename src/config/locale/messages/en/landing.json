@@ -75,6 +75,11 @@
           "title": "Product",
           "children": [
             {
+              "title": "Free Tattoo Try-on",
+              "url": "/studio",
+              "target": "_self"
+            },
+            {
               "title": "Features",
               "url": "/#features",
               "target": "_self"
