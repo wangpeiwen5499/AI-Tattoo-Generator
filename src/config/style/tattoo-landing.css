@@ -1,3 +1,71 @@
+/* Homepage only: eight calm regions, one theme surface and seven separators.
+   The case remains inside Hero so its state and interactions do not change. */
+.tattoo-home {
+  --home-space: 64px;
+  --home-gutter: 16px;
+  --home-header: 56px;
+  background: var(--background);
+}
+.tattoo-home > section {
+  background: var(--background);
+}
+.tattoo-home > #hero {
+  padding: 0;
+}
+.tattoo-home .tattoo-hero-intro {
+  padding-top: calc(var(--home-header) + var(--home-space));
+  padding-bottom: var(--home-space);
+}
+.tattoo-home .tattoo-hero-intro h1 {
+  margin-top: 0;
+}
+.tattoo-home > section:not(#hero),
+.tattoo-home .tattoo-hero-case {
+  position: relative;
+  padding-top: var(--home-space);
+  padding-bottom: var(--home-space);
+}
+.tattoo-home .tattoo-hero-case {
+  width: 100%;
+  max-width: 1280px;
+  margin-top: 0;
+  padding-inline: var(--home-gutter);
+}
+.tattoo-home .tattoo-hero-case > #tattoo-case {
+  width: 100%;
+  max-width: none;
+}
+.tattoo-home #tattoo-case > header {
+  padding-block: 0;
+}
+.tattoo-home #usage > div {
+  margin: 0;
+}
+.tattoo-home > section:not(#hero)::before,
+.tattoo-home .tattoo-hero-case::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: calc(100% - 2 * var(--home-gutter));
+  max-width: calc(1280px - 2 * var(--home-gutter));
+  height: 1px;
+  transform: translateX(-50%);
+  background: color-mix(in oklab, var(--foreground) 12%, transparent);
+  pointer-events: none;
+}
+@media (min-width: 768px) {
+  .tattoo-home {
+    --home-space: 112px;
+    --home-gutter: 32px;
+  }
+}
+@media (min-width: 1024px) {
+  .tattoo-home {
+    --home-header: 72px;
+  }
+}
+
 .tattoo-features-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

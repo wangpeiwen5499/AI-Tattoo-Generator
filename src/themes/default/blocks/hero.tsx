@@ -58,7 +58,7 @@ export function Hero({
         </Link>
       )}
 
-      <div className="relative mx-auto max-w-full px-4 text-center md:max-w-5xl">
+      <div className="tattoo-hero-intro relative mx-auto max-w-full px-4 text-center md:max-w-5xl">
         {texts && texts.length > 0 ? (
           <h1 className="text-foreground text-4xl font-normal text-balance sm:mt-12 sm:text-6xl">
             {texts[0]}
@@ -117,7 +117,7 @@ export function Hero({
       </div>
 
       {section.tattoo_demo ? (
-        <div className="mx-auto mt-10 max-w-6xl px-4 sm:mt-14 sm:px-6">
+        <div className="tattoo-hero-case mx-auto mt-10 max-w-6xl px-4 sm:mt-14 sm:px-6">
           <TattooCaseDemo />
         </div>
       ) : (

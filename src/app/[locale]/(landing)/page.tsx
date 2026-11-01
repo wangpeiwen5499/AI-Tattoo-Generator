@@ -41,5 +41,9 @@ export default async function LandingPage({
   // load page component
   const Page = await getThemePage('dynamic-page');
 
-  return <Page locale={locale} page={page} />;
+  return (
+    <main className="tattoo-home">
+      <Page locale={locale} page={page} />
+    </main>
+  );
 }
