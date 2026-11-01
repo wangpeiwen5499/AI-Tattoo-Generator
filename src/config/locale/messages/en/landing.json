@@ -2,7 +2,7 @@
   "header": {
     "id": "header",
     "brand": {
-      "title": "AI Tattoo",
+      "title": "TattooVis",
       "url": "/"
     },
     "nav": {
@@ -54,7 +54,7 @@
   "footer": {
     "id": "footer",
     "brand": {
-      "title": "AI Tattoo Generator",
+      "title": "TattooVis",
       "description": "See your tattoo before you ink. Upload a photo, describe your idea, and AI generates realistic tattoo previews.",
       "url": "/",
       "logo": {

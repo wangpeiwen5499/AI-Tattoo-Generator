@@ -2,7 +2,7 @@
   "header": {
     "id": "header",
     "brand": {
-      "title": "AI 纹身",
+      "title": "TattooVis",
       "url": "/"
     },
     "nav": {
@@ -54,7 +54,7 @@
   "footer": {
     "id": "footer",
     "brand": {
-      "title": "AI 纹身生成器",
+      "title": "TattooVis",
       "description": "在纹身之前先看效果。上传照片、描述想法，AI 即可生成逼真的纹身预览。",
       "url": "/",
       "logo": {
