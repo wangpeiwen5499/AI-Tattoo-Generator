@@ -13,8 +13,8 @@
         "id": "hero",
         "title": "See Your Tattoo Before You Ink",
         "highlight_text": "Before You Ink",
-        "description": "TattooVis is an AI tattoo design and photo preview tool. Describe your idea and see a tattoo preview on your own photo, or a photo you have permission to edit.<br/>Sign up and verify your email for 3 free credits.",
-        "tip": "🎁 Sign up and verify your email for 3 free credits · One-time welcome gift",
+        "description": "TattooVis is an AI tattoo design and photo preview tool. Describe your idea and see a tattoo preview on your own photo, or a photo you have permission to edit.",
+        "tip": "🎁 Sign up and verify your email for <strong>3 free credits</strong> · One-time welcome gift",
         "buttons": [
           {
             "title": "Try It Free",
@@ -32,8 +32,7 @@
             "variant": "outline"
           }
         ],
-        "show_avatars": true,
-        "avatars_tip": "Trusted by tattoo enthusiasts worldwide",
+        "show_avatars": false,
         "tattoo_demo": true,
         "demo": {
           "eyebrow": "Interactive example",

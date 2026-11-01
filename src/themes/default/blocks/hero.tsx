@@ -106,7 +106,7 @@ export function Hero({
 
         {section.tip && (
           <p
-            className="text-muted-foreground mt-6 block text-center text-sm"
+            className="tattoo-welcome-gift text-muted-foreground mt-6 block text-center text-sm"
             dangerouslySetInnerHTML={{ __html: section.tip ?? '' }}
           />
         )}

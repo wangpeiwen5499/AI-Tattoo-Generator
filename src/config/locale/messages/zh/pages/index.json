@@ -13,8 +13,8 @@
         "id": "hero",
         "title": "在纹身之前，先看效果",
         "highlight_text": "先看效果",
-        "description": "TattooVis 是 AI 纹身设计与照片试戴工具。描述你的想法，在本人或已获授权的照片上查看纹身预览。<br/>注册并验证邮箱，即可领取 3 个免费积分。",
-        "tip": "🎁 注册并验证邮箱，即可获赠 3 个积分 · 每个账户仅赠送一次",
+        "description": "TattooVis 是 AI 纹身设计与照片试戴工具。描述你的想法，在本人或已获授权的照片上查看纹身预览。",
+        "tip": "🎁 注册并验证邮箱，即可获赠 <strong>3 个免费积分</strong> · 每个账户仅赠送一次",
         "buttons": [
           {
             "title": "免费试用",
@@ -32,8 +32,7 @@
             "variant": "outline"
           }
         ],
-        "show_avatars": true,
-        "avatars_tip": "全球纹身爱好者的信赖之选",
+        "show_avatars": false,
         "tattoo_demo": true,
         "demo": {
           "eyebrow": "交互案例",

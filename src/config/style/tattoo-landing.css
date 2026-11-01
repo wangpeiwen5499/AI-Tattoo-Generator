@@ -19,6 +19,18 @@
 .tattoo-home .tattoo-hero-intro h1 {
   margin-top: 0;
 }
+.tattoo-home .tattoo-welcome-gift {
+  max-width: 52rem;
+  margin-inline: auto;
+  color: var(--primary);
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.6;
+  text-wrap: balance;
+}
+.tattoo-home .tattoo-welcome-gift strong {
+  font-weight: 700;
+}
 .tattoo-home > section:not(#hero),
 .tattoo-home .tattoo-hero-case {
   position: relative;
@@ -58,6 +70,9 @@
   .tattoo-home {
     --home-space: 112px;
     --home-gutter: 32px;
+  }
+  .tattoo-home .tattoo-welcome-gift {
+    font-size: 20px;
   }
 }
 @media (min-width: 1024px) {
