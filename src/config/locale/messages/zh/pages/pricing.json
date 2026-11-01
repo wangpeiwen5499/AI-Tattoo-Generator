@@ -1,7 +1,7 @@
 {
   "metadata": {
     "title": "价格方案",
-    "description": "购买灵活的纹身预览积分，可选择 1K、2K 或 4K 分辨率，积分永不过期。"
+    "description": "购买纹身设计与真实试戴积分。新设计 1 credit，单张 1K / 2K / 4K 试戴为 1 / 2 / 3 credits；手动摆放免费，积分永不过期。"
   },
   "messages": {
     "current_plan": "当前方案",
@@ -13,7 +13,7 @@
       "pricing": {
         "id": "pricing",
         "title": "选择积分方案",
-        "description": "每组包含 1 张设计图和 4 张身体效果图：1K 扣 1 个积分，2K 扣 2 个，4K 扣 3 个。积分永不过期。",
+        "description": "新设计 1 credit；单张真实试戴 1K / 2K / 4K 为 1 / 2 / 3 credits。保存和复用设计、手动摆放免费。积分永不过期。",
         "groups": [
           {
             "name": "one-time",
@@ -30,20 +30,22 @@
             "currency": "USD",
             "amount": 4.99,
             "credits": 5,
-            "description": "5 个灵活积分，可按所选分辨率生成纹身设计和身体效果图。",
+            "description": "5 credits，按需要用于设计与单张真实试戴。",
             "features_title": "包含",
             "features": [
-              "5 个积分，可混合选择 1K、2K 和 4K",
-              "每组扣费：1K 1 分 · 2K 2 分 · 4K 3 分",
-              "每组含 1 张设计图和 4 张身体效果图",
-              "覆盖左臂、右臂、肩膀和小腿",
+              "5 credits，一次性购买",
+              "生成新图案：1 credit",
+              "单张真实试戴：1K / 2K / 4K 为 1 / 2 / 3 credits",
+              "保存和复用设计、手动摆放免费",
               "积分永不过期",
-              "一次性购买，无订阅费用"
+              "不承诺固定图片数量，无订阅"
             ],
             "button": {
               "title": "购买入门版"
             },
-            "payment_providers": ["waffo"],
+            "payment_providers": [
+              "waffo"
+            ],
             "payment_product_id": "PROD_5GdIMzJzJlUpdrBCyuaX2x"
           },
           {
@@ -55,21 +57,23 @@
             "currency": "USD",
             "amount": 14.99,
             "credits": 20,
-            "description": "20 个灵活积分，可按所选分辨率生成纹身设计和身体效果图。",
+            "description": "20 credits，按需要用于设计与单张真实试戴。",
             "label": "最受欢迎",
             "features_title": "包含",
             "features": [
-              "20 个积分，可混合选择 1K、2K 和 4K",
-              "每组扣费：1K 1 分 · 2K 2 分 · 4K 3 分",
-              "每组含 1 张设计图和 4 张身体效果图",
-              "覆盖左臂、右臂、肩膀和小腿",
+              "20 credits，一次性购买",
+              "生成新图案：1 credit",
+              "单张真实试戴：1K / 2K / 4K 为 1 / 2 / 3 credits",
+              "保存和复用设计、手动摆放免费",
               "积分永不过期",
-              "一次性购买，无订阅费用"
+              "不承诺固定图片数量，无订阅"
             ],
             "button": {
               "title": "购买热门版"
             },
-            "payment_providers": ["waffo"],
+            "payment_providers": [
+              "waffo"
+            ],
             "payment_product_id": "PROD_10hOkpFlMDiWFiqLxcWXHi"
           },
           {
@@ -81,21 +85,22 @@
             "currency": "USD",
             "amount": 29.99,
             "credits": 50,
-            "description": "50 个灵活积分，可按所选分辨率生成纹身设计和身体效果图。",
+            "description": "50 credits，按需要用于设计与单张真实试戴。",
             "features_title": "包含",
             "features": [
-              "50 个积分，可混合选择 1K、2K 和 4K",
-              "每组扣费：1K 1 分 · 2K 2 分 · 4K 3 分",
-              "每组含 1 张设计图和 4 张身体效果图",
-              "覆盖左臂、右臂、肩膀和小腿",
+              "50 credits，一次性购买",
+              "生成新图案：1 credit",
+              "单张真实试戴：1K / 2K / 4K 为 1 / 2 / 3 credits",
+              "保存和复用设计、手动摆放免费",
               "积分永不过期",
-              "一次性购买，无订阅费用",
-              "单积分价格最低"
+              "不承诺固定图片数量，无订阅"
             ],
             "button": {
               "title": "购买专业版"
             },
-            "payment_providers": ["waffo"],
+            "payment_providers": [
+              "waffo"
+            ],
             "payment_product_id": "PROD_1COeqPCRSNk89LbIyHYnC"
           }
         ]

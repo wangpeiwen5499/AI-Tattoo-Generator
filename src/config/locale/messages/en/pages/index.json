@@ -13,16 +13,16 @@
         "id": "hero",
         "title": "See Your Tattoo Before You Ink",
         "highlight_text": "Before You Ink",
-        "description": "TattooVis is an AI tattoo design and photo preview tool. Describe your idea and see a tattoo preview on your own photo, or a photo you have permission to edit.",
+        "description": "Upload a close-up or side-view photo. Create, upload or reuse a tattoo design, place it freely, then see a realistic AI try-on on your own skin.",
         "tip": "🎁 Sign up and verify your email for <strong>3 free credits</strong> · One-time welcome gift",
         "buttons": [
           {
             "title": "Try It Free",
             "icon": "Sparkles",
-            "url": "/generate",
+            "url": "/studio",
             "target": "_self",
             "variant": "default",
-            "trial_cta": true
+            "trial_cta": false
           },
           {
             "title": "Explore real example",
@@ -78,24 +78,24 @@
         "block": "features-step",
         "id": "usage",
         "title": "How It Works",
-        "description": "Get your tattoo preview in four simple steps:",
+        "description": "From your photo to a realistic try-on, with you in control.",
         "text_align": "center",
         "items": [
           {
-            "title": "Upload Your Photo",
-            "description": "Take a clear photo of the body part you want tattooed. Left arm, right arm, shoulder, or calf."
+            "title": "Upload your body photo",
+            "description": "Close-ups and side views work too. Keep the skin you want tattooed clearly visible."
           },
           {
-            "title": "Describe Your Idea",
-            "description": "Tell us what you want — a dragon in Japanese style, a geometric wolf, or any design you can imagine."
+            "title": "Choose or create a design",
+            "description": "Upload a design, generate a new one from a prompt, or reuse a design saved to your account."
           },
           {
-            "title": "AI Generates Preview",
-            "description": "Our AI creates a unique tattoo design and realistically places it on your photo in all 4 body positions."
+            "title": "Place it for free",
+            "description": "Move, resize and rotate the design directly on your photo. Adjust the ink before you commit."
           },
           {
-            "title": "Make Your Decision",
-            "description": "See how it looks before committing. Share with friends, or take it to your tattoo artist."
+            "title": "Generate a real try-on",
+            "description": "Choose 1K, 2K or 4K. Create one AI-rendered result, compare it with your original and download it."
           }
         ],
         "className": "bg-muted"
@@ -106,28 +106,28 @@
         "description": "The smartest way to preview your next tattoo.",
         "items": [
           {
-            "title": "4 Body Parts",
-            "description": "Preview your tattoo on left arm, right arm, shoulder, and calf — all in one generation.",
+            "title": "Your chosen placement",
+            "description": "Preview a tattoo on the skin visible in your photo. No fixed four-part package.",
             "icon": "RiBodyScanLine"
           },
           {
-            "title": "AI-Powered Design",
-            "description": "State-of-the-art image generation creates unique, high-quality tattoo designs from your description.",
+            "title": "Save and reuse designs",
+            "description": "New designs are saved automatically to your account and can be reused across devices.",
             "icon": "RiRobot2Line"
           },
           {
-            "title": "Realistic Placement",
-            "description": "Designs are naturally blended onto your skin with realistic lighting, texture, and body contour wrapping.",
+            "title": "One realistic result",
+            "description": "AI uses your photo, design and placement reference, aiming to preserve pose, clothing and background.",
             "icon": "RiMagicLine"
           },
           {
-            "title": "Instant Preview",
-            "description": "No appointments, no drawing skills needed. Get your preview in minutes, not days.",
+            "title": "Free placement preview",
+            "description": "Adjust size, angle and ink before rendering. Manual placement uses no credits.",
             "icon": "RiTimerFlashLine"
           },
           {
-            "title": "Try Before You Ink",
-            "description": "Experiment with different designs before committing permanently. Save time, money, and regret.",
+            "title": "Clear, separate charges",
+            "description": "A new design costs 1 credit. One real try-on costs 1 / 2 / 3 credits at 1K / 2K / 4K.",
             "icon": "RiShieldCheckLine"
           },
           {
@@ -177,35 +177,39 @@
         "description": "Have questions? We have answers.",
         "items": [
           {
-            "question": "How does AI Tattoo Generator work?",
-            "answer": "Upload a photo of the body part you want tattooed, describe your tattoo idea, and our AI generates a custom design then places it realistically on your photo. You'll see previews on all 4 body positions (left arm, right arm, shoulder, calf)."
+            "question": "How does the tattoo workflow work?",
+            "answer": "Upload a body photo, upload or generate a design, or pick a saved one. Place it freely, then generate one realistic AI try-on. A full-body front view and four fixed placements are not required."
           },
           {
-            "question": "How many free previews can I try?",
-            "answer": "Explore the real interactive example for free. New accounts receive 3 one-time credits after email verification. A complete set costs 1 credit at 1K, 2 at 2K, or 3 at 4K. Buy more credits on the pricing page when needed."
+            "question": "What is free, and how do credits work?",
+            "answer": "New accounts receive 3 one-time credits after email verification. Manual placement is free. A new design costs 1 credit; one AI try-on costs 1 / 2 / 3 credits at 1K / 2K / 4K. Credits never expire."
           },
           {
-            "question": "How realistic are the previews?",
-            "answer": "Our AI uses advanced image-to-image technology to blend the tattoo design naturally onto your skin, accounting for lighting, skin texture, and body contours. While not 100% perfect, users tell us the results are remarkably accurate."
+            "question": "Can I reuse earlier designs?",
+            "answer": "Yes. Generated designs are saved automatically to My designs. Uploaded designs can be saved to your account. Selecting and placing saved designs is free; each new AI try-on is charged separately."
           },
           {
-            "question": "How long does generation take?",
-            "answer": "Typically 3-5 minutes for a full set of 4 previews. The AI works in two steps: first designing the tattoo, then placing it on each body part."
+            "question": "Can I leave while an image is generating?",
+            "answer": "After submission is accepted, the task continues in the background. Return to the studio to follow your account task. Finished designs and try-ons are saved automatically. Unsubmitted placement edits are not saved."
           },
           {
-            "question": "What photo should I upload?",
-            "answer": "A clear, well-lit photo of the body area where you want the tattoo. Avoid baggy clothing that covers the area. The better the photo, the better the preview."
+            "question": "What photo works best, and how accurate is the result?",
+            "answer": "Use a clear, well-lit close-up or side-view photo with visible skin, and only photos of consenting adults. AI aims to preserve your photo but may alter details. Compare the result with your original."
           },
           {
-            "question": "Can I use the generated design at a tattoo shop?",
-            "answer": "Absolutely! Many users take their AI-generated preview to their tattoo artist as a reference. It helps the artist understand exactly what you're looking for."
+            "question": "What happens if generation fails?",
+            "answer": "Confirmed generation failures return the credits used for that task. If the connection drops, resume the saved task rather than submitting again. Unconfirmed provider submissions hold the credit for support review."
+          },
+          {
+            "question": "Can I take the design to a tattoo artist?",
+            "answer": "Download your design and try-on as references. Discuss the final artwork, size and tattoo feasibility with your artist."
           }
         ]
       },
       "cta": {
         "id": "cta",
         "title": "Ready to See Your Next Tattoo?",
-        "description": "Explore the real example, then sign up for 3 credits to create your own tattoo.",
+        "description": "Start with your photo. Place a design for free, then use your 3 welcome credits after email verification for designs and realistic try-ons.",
         "buttons": [
           {
             "title": "Start Generating",

@@ -22,6 +22,7 @@ const requestSchema = z.object({
 });
 
 export async function POST(req: Request): Promise<Response> {
+  if (process.env.VERCEL_ENV === 'production') return Response.json({error:'The four-placement workflow has been replaced. Open the studio to create a design and one try-on.',url:'/studio'},{status:410});
   const access = await requireGenerationUser();
   if (access.response) return access.response;
   const actor = { type: 'user' as const, id: access.user.id };

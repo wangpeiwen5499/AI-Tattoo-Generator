@@ -22,6 +22,9 @@
     }
   },
   "functions": {
+    "src/app/api/studio/**/*.ts": {
+      "maxDuration": 90
+    },
     "src/app/api/**/*.ts": {
       "maxDuration": 30
     },

@@ -3,6 +3,9 @@ import { afterEach, expect, it, vi } from 'vitest';
 
 const advance = vi.hoisted(() => vi.fn().mockResolvedValue(2));
 vi.mock('@/server/ai/tattoo-jobs', () => ({ advanceDueTattooJobs: advance }));
+vi.mock('@/server/studio/runner', () => ({
+  advanceDueStudioJobs: vi.fn().mockResolvedValue(1),
+}));
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -34,5 +37,5 @@ it('advances due jobs with valid credentials', async () => {
       headers: { authorization: `Bearer ${'a'.repeat(32)}` },
     })
   );
-  expect(await response.json()).toEqual({ advanced: 2 });
+  expect(await response.json()).toEqual({ advanced: 2, studioAdvanced: 1 });
 });

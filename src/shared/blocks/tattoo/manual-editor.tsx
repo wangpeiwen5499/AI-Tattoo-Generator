@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useStudio } from '@/hooks/use-studio';
 import {
   canvasBlob,
   loadDesign,
   loadPhoto,
   loadSample,
+  photoCanvas,
 } from '@/lib/manual-images';
 import {
   constrainPlacement,
@@ -17,20 +19,52 @@ import {
   type Placement,
   type Point,
 } from '@/lib/manual-placement';
+import { studioClient, type StudioRecord } from '@/lib/studio-client';
+import {
+  assetImage,
+  imageBlob,
+  photoBlob,
+  placementRegion,
+} from '@/lib/studio-images';
+
+import { StudioAccount, StudioDesigns, StudioRender } from './studio-actions';
 
 const button =
   'rounded-xl border border-border bg-background px-4 py-3 text-sm font-medium transition hover:border-primary focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-40 disabled:cursor-not-allowed';
 
-export function ManualEditor({ locale }: { locale: string }) {
+export function ManualEditor({
+  locale,
+  initialDesignId,
+  initialHistoryId,
+}: {
+  locale: string;
+  initialDesignId?: string;
+  initialHistoryId?: string;
+}) {
   const zh = locale === 'zh';
-  const t = (en: string, cn: string) => (zh ? cn : en);
+  const t = useCallback((en: string, cn: string) => (zh ? cn : en), [zh]);
   const [photo, setPhoto] = useState<HTMLCanvasElement | null>(null);
   const [design, setDesign] = useState<HTMLImageElement | null>(null);
   const [placement, setPlacement] = useState(defaultPlacement);
   const [original, setOriginal] = useState(false);
   const [menu, setMenu] = useState(false);
   const [ink, setInk] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [loading, setBusy] = useState(!!initialDesignId || !!initialHistoryId);
+  const studio = useStudio();
+  const [loadedResult, setLoadedResult] = useState<typeof studio.result>(null);
+  const busy =
+    loading ||
+    studio.busy ||
+    (!!studio.result && studio.result !== loadedResult);
+  const [prompt, setPrompt] = useState('');
+  const [resolution, setResolution] = useState('1K');
+  const [designRecord, setDesignRecord] = useState<StudioRecord | null>(null);
+  const [aiSelected, setAiSelected] = useState(false);
+  const [renderResult, setRenderResult] = useState<{
+    raw: HTMLImageElement;
+    original: HTMLCanvasElement;
+    draft: HTMLCanvasElement;
+  } | null>(null);
   const [error, setError] = useState('');
   const [view, setView] = useState(false);
   const [zoom, setZoom] = useState(1);
@@ -53,7 +87,141 @@ export function ManualEditor({ locale }: { locale: string }) {
     zoom: number;
     pan: Point;
   } | null>(null);
-  const update = (p: Placement) => setPlacement(constrainPlacement(p));
+  const update = (p: Placement) => {
+    if (busy) return;
+    setPlacement(constrainPlacement(p));
+    setAiSelected(false);
+  };
+
+  async function pickDesign(record: StudioRecord) {
+    await run(async () => {
+      const ticket = revision.current;
+      const image = await assetImage(record.image);
+      if (ticket !== revision.current) return;
+      setDesign(image);
+      setDesignRecord(record);
+      setPrompt(record.prompt || '');
+      setPlacement(defaultPlacement());
+      setOriginal(false);
+      setAiSelected(false);
+      setRenderResult(null);
+    });
+  }
+  useEffect(() => {
+    if (!studio.result) return;
+    let cancelled = false;
+    const ticket = ++revision.current;
+    const { kind, record } = studio.result;
+    (async () => {
+      if (kind === 'design') {
+        const image = await assetImage(record.image);
+        if (cancelled || ticket !== revision.current) return;
+        setDesign(image);
+        setDesignRecord(record);
+        setPrompt(record.prompt || '');
+        setPlacement(defaultPlacement());
+        setOriginal(false);
+        setAiSelected(false);
+        setRenderResult(null);
+      } else if (record.original && record.draft) {
+        const [raw, original, draft, savedDesign] = await Promise.all([
+          assetImage(record.image),
+          assetImage(record.original),
+          assetImage(record.draft),
+          record.designAsset
+            ? assetImage(record.designAsset)
+            : Promise.resolve(null),
+        ]);
+        if (cancelled || ticket !== revision.current) return;
+        const originalCanvas = photoCanvas(original);
+        setPhoto(originalCanvas);
+        if (savedDesign) {
+          setDesign(savedDesign);
+          setDesignRecord((previous) =>
+            previous?.image === record.designAsset ? previous : null
+          );
+        }
+        if (record.placement) setPlacement(record.placement);
+        setRenderResult({
+          raw,
+          original: originalCanvas,
+          draft: photoCanvas(draft),
+        });
+        setAiSelected(true);
+        setOriginal(false);
+      }
+    })()
+      .catch(() => {
+        if (!cancelled && ticket === revision.current)
+          setError(
+            t(
+              'Your result is saved. Open My designs or History to load it again.',
+              '结果已保存，请前往我的图案或历史记录重新查看。'
+            )
+          );
+      })
+      .finally(() => {
+        if (!cancelled && ticket === revision.current) {
+          setLoadedResult(studio.result);
+          setBusy(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [studio.result, t]);
+  useEffect(() => {
+    if (!initialDesignId && !initialHistoryId) return;
+    let cancelled = false;
+    const ticket = ++revision.current;
+    (async () => {
+      const { records } = await studioClient.collection(
+        initialDesignId ? 'designs' : 'history'
+      );
+      const record = records.find(
+        (record) => record.id === (initialDesignId || initialHistoryId)
+      );
+      if (!record)
+        throw new Error(t('Saved image not found.', '未找到该保存记录。'));
+      if (initialDesignId) {
+        const image = await assetImage(record.image);
+        if (cancelled || ticket !== revision.current) return;
+        setDesign(image);
+        setDesignRecord(record);
+        setPrompt(record.prompt || '');
+      } else if (record.original && record.draft) {
+        const [raw, original, draft, savedDesign] = await Promise.all([
+          assetImage(record.image),
+          assetImage(record.original),
+          assetImage(record.draft),
+          record.designAsset
+            ? assetImage(record.designAsset)
+            : Promise.resolve(null),
+        ]);
+        if (cancelled || ticket !== revision.current) return;
+        const originalCanvas = photoCanvas(original);
+        setPhoto(originalCanvas);
+        if (savedDesign) setDesign(savedDesign);
+        if (record.placement) setPlacement(record.placement);
+        setRenderResult({
+          raw,
+          original: originalCanvas,
+          draft: photoCanvas(draft),
+        });
+        setAiSelected(true);
+        setView(true);
+      }
+    })()
+      .catch((reason) => {
+        if (!cancelled && ticket === revision.current) setError(reason.message);
+      })
+      .finally(() => {
+        if (!cancelled && ticket === revision.current) setBusy(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [initialDesignId, initialHistoryId, t]);
 
   useEffect(
     () => () => {
@@ -67,9 +235,26 @@ export function ManualEditor({ locale }: { locale: string }) {
       el.width = photo.width;
       el.height = photo.height;
       const ctx = el.getContext('2d');
-      if (ctx) drawManual(ctx, photo, design, placement, original);
+      if (ctx) {
+        if (renderResult && (el === viewer.current || aiSelected)) {
+          const source = original
+            ? renderResult.original
+            : aiSelected
+              ? renderResult.raw
+              : renderResult.draft;
+          el.width =
+            source instanceof HTMLImageElement
+              ? source.naturalWidth
+              : source.width;
+          el.height =
+            source instanceof HTMLImageElement
+              ? source.naturalHeight
+              : source.height;
+          ctx.drawImage(source, 0, 0);
+        } else drawManual(ctx, photo, design, placement, original);
+      }
     }
-  }, [photo, design, placement, original, view]);
+  }, [photo, design, placement, original, view, aiSelected, renderResult]);
   useEffect(() => {
     if (!view) return;
     const previous = document.body.style.overflow;
@@ -99,7 +284,7 @@ export function ManualEditor({ locale }: { locale: string }) {
     }
   }
   function choose(file: File | undefined, kind: 'photo' | 'design') {
-    if (!file) return;
+    if (!file || busy) return;
     void run(async () => {
       const id = revision.current;
       if (kind === 'photo') {
@@ -110,31 +295,97 @@ export function ManualEditor({ locale }: { locale: string }) {
         const image = await loadDesign(file);
         if (id !== revision.current) return;
         setDesign(image);
+        setDesignRecord(null);
+        if (studio.capabilities?.signedIn && studio.capabilities.verified) {
+          try {
+            const saved = await studioClient.saveDesign(
+              await imageBlob(image),
+              prompt
+            );
+            if (id === revision.current) setDesignRecord(saved);
+          } catch {
+            setError(
+              t(
+                'Design is ready locally, but could not be saved yet. Retry when generating your try-on.',
+                '图案已准备好，但暂未保存到账户。提交真实试戴时会重试保存。'
+              )
+            );
+          }
+        }
       }
       setPlacement(defaultPlacement());
       setOriginal(false);
       setMenu(false);
       setInk(false);
+      setRenderResult(null);
+      setAiSelected(false);
     });
   }
   async function download() {
-    if (!photo || !design) return;
+    if (!renderResult) return;
     try {
       const out = document.createElement('canvas');
-      out.width = photo.width;
-      out.height = photo.height;
+      out.width = renderResult.raw.naturalWidth;
+      out.height = renderResult.raw.naturalHeight;
       const ctx = out.getContext('2d');
       if (!ctx) return;
-      drawManual(ctx, photo, design, placement);
+      ctx.drawImage(renderResult.raw, 0, 0);
       const url = URL.createObjectURL(await canvasBlob(out));
       const anchor = document.createElement('a');
       anchor.href = url;
-      anchor.download = 'tattoovis-manual-preview.png';
+      anchor.download = 'tattoovis-ai-try-on.png';
       anchor.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch {
       setError(t('Download failed. Please try again.', '下载失败，请重试。'));
     }
+  }
+  function renderTryOn() {
+    if (!photo || !design || busy) return;
+    const currentPhoto = photo,
+      currentDesign = design,
+      currentPlacement = { ...placement };
+    studio.render(
+      async (signal) => {
+        const guide = document.createElement('canvas');
+        guide.width = currentPhoto.width;
+        guide.height = currentPhoto.height;
+        const ctx = guide.getContext('2d');
+        if (!ctx) throw new Error('Could not prepare placement');
+        drawManual(ctx, currentPhoto, currentDesign, currentPlacement);
+        const record =
+          designRecord ||
+          (await studioClient.saveDesign(
+            await imageBlob(currentDesign),
+            prompt,
+            signal
+          ));
+        setDesignRecord(record);
+        const photoAsset = await studioClient.upload(
+          await photoBlob(currentPhoto),
+          signal
+        );
+        const guideAsset = await studioClient.upload(
+          await photoBlob(guide),
+          signal
+        );
+        return {
+          photo: photoAsset,
+          design: record.image,
+          designId: record.id,
+          guide: guideAsset,
+          region: placementRegion(
+            currentPlacement,
+            currentPhoto,
+            currentDesign
+          ),
+          placement: currentPlacement,
+          prompt,
+        };
+      },
+      resolution,
+      resolution === '4K' ? 3 : resolution === '2K' ? 2 : 1
+    );
   }
   const g =
     photo && design
@@ -161,7 +412,7 @@ export function ManualEditor({ locale }: { locale: string }) {
       : null;
   }
   function down(e: React.PointerEvent, mode = 'move') {
-    if (!photo || !design || original) return;
+    if (!photo || !design || original || aiSelected || busy) return;
     const p = point(e, mode !== 'move');
     if (!p) return;
     e.preventDefault();
@@ -209,7 +460,7 @@ export function ManualEditor({ locale }: { locale: string }) {
       : null;
   }
   function handleKey(e: React.KeyboardEvent) {
-    if (!design || original) return;
+    if (!design || original || aiSelected || busy) return;
     const p = { ...placement };
     switch (e.key) {
       case 'ArrowLeft':
@@ -257,6 +508,12 @@ export function ManualEditor({ locale }: { locale: string }) {
 
   return (
     <div className="mt-10 pb-16">
+      <StudioAccount studio={studio} locale={locale} />
+      {loading && (
+        <p role="status" className="text-primary mb-4">
+          {t('Opening your images…', '正在打开图片…')}
+        </p>
+      )}
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <section
           aria-label={t('Photo editor', '照片编辑器')}
@@ -266,9 +523,12 @@ export function ManualEditor({ locale }: { locale: string }) {
             <div className="flex gap-2">
               <button
                 className={button}
-                aria-pressed={!original}
+                aria-pressed={!original && !aiSelected}
                 disabled={!photo}
-                onClick={() => setOriginal(false)}
+                onClick={() => {
+                  setOriginal(false);
+                  setAiSelected(false);
+                }}
               >
                 {t('Edit placement', '编辑位置')}
               </button>
@@ -276,10 +536,25 @@ export function ManualEditor({ locale }: { locale: string }) {
                 className={button}
                 aria-pressed={original}
                 disabled={!photo}
-                onClick={() => setOriginal(true)}
+                onClick={() => {
+                  setOriginal(true);
+                  setAiSelected(false);
+                }}
               >
                 {t('Original', '原图')}
               </button>
+              {renderResult && (
+                <button
+                  className={`${button} border-primary text-primary`}
+                  aria-pressed={aiSelected}
+                  onClick={() => {
+                    setAiSelected(true);
+                    setOriginal(false);
+                  }}
+                >
+                  {t('AI result', 'AI 结果')}
+                </button>
+              )}
             </div>
             <button
               className={button}
@@ -319,7 +594,7 @@ export function ManualEditor({ locale }: { locale: string }) {
                     setMenu(!menu);
                   }}
                 />
-                {g && !original && (
+                {g && !original && !aiSelected && !busy && (
                   <>
                     <div
                       aria-hidden="true"
@@ -506,48 +781,42 @@ export function ManualEditor({ locale }: { locale: string }) {
                 : t('Upload photo', '上传照片')}
             </button>
           </div>
-          <div className="border-b pb-6">
-            <p className="text-primary text-sm">02 / {t('DESIGN', '图案')}</p>
-            <h2 className="mt-2 text-2xl">
-              {t('Bring a design you love', '放上你喜欢的图案')}
-            </h2>
-            <p className="text-muted-foreground mt-3 leading-7">
-              {t(
-                'A transparent PNG or a design on white works best. White blends into the photo.',
-                '推荐透明 PNG 或白底图案，白色会融入照片背景。'
+          <StudioDesigns
+            locale={locale}
+            prompt={prompt}
+            setPrompt={setPrompt}
+            onUpload={() => designInput.current?.click()}
+            onPick={pickDesign}
+            studio={studio}
+            busy={busy}
+          />
+          {design && (
+            <div className="rounded-xl border p-4">
+              <p className="text-muted-foreground mb-3 text-sm">
+                {t('Selected design', '当前图案')}
+              </p>
+              <DesignPreview image={design} />
+              {designRecord && (
+                <p className="text-primary mt-3 text-sm">
+                  {t(
+                    'Saved to your account · reusable for free',
+                    '已保存到账户 · 免费复用'
+                  )}
+                </p>
               )}
-            </p>
-            <button
-              className={`${button} mt-4 w-full`}
-              disabled={busy || !photo}
-              onClick={() => designInput.current?.click()}
-            >
-              {design
-                ? t('Change design', '更换图案')
-                : t('Upload design', '上传图案')}
-            </button>
-          </div>
-          <div>
-            <p className="text-primary text-sm">
-              03 / {t('PLACE & SAVE', '摆放与保存')}
-            </p>
-            <h2 className="mt-2 text-2xl">
-              {t('Make it feel like you', '找到适合自己的位置')}
-            </h2>
-            <p className="text-muted-foreground mt-3 leading-7">
-              {t(
-                'Explore placement for free. This is a manual overlay, not an AI-rendered tattoo.',
-                '免费探索位置、大小和角度。这是手动叠放预览，不是 AI 真实融合效果。'
-              )}
-            </p>
-            <button
-              className={`${button} border-primary bg-primary text-primary-foreground mt-4 w-full`}
-              disabled={!photo || !design || busy}
-              onClick={() => void download()}
-            >
-              {t('Download preview', '下载预览')}
-            </button>
-          </div>
+            </div>
+          )}
+          <StudioRender
+            locale={locale}
+            resolution={resolution}
+            setResolution={setResolution}
+            onRender={renderTryOn}
+            busy={busy}
+            ready={!!photo && !!design}
+            pending={!!studio.pending}
+            hasResult={!!renderResult}
+            onDownload={() => void download()}
+          />
           <button
             className={`${button} w-full`}
             disabled={busy}
@@ -558,6 +827,9 @@ export function ManualEditor({ locale }: { locale: string }) {
                 if (id !== revision.current) return;
                 setPhoto(result.photo);
                 setDesign(result.design);
+                setDesignRecord(null);
+                setRenderResult(null);
+                setAiSelected(false);
                 setPlacement({
                   ...defaultPlacement(),
                   px: 0.37,
@@ -574,8 +846,8 @@ export function ManualEditor({ locale }: { locale: string }) {
           </button>
           <p className="text-muted-foreground text-sm leading-6">
             {t(
-              'No sign-in or credits required. Images stay in this tab and are not uploaded. Leaving or refreshing clears your work — download first. PNG / JPEG / WebP · up to 20 MB. Photo previews are resized to a maximum 2560px long edge.',
-              '无需登录、不消耗积分。图片仅保留在当前页面内存，不上传。离开或刷新会清空，请先下载。支持 PNG / JPEG / WebP，最大 20MB。预览照片长边最大 2560px。'
+              'Manual placement is free. Design generation costs 1 credit; each real try-on costs 1 / 2 / 3 credits at 1K / 2K / 4K. Images are uploaded when you save a design or submit a try-on. Generated designs and results are saved to your account. Unsaved placement edits clear when you leave or refresh. PNG / JPEG / WebP · up to 20 MB.',
+              '手动摆放免费；新设计 1 credit，单张真实试戴 1K / 2K / 4K 为 1 / 2 / 3 credits。保存设计或提交试戴时会上传图片；生成的设计和结果自动保存到账户。未提交的摆放编辑在离开或刷新后清空。支持 PNG / JPEG / WebP，最大 20MB。'
             )}
           </p>
         </aside>
@@ -617,25 +889,31 @@ export function ManualEditor({ locale }: { locale: string }) {
           <div className="flex h-full flex-col">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3 sm:px-8">
               <div className="flex gap-2">
-                {[false, true].map((value) => (
+                {(['original', 'manual', 'ai'] as const).map((value) => (
                   <button
-                    key={String(value)}
-                    className={`${button} ${original === value ? 'border-primary text-primary' : ''}`}
-                    onClick={() => setOriginal(value)}
+                    key={value}
+                    className={`${button} ${(value === 'original' ? original : value === 'ai' ? aiSelected : !original && !aiSelected) ? 'border-primary text-primary' : ''}`}
+                    disabled={value === 'ai' && !renderResult}
+                    onClick={() => {
+                      setOriginal(value === 'original');
+                      setAiSelected(value === 'ai');
+                    }}
                   >
-                    {value
+                    {value === 'original'
                       ? t('Original', '原图')
-                      : t('Manual preview', '手动预览')}
+                      : value === 'ai'
+                        ? t('AI result', 'AI 结果')
+                        : t('Manual placement', '手动摆放')}
                   </button>
                 ))}
               </div>
               <div className="flex gap-2">
                 <button
                   className={button}
-                  disabled={!design}
+                  disabled={!renderResult}
                   onClick={() => void download()}
                 >
-                  {t('Download preview', '下载预览')}
+                  {t('Download AI result', '下载 AI 结果')}
                 </button>
                 <button className={button} onClick={() => setView(false)}>
                   {t('Close', '关闭')}
@@ -746,5 +1024,27 @@ export function ManualEditor({ locale }: { locale: string }) {
         </dialog>
       )}
     </div>
+  );
+}
+
+function DesignPreview({ image }: { image: HTMLImageElement }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const canvas = ref.current;
+    if (!canvas) return;
+    canvas.width = 320;
+    canvas.height = Math.min(
+      400,
+      (320 * image.naturalHeight) / image.naturalWidth
+    );
+    const ctx = canvas.getContext('2d');
+    ctx?.drawImage(image, 0, 0, canvas.width, canvas.height);
+  }, [image]);
+  return (
+    <canvas
+      ref={ref}
+      className="mx-auto max-h-48 max-w-full rounded-lg bg-white object-contain"
+      aria-label="Selected tattoo design"
+    />
   );
 }

@@ -653,3 +653,75 @@ export const guestFreeUsage = table(
   },
   (table) => [primaryKey({ columns: [table.ip, table.usedDate] })]
 );
+// Account placement studio: additive tables; existing balances/history are untouched.
+export const studioAsset = table(
+  'studio_asset',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    key: text('key').notNull(),
+    contentType: text('content_type').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (t) => [index('idx_studio_asset_owner').on(t.userId)]
+);
+
+export const studioRecord = table(
+  'studio_record',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    collection: text('collection').notNull(),
+    operationId: text('operation_id').unique(),
+    name: text('name'),
+    prompt: text('prompt').notNull().default(''),
+    source: text('source'),
+    resolution: text('resolution'),
+    image: text('image')
+      .notNull()
+      .references(() => studioAsset.id),
+    original: text('original').references(() => studioAsset.id),
+    draft: text('draft').references(() => studioAsset.id),
+    designId: text('design_id'),
+    deletedAt: timestamp('deleted_at'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (t) => [index('idx_studio_record_owner').on(t.userId, t.collection)]
+);
+
+export const studioJob = table(
+  'studio_job',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    operationId: text('operation_id').notNull().unique(),
+    kind: text('kind').notNull(),
+    input: text('input').notNull(),
+    resolution: text('resolution').notNull(),
+    creditId: text('credit_id')
+      .notNull()
+      .references(() => credit.id),
+    state: text('state').notNull().default('queued'),
+    providerTaskId: text('provider_task_id'),
+    resultUrl: text('result_url'),
+    assetId: text('asset_id').references(() => studioAsset.id),
+    recordId: text('record_id').references(() => studioRecord.id),
+    workflowRunId: text('workflow_run_id'),
+    leaseToken: text('lease_token'),
+    leaseUntil: timestamp('lease_until').notNull().defaultNow(),
+    nextRunAt: timestamp('next_run_at').notNull().defaultNow(),
+    deadlineAt: timestamp('deadline_at')
+      .notNull()
+      .$defaultFn(() => new Date(Date.now() + 60 * 60_000)),
+    refunded: boolean('refunded').notNull().default(false),
+    error: text('error'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (t) => [index('idx_studio_job_owner').on(t.userId, t.state)]
+);

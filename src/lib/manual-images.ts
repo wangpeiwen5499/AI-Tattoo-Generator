@@ -19,7 +19,7 @@ async function fileImage(file: File) {
     URL.revokeObjectURL(url);
   }
 }
-function photoCanvas(image: HTMLImageElement) {
+export function photoCanvas(image: HTMLImageElement) {
   const scale = Math.min(
     1,
     2560 / Math.max(image.naturalWidth, image.naturalHeight)

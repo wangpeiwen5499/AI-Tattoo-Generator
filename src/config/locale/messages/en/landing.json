@@ -60,7 +60,7 @@
     "id": "footer",
     "brand": {
       "title": "TattooVis",
-      "description": "See your tattoo before you ink. Upload a photo, describe your idea, and AI generates realistic tattoo previews.",
+      "description": "See your tattoo before you ink. Create or reuse a design, place it on your photo, then generate one realistic AI try-on.",
       "url": "/",
       "logo": {
         "src": "/favicon.ico",
@@ -75,7 +75,7 @@
           "title": "Product",
           "children": [
             {
-              "title": "Free Tattoo Try-on",
+              "title": "Placement Studio",
               "url": "/studio",
               "target": "_self"
             },

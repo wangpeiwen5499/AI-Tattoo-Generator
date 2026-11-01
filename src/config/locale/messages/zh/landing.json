@@ -60,7 +60,7 @@
     "id": "footer",
     "brand": {
       "title": "TattooVis",
-      "description": "在纹身之前先看效果。上传照片、描述想法，AI 即可生成逼真的纹身预览。",
+      "description": "在纹身前先看效果。选择或生成图案，自由摆放在自己的照片上，再生成单张真实试戴。",
       "url": "/",
       "logo": {
         "src": "/favicon.ico",
@@ -75,7 +75,7 @@
           "title": "产品",
           "children": [
             {
-              "title": "免费纹身试戴",
+              "title": "纹身工作室",
               "url": "/studio",
               "target": "_self"
             },

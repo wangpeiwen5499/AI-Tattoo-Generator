@@ -11,6 +11,15 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 import { ManualEditor } from '@/shared/blocks/tattoo/manual-editor';
 
+vi.mock('@/core/i18n/navigation', () => ({
+  Link: ({
+    children,
+    ...props
+  }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
+    <a {...props}>{children}</a>
+  ),
+}));
+
 const sample = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/manual-images', () => ({
   loadSample: sample,
@@ -66,7 +75,7 @@ it('works after unmount/remount, without account, generation or storage calls', 
     expect(
       (
         screen.getByRole('button', {
-          name: 'Download preview',
+          name: 'Generate real try-on · 1 credit',
         }) as HTMLButtonElement
       ).disabled
     ).toBe(false)
@@ -76,7 +85,7 @@ it('works after unmount/remount, without account, generation or storage calls', 
   expect(
     (
       screen.getByRole('button', {
-        name: 'Download preview',
+        name: 'Generate real try-on · 1 credit',
       }) as HTMLButtonElement
     ).disabled
   ).toBe(true);
@@ -85,12 +94,16 @@ it('works after unmount/remount, without account, generation or storage calls', 
     expect(
       (
         screen.getByRole('button', {
-          name: 'Download preview',
+          name: 'Generate real try-on · 1 credit',
         }) as HTMLButtonElement
       ).disabled
     ).toBe(false)
   );
   expect(sample).toHaveBeenCalledTimes(2);
-  expect(fetch).not.toHaveBeenCalled();
+  expect(
+    vi
+      .mocked(fetch)
+      .mock.calls.every((call) => !call[1]?.method || call[1].method === 'GET')
+  ).toBe(true);
   expect(store).not.toHaveBeenCalled();
 });

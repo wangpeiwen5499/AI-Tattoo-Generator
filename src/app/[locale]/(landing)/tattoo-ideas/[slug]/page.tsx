@@ -67,8 +67,8 @@ export default async function GuidePage({ params }: Props) {
         >
           <p>
             {zh
-              ? '本文部分流程与积分示例涉及尚未上线的新功能。当前正式站功能与费用请以生成页面和价格页面为准。'
-              : 'Some workflow and credit examples describe features not yet available on the live site. For current features and charges, see the generator and pricing pages.'}
+              ? '设计和真实试戴分别消耗积分，免费摆放不扣费。具体操作与费用请查看工作室和价格页面。'
+              : 'Design generation and realistic try-ons use credits separately. Manual placement is free. See the studio and pricing pages for current operations and charges.'}
           </p>
           <div className="mt-2 flex flex-wrap gap-4">
             <Link

@@ -12,3 +12,15 @@ export const CASE_PLACEMENTS = [
 ] as const;
 
 export type CasePlacement = (typeof CASE_PLACEMENTS)[number]['id'];
+
+/** Homepage guided example: an uploaded Gundam design placed on the biceps. */
+export const GUNDAM_CASE_ROOT = '/imgs/cases/gundam-biceps';
+
+/**
+ * The Gundam design was uploaded by the user (uploads are free). It must be
+ * presented as an uploaded reference, never as an on-site generation.
+ */
+export const GUNDAM_DESIGN_NOTE = {
+  zh: '该图案由用户上传（上传免费），不是网站现场生成的结果。网站生成设计需要另耗积分。',
+  en: 'This design was uploaded by the user (uploads are free); it was not generated on this site. Generating a design on the site costs credits separately.',
+} as const;

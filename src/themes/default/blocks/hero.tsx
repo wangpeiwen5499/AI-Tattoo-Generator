@@ -3,7 +3,7 @@ import { ArrowRight } from 'lucide-react';
 
 import { Link } from '@/core/i18n/navigation';
 import { SmartIcon } from '@/shared/blocks/common';
-import { TattooCaseDemo } from '@/shared/blocks/tattoo/tattoo-case-demo';
+import { WorkflowCase } from '@/shared/blocks/tattoo/preview-workflow-case';
 import { TrialCta } from '@/shared/blocks/tattoo/trial-cta';
 import { Button } from '@/shared/components/ui/button';
 import { Highlighter } from '@/shared/components/ui/highlighter';
@@ -118,7 +118,7 @@ export function Hero({
 
       {section.tattoo_demo ? (
         <div className="tattoo-hero-case mx-auto mt-10 max-w-6xl px-4 sm:mt-14 sm:px-6">
-          <TattooCaseDemo />
+          <WorkflowCase />
         </div>
       ) : (
         (section.image?.src || section.image_invert?.src) && (
