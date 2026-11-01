@@ -28,6 +28,13 @@ import {
 } from '@/lib/studio-images';
 
 import { StudioAccount, StudioDesigns, StudioRender } from './studio-actions';
+import {
+  StepHelp,
+  StepHint,
+  studioStep,
+  StudioSteps,
+  studioTaskKind,
+} from './studio-guidance';
 
 const button =
   'rounded-xl border border-border bg-background px-4 py-3 text-sm font-medium transition hover:border-primary focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-40 disabled:cursor-not-allowed';
@@ -69,6 +76,45 @@ export function ManualEditor({
   const [view, setView] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [actionKind, setActionKind] = useState<
+    'design' | 'render' | undefined
+  >();
+  const [dismissedTips, setDismissedTips] = useState<Set<number>>(
+    () => new Set()
+  );
+  const stageBox = useRef<HTMLDivElement>(null);
+  const [stageSize, setStageSize] = useState({ width: 0, height: 0 });
+  const dismissTip = (step: number) =>
+    setDismissedTips((previous) => new Set([...previous, step]));
+  const jobKind = studioTaskKind({
+    busy: studio.busy,
+    phase: studio.phase,
+    action: actionKind,
+    task: studio.task?.kind,
+    pending: studio.pending?.kind,
+  });
+  const currentStep = studioStep({
+    photo: !!photo,
+    design: !!design,
+    result: !!renderResult,
+    showResult: !!renderResult && (aiSelected || original),
+    task: jobKind,
+  });
+  const displayRatio =
+    aiSelected && renderResult
+      ? renderResult.raw.naturalWidth / renderResult.raw.naturalHeight
+      : photo
+        ? photo.width / photo.height
+        : 1;
+  useEffect(() => {
+    if (!stageBox.current || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver((entries) => {
+      const rect = entries[0]?.contentRect;
+      if (rect) setStageSize({ width: rect.width, height: rect.height });
+    });
+    observer.observe(stageBox.current);
+    return () => observer.disconnect();
+  }, []);
   const canvas = useRef<HTMLCanvasElement>(null);
   const viewer = useRef<HTMLCanvasElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
@@ -342,6 +388,7 @@ export function ManualEditor({
   }
   function renderTryOn() {
     if (!photo || !design || busy) return;
+    setActionKind('render');
     const currentPhoto = photo,
       currentDesign = design,
       currentPlacement = { ...placement };
@@ -503,21 +550,55 @@ export function ManualEditor({
     e.preventDefault();
     update(p);
   }
+  function visitStep(step: number) {
+    const target = document.getElementById(
+      step === 1
+        ? 'studio-photo-step'
+        : step === 2
+          ? 'studio-design-step'
+          : step === 3
+            ? 'studio-placement-step'
+            : 'studio-result-step'
+    );
+    target?.scrollIntoView?.({ block: 'nearest' });
+    if (step === 3) {
+      setOriginal(false);
+      setAiSelected(false);
+      canvas.current?.focus({ preventScroll: true });
+    }
+    if (step === 4 && renderResult) {
+      setOriginal(false);
+      setAiSelected(true);
+    }
+  }
   const handleStyle =
     'absolute flex h-11 w-11 items-center justify-center rounded-full border-2 border-white bg-primary text-white shadow-md touch-none';
 
   return (
     <div className="mt-10 pb-16">
       <StudioAccount studio={studio} locale={locale} />
+      <StudioSteps
+        locale={locale}
+        current={currentStep}
+        completed={[
+          !!photo,
+          !!design,
+          !!renderResult || jobKind === 'render',
+          !!renderResult,
+        ]}
+        onSelect={visitStep}
+        busy={busy}
+      />
       {loading && (
         <p role="status" className="text-primary mb-4">
           {t('Opening your images…', '正在打开图片…')}
         </p>
       )}
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="studio-workspace">
         <section
           aria-label={t('Photo editor', '照片编辑器')}
-          className="min-w-0"
+          id="studio-placement-step"
+          className="studio-photo-panel"
         >
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div className="flex gap-2">
@@ -568,12 +649,28 @@ export function ManualEditor({
               {t('Enlarge & compare', '放大与对比')}
             </button>
           </div>
-          <div className="border-border bg-muted/40 flex min-h-96 items-center justify-center overflow-hidden rounded-2xl border p-6 sm:p-10">
+          {currentStep === 3 && !dismissedTips.has(3) && (
+            <div className="mb-4">
+              <StepHint locale={locale} onDismiss={() => dismissTip(3)}>
+                {t(
+                  'Drag to place your design. Resize with ↗, rotate with ↻, then generate when the placement feels right.',
+                  '拖动图案选择位置，用 ↗ 缩放、↻ 旋转。满意后点击生成真实试戴即可。'
+                )}
+              </StepHint>
+            </div>
+          )}
+          <div
+            ref={stageBox}
+            className="studio-stage border-border bg-muted/40 flex items-center justify-center overflow-hidden rounded-2xl border p-6"
+          >
             {photo ? (
               <div
                 className="relative mx-auto w-full"
                 style={{
-                  maxWidth: `min(100%, ${(660 * photo.width) / photo.height}px)`,
+                  maxWidth:
+                    stageSize.width && stageSize.height
+                      ? `${Math.min(stageSize.width, stageSize.height * displayRatio)}px`
+                      : '100%',
                 }}
               >
                 <canvas
@@ -729,7 +826,7 @@ export function ManualEditor({
                   )}
                 </p>
                 <button
-                  className={`${button} mt-6`}
+                  className={`${button} mt-6 ${currentStep === 1 ? 'studio-current-action' : ''}`}
                   disabled={busy}
                   onClick={() => photoInput.current?.click()}
                 >
@@ -747,65 +844,126 @@ export function ManualEditor({
               {t('Next: add your tattoo design', '下一步：添加纹身图案')}
             </button>
           )}
-          <p className="text-muted-foreground mt-4 text-base leading-7">
-            {design
-              ? t(
-                  'Drag the design to move it. Use ↗ to resize and ↻ to rotate, or pinch and twist with two fingers. Ink and ••• are on your photo.',
-                  '拖动图案移动位置；拖动 ↗ 缩放、↻ 旋转，手机可双指缩放和旋转。深浅和更多操作就在照片上。'
-                )
-              : t(
-                  'Add a design after choosing your photo. You can change either image at any time.',
-                  '选择照片后添加图案。两张图片都可以随时更换。'
-                )}
-          </p>
-        </section>
-        <aside className="space-y-7 lg:pt-1">
-          <div className="border-b pb-6">
-            <p className="text-primary text-sm">01 / {t('PHOTO', '照片')}</p>
-            <h2 className="mt-2 text-2xl">
-              {t('Start with your skin', '从你的照片开始')}
-            </h2>
-            <p className="text-muted-foreground mt-3 leading-7">
-              {t(
-                'Use a photo of yourself or a consenting adult. Keep the area you want to tattoo visible.',
-                '请使用本人或已同意的成年人的照片，确保想纹身的位置清晰可见。'
-              )}
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <p className="text-muted-foreground text-sm">
+              {photo && design
+                ? t(
+                    'Drag, resize and rotate on your photo.',
+                    '直接在照片上拖动、缩放和旋转。'
+                  )
+                : t('Your photo stays uncropped.', '照片保持完整，不会裁切。')}
             </p>
-            <button
-              className={`${button} mt-4 w-full`}
-              disabled={busy}
-              onClick={() => photoInput.current?.click()}
-            >
-              {photo
-                ? t('Change photo', '更换照片')
-                : t('Upload photo', '上传照片')}
-            </button>
+            <StepHelp label={t('About placement', '摆放操作说明')}>
+              {t(
+                'Drag the design to move it. Use ↗ to resize and ↻ to rotate, or pinch and twist with two fingers. Ink controls intensity; ••• contains flip, reset and remove. Manual placement is free.',
+                '拖动图案移动；↗ 缩放，↻ 旋转；手机可双指缩放和旋转。“深浅”调整透明度，••• 中可翻转、重置或移除。手动摆放免费。'
+              )}
+            </StepHelp>
           </div>
-          <StudioDesigns
-            locale={locale}
-            prompt={prompt}
-            setPrompt={setPrompt}
-            onUpload={() => designInput.current?.click()}
-            onPick={pickDesign}
-            studio={studio}
-            busy={busy}
-          />
-          {design && (
-            <div className="rounded-xl border p-4">
-              <p className="text-muted-foreground mb-3 text-sm">
-                {t('Selected design', '当前图案')}
-              </p>
-              <DesignPreview image={design} />
-              {designRecord && (
-                <p className="text-primary mt-3 text-sm">
+        </section>
+        <aside className="studio-controls">
+          <div className="studio-options space-y-7">
+            <div id="studio-photo-step" className="border-b pb-6">
+              <p className="text-primary text-sm">01 / {t('PHOTO', '照片')}</p>
+              <div className="mt-2 flex items-center justify-between gap-2">
+                <h2 className="text-2xl">
+                  {t('Start with your skin', '从你的照片开始')}
+                </h2>
+                <StepHelp label={t('About photo uploads', '照片上传说明')}>
                   {t(
-                    'Saved to your account · reusable for free',
-                    '已保存到账户 · 免费复用'
+                    'Close-ups and side views work too. Keep the target skin visible. Use a photo of yourself or a consenting adult. Local previews keep the whole photo and resize its long edge to at most 2560px.',
+                    '局部和侧面照片都可以，让目标皮肤清晰可见。请使用本人或已同意的成年人的照片。预览保留整张照片，长边最大 2560px。'
                   )}
-                </p>
+                </StepHelp>
+              </div>
+              <button
+                className={`${button} mt-4 w-full ${currentStep === 1 ? 'studio-current-action' : ''}`}
+                disabled={busy}
+                onClick={() => photoInput.current?.click()}
+              >
+                {photo
+                  ? t('Change photo', '更换照片')
+                  : t('Upload photo', '上传照片')}
+              </button>
+              <p className="text-muted-foreground mt-3 text-sm">
+                PNG / JPEG / WebP · {t('up to 20 MB', '最大 20MB')}
+              </p>
+              {currentStep === 1 && !dismissedTips.has(1) && (
+                <StepHint locale={locale} onDismiss={() => dismissTip(1)}>
+                  {t(
+                    'Choose a clear photo of the area you want tattooed. A full-body photo is not required.',
+                    '先选择想纹身部位的清晰照片，不需要全身照。'
+                  )}
+                </StepHint>
               )}
             </div>
-          )}
+            <StudioDesigns
+              locale={locale}
+              prompt={prompt}
+              setPrompt={setPrompt}
+              onUpload={() => designInput.current?.click()}
+              onPick={pickDesign}
+              studio={studio}
+              busy={busy}
+              current={currentStep === 2}
+              showHint={currentStep === 2 && !dismissedTips.has(2)}
+              onDismissHint={() => dismissTip(2)}
+              onGenerate={() => setActionKind('design')}
+            />
+            {design && (
+              <div className="rounded-xl border p-4">
+                <p className="text-muted-foreground mb-3 text-sm">
+                  {t('Selected design', '当前图案')}
+                </p>
+                <DesignPreview image={design} />
+                {designRecord && (
+                  <p className="text-primary mt-3 text-sm">
+                    {t(
+                      'Saved to your account · reusable for free',
+                      '已保存到账户 · 免费复用'
+                    )}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <button
+              className={`${button} w-full`}
+              disabled={busy}
+              onClick={() =>
+                void run(async () => {
+                  const id = revision.current;
+                  const result = await loadSample();
+                  if (id !== revision.current) return;
+                  setPhoto(result.photo);
+                  setDesign(result.design);
+                  setDesignRecord(null);
+                  setRenderResult(null);
+                  setAiSelected(false);
+                  setPlacement({
+                    ...defaultPlacement(),
+                    px: 0.37,
+                    py: 0.28,
+                    scale: 0.45,
+                  });
+                  setOriginal(false);
+                })
+              }
+            >
+              {busy
+                ? t('Opening image…', '正在打开图片…')
+                : t('Try sample', '试用示例')}
+            </button>
+            <div className="text-muted-foreground flex items-center justify-between gap-2 text-sm">
+              <span>{t('Saving & photo privacy', '保存与照片隐私')}</span>
+              <StepHelp label={t('About saving and privacy', '保存与隐私说明')}>
+                {t(
+                  'Images are uploaded when you save a design or submit a try-on. Generated designs and results are saved to your account. Unsubmitted placement edits clear when you leave or refresh. Manual placement is free; new designs and AI try-ons are charged separately.',
+                  '保存设计或提交试戴时会上传图片，生成的设计和结果保存在账户中。未提交的摆放在离开或刷新后清空。手动摆放免费，新设计和真实试戴分别计费。'
+                )}
+              </StepHelp>
+            </div>
+          </div>
           <StudioRender
             locale={locale}
             resolution={resolution}
@@ -816,40 +974,12 @@ export function ManualEditor({
             pending={!!studio.pending}
             hasResult={!!renderResult}
             onDownload={() => void download()}
-          />
-          <button
-            className={`${button} w-full`}
-            disabled={busy}
-            onClick={() =>
-              void run(async () => {
-                const id = revision.current;
-                const result = await loadSample();
-                if (id !== revision.current) return;
-                setPhoto(result.photo);
-                setDesign(result.design);
-                setDesignRecord(null);
-                setRenderResult(null);
-                setAiSelected(false);
-                setPlacement({
-                  ...defaultPlacement(),
-                  px: 0.37,
-                  py: 0.28,
-                  scale: 0.45,
-                });
-                setOriginal(false);
-              })
+            current={currentStep === 4 || currentStep === 3}
+            showHint={
+              currentStep === 4 && !studio.busy && !dismissedTips.has(4)
             }
-          >
-            {busy
-              ? t('Opening image…', '正在打开图片…')
-              : t('Try sample', '试用示例')}
-          </button>
-          <p className="text-muted-foreground text-sm leading-6">
-            {t(
-              'Manual placement is free. Design generation costs 1 credit; each real try-on costs 1 / 2 / 3 credits at 1K / 2K / 4K. Images are uploaded when you save a design or submit a try-on. Generated designs and results are saved to your account. Unsaved placement edits clear when you leave or refresh. PNG / JPEG / WebP · up to 20 MB.',
-              '手动摆放免费；新设计 1 credit，单张真实试戴 1K / 2K / 4K 为 1 / 2 / 3 credits。保存设计或提交试戴时会上传图片；生成的设计和结果自动保存到账户。未提交的摆放编辑在离开或刷新后清空。支持 PNG / JPEG / WebP，最大 20MB。'
-            )}
-          </p>
+            onDismissHint={() => dismissTip(4)}
+          />
         </aside>
       </div>
       <input

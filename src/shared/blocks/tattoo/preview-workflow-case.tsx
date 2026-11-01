@@ -6,6 +6,7 @@ import { useLocale } from 'next-intl';
 
 import { GUNDAM_CASE_ROOT, GUNDAM_DESIGN_NOTE } from './case-study-data';
 import { Lightbox } from './lightbox';
+import { StepHelp, StepHint } from './studio-guidance';
 
 const studioUrl = (_panel: unknown, locale: string) =>
   `${locale === 'zh' ? '/zh' : ''}/studio`;
@@ -20,6 +21,15 @@ export function WorkflowCase() {
   const [step, setStep] = useState(0);
   const [lightbox, setLightbox] = useState<number | null>(null);
   const opener = useRef<HTMLButtonElement>(null);
+  const [dismissed, setDismissed] = useState<Set<number>>(() => new Set());
+  const dismiss = () =>
+    setDismissed((previous) => new Set([...previous, step]));
+  const hint = (index: number) =>
+    step === index && !dismissed.has(index) ? (
+      <StepHint locale={locale} onDismiss={dismiss}>
+        {instructions[index]}
+      </StepHint>
+    ) : null;
   const finished = step === 4;
   const placed = step >= 3 && !finished;
   const instructions = zh
@@ -98,13 +108,6 @@ export function WorkflowCase() {
             </li>
           ))}
         </ol>
-        <p
-          className="bg-card mb-6 rounded-xl border px-5 py-4 text-sm leading-6"
-          role="status"
-          aria-live="polite"
-        >
-          {instructions[step]}
-        </p>
         <div className="grid items-start gap-8 lg:grid-cols-2">
           <div>
             <button
@@ -164,8 +167,12 @@ export function WorkflowCase() {
             </p>
           </div>
           <div className="space-y-4">
-            <article className="bg-card rounded-xl border p-5">
+            <article
+              className="studio-case-step bg-card rounded-xl border p-5"
+              data-current={step === 0 || undefined}
+            >
               <h3 className="font-medium">1 / {labels[0]}</h3>
+              {hint(0)}
               <p className="text-muted-foreground mt-2 text-sm">
                 {zh
                   ? '先选择没有纹身的原始照片。'
@@ -173,7 +180,7 @@ export function WorkflowCase() {
               </p>
               <button
                 type="button"
-                className={buttonClass}
+                className={`${buttonClass} ${step === 0 ? 'studio-current-action bg-primary text-primary-foreground' : ''}`}
                 disabled={step !== 0}
                 onClick={() => setStep(1)}
               >
@@ -186,14 +193,27 @@ export function WorkflowCase() {
                     : 'Use this sample photo'}
               </button>
             </article>
-            <article className="bg-card rounded-xl border p-5">
+            <article
+              className="studio-case-step bg-card rounded-xl border p-5"
+              data-current={step === 1 || undefined}
+            >
               <h3 className="font-medium">2 / {labels[1]}</h3>
-              <p className="text-muted-foreground mt-2 text-sm leading-6">
-                {zh ? GUNDAM_DESIGN_NOTE.zh : GUNDAM_DESIGN_NOTE.en}
-              </p>
+              {hint(1)}
+              <div className="text-muted-foreground mt-2 flex items-center gap-2 text-sm">
+                <p>
+                  {zh
+                    ? '用户上传的高达图案，上传免费。'
+                    : 'User-uploaded Gundam design. Uploading is free.'}
+                </p>
+                <StepHelp
+                  label={zh ? '案例图案说明' : 'About the example design'}
+                >
+                  {zh ? GUNDAM_DESIGN_NOTE.zh : GUNDAM_DESIGN_NOTE.en}
+                </StepHelp>
+              </div>
               <button
                 type="button"
-                className={buttonClass}
+                className={`${buttonClass} ${step === 1 ? 'studio-current-action bg-primary text-primary-foreground' : ''}`}
                 disabled={step !== 1}
                 onClick={() => setStep(2)}
               >
@@ -223,8 +243,12 @@ export function WorkflowCase() {
                 </button>
               )}
             </article>
-            <article className="bg-card rounded-xl border p-5">
+            <article
+              className="studio-case-step bg-card rounded-xl border p-5"
+              data-current={step === 2 || undefined}
+            >
               <h3 className="font-medium">3 / {labels[2]}</h3>
+              {hint(2)}
               <p className="text-muted-foreground mt-2 text-sm leading-6">
                 {zh
                   ? '案例使用固定的肱二头肌位置，点击即可确认。真实自由移动、缩放和旋转在工作室中体验。'
@@ -232,7 +256,7 @@ export function WorkflowCase() {
               </p>
               <button
                 type="button"
-                className={buttonClass}
+                className={`${buttonClass} ${step === 2 ? 'studio-current-action bg-primary text-primary-foreground' : ''}`}
                 disabled={step !== 2}
                 onClick={() => setStep(3)}
               >
@@ -245,8 +269,12 @@ export function WorkflowCase() {
                     : 'Apply preset placement'}
               </button>
             </article>
-            <article className="bg-card rounded-xl border p-5">
+            <article
+              className="studio-case-step bg-card rounded-xl border p-5"
+              data-current={step === 3 || undefined}
+            >
               <h3 className="font-medium">4 / {labels[3]}</h3>
+              {hint(3)}
               <p className="text-muted-foreground mt-2 text-sm leading-6">
                 {zh
                   ? '查看该设计在相同示例位置上的一张已保存 AI 图片。'
@@ -254,7 +282,7 @@ export function WorkflowCase() {
               </p>
               <button
                 type="button"
-                className={`${buttonClass} bg-primary text-primary-foreground enabled:hover:bg-primary/90`}
+                className={`${buttonClass} ${step === 3 ? 'studio-current-action bg-primary text-primary-foreground enabled:hover:bg-primary/90' : ''}`}
                 disabled={step !== 3}
                 onClick={() => setStep(4)}
               >
@@ -263,6 +291,7 @@ export function WorkflowCase() {
             </article>
           </div>
         </div>
+        {finished && hint(4)}
         <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
           <button
             type="button"
@@ -273,7 +302,7 @@ export function WorkflowCase() {
           </button>
           <a
             href={studioUrl(undefined, locale)}
-            className={`${buttonClass} bg-primary text-primary-foreground`}
+            className={`${buttonClass} bg-primary text-primary-foreground ${finished ? 'studio-current-action' : ''}`}
           >
             {zh ? '用自己的照片进入工作室' : 'Try your own photo in the studio'}
           </a>

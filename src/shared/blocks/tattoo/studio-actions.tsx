@@ -10,6 +10,8 @@ import {
 
 import { Link } from '@/core/i18n/navigation';
 
+import { StepHelp, StepHint } from './studio-guidance';
+
 const button =
   'min-h-11 rounded-xl border border-border px-4 py-3 text-base transition hover:border-primary disabled:cursor-not-allowed disabled:opacity-40';
 export function StudioAccount({
@@ -26,37 +28,30 @@ export function StudioAccount({
     if (studio.gate || studio.error)
       notice.current?.scrollIntoView?.({ block: 'center' });
   }, [studio.gate, studio.error]);
+  if (
+    !caps?.signedIn &&
+    !studio.error &&
+    !studio.busy &&
+    !studio.pending &&
+    !studio.gate &&
+    (!caps || caps.configured)
+  )
+    return null;
   return (
     <div
       ref={notice}
       className="mb-6 flex flex-wrap items-center justify-between gap-4 border-y py-5 text-base"
     >
-      <p>
-        {!caps
-          ? zh
-            ? '正在连接账户…'
-            : 'Connecting to your account…'
-          : caps.signedIn
-            ? `${caps.credits} credits`
-            : zh
-              ? '注册并验证邮箱，获赠 3 credits'
-              : 'Sign up and verify your email for 3 free credits'}
-      </p>
-      <div className="text-primary flex flex-wrap gap-5">
-        <Link href="/designs">{zh ? '我的图案' : 'My designs'}</Link>
-        <Link href="/history">{zh ? '试戴历史' : 'History'}</Link>
-        <Link
-          href={caps?.signedIn ? '/pricing' : '/sign-up?callbackUrl=%2Fstudio'}
-        >
-          {caps?.signedIn
-            ? zh
-              ? '购买积分'
-              : 'Get credits'
-            : zh
-              ? '注册 / 登录'
-              : 'Create account / sign in'}
-        </Link>
-      </div>
+      {caps?.signedIn && (
+        <>
+          <p>{caps.credits} credits</p>
+          <div className="text-primary flex flex-wrap gap-5">
+            <Link href="/designs">{zh ? '我的图案' : 'My designs'}</Link>
+            <Link href="/history">{zh ? '试戴历史' : 'History'}</Link>
+            <Link href="/pricing">{zh ? '购买积分' : 'Get credits'}</Link>
+          </div>
+        </>
+      )}
       {!caps?.configured && caps && (
         <p className="text-muted-foreground w-full">
           {zh
@@ -132,7 +127,15 @@ export function StudioDesigns({
   onPick,
   studio,
   busy,
+  current = false,
+  showHint = false,
+  onDismissHint = () => {},
+  onGenerate,
 }: {
+  current?: boolean;
+  showHint?: boolean;
+  onDismissHint?: () => void;
+  onGenerate?: () => void;
   locale: string;
   prompt: string;
   setPrompt: (value: string) => void;
@@ -157,12 +160,28 @@ export function StudioDesigns({
     return () => abort.abort();
   }, [open, studio.capabilities?.signedIn, studio.result]);
   return (
-    <div className="border-b pb-6">
+    <div id="studio-design-step" className="border-b pb-6">
       <p className="text-primary text-sm">02 / {zh ? '图案' : 'DESIGN'}</p>
-      <h2 className="mt-2 text-2xl">
-        {zh ? '选择或创作图案' : 'Choose or create a design'}
-      </h2>
-      <div className="mt-4 grid grid-cols-2 gap-2">
+      <div className="mt-2 flex items-center justify-between gap-2">
+        <h2 className="text-2xl">
+          {zh ? '选择或创作图案' : 'Choose or create a design'}
+        </h2>
+        <StepHelp label={zh ? '图案说明' : 'About designs'}>
+          {zh
+            ? '生成成功后自动保存到账户。上传图案、保存和复用、手动摆放免费。建议使用透明PNG或白底图案。'
+            : 'New designs are saved automatically. Reusing designs and manual placement are free. Upload a transparent PNG or a design on white for best results.'}
+        </StepHelp>
+      </div>
+      {showHint && (
+        <StepHint locale={locale} onDismiss={onDismissHint}>
+          {zh
+            ? '上传图案、描述一个新想法，或选择账户中的图案。任选一种即可。'
+            : 'Upload a design, describe a new idea, or choose a saved design. Pick whichever works for you.'}
+        </StepHint>
+      )}
+      <div
+        className={`mt-4 grid grid-cols-2 gap-2 ${current ? 'studio-current-group' : ''}`}
+      >
         <button className={button} disabled={busy} onClick={onUpload}>
           {zh ? '上传图案' : 'Upload design'}
         </button>
@@ -195,17 +214,15 @@ export function StudioDesigns({
         className="bg-background mt-2 w-full rounded-xl border p-4 text-base leading-7"
       />
       <button
-        className={`${button} border-primary text-primary mt-3 w-full`}
+        className={`${button} border-primary text-primary mt-3 w-full ${current && prompt.trim() ? 'studio-current-action' : ''}`}
         disabled={busy || !prompt.trim() || !!studio.pending}
-        onClick={() => studio.generate(prompt)}
+        onClick={() => {
+          onGenerate?.();
+          studio.generate(prompt);
+        }}
       >
         {zh ? '生成纹身图案 · 1 credit' : 'Generate design · 1 credit'}
       </button>
-      <p className="text-muted-foreground mt-3 text-sm leading-6">
-        {zh
-          ? '生成成功后自动保存。复用已有图案和手动摆放免费。'
-          : 'New designs are saved automatically. Reusing designs and manual placement are free.'}
-      </p>
       {open && (
         <div className="mt-4 rounded-xl border p-3">
           <p className="mb-3">
@@ -260,6 +277,9 @@ export function StudioRender({
   pending,
   hasResult,
   onDownload,
+  current = false,
+  showHint = false,
+  onDismissHint = () => {},
 }: {
   locale: string;
   resolution: string;
@@ -270,22 +290,27 @@ export function StudioRender({
   pending: boolean;
   hasResult: boolean;
   onDownload: () => void;
+  current?: boolean;
+  showHint?: boolean;
+  onDismissHint?: () => void;
 }) {
   const zh = locale === 'zh';
   const cost = resolution === '4K' ? 3 : resolution === '2K' ? 2 : 1;
   return (
-    <div>
+    <div id="studio-result-step" className="studio-render-actions">
       <p className="text-primary text-sm">
-        03 / {zh ? '确认与生成' : 'PLACE & TRY ON'}
+        04 / {zh ? '真实结果' : 'REAL RESULT'}
       </p>
-      <h2 className="mt-2 text-2xl">
-        {zh ? '让图案融入皮肤' : 'Make it feel real'}
-      </h2>
-      <p className="text-muted-foreground mt-3 text-base leading-7">
-        {zh
-          ? '先在照片上确认位置、大小和角度。AI 将参考你的摆放，生成一张真实试戴效果。'
-          : 'Confirm placement, size and angle on your photo. AI uses your placement to create one realistic tattoo try-on.'}
-      </p>
+      <div className="mt-2 flex items-center justify-between gap-2">
+        <h2 className="text-2xl">
+          {zh ? '让图案融入皮肤' : 'Make it feel real'}
+        </h2>
+        <StepHelp label={zh ? '真实试戴说明' : 'About real try-ons'}>
+          {zh
+            ? 'AI参考你在照片上的摆放生成一张真实试戴。点击生成即确认当前摆放并扣费；明确生成失败会退回本次积分。AI可能改变细节，请对比原图检查。'
+            : 'AI uses your placement to generate one realistic try-on. Generating confirms your placement and charges the displayed credits. Confirmed generation failures return this operation’s credits. Compare with the original to check altered details.'}
+        </StepHelp>
+      </div>
       <label className="mt-4 block">
         {zh ? '结果分辨率' : 'Result resolution'}
         <select
@@ -303,7 +328,7 @@ export function StudioRender({
         </select>
       </label>
       <button
-        className={`${button} border-primary bg-primary text-primary-foreground mt-4 w-full`}
+        className={`${button} border-primary bg-primary text-primary-foreground mt-4 w-full ${current ? 'studio-current-action' : ''}`}
         disabled={!ready || busy || pending}
         onClick={onRender}
       >
@@ -311,13 +336,27 @@ export function StudioRender({
           ? `生成真实试戴 · ${cost} credit${cost > 1 ? 's' : ''}`
           : `Generate real try-on · ${cost} credit${cost > 1 ? 's' : ''}`}
       </button>
-      <p className="text-muted-foreground mt-3 text-sm leading-6">
+      <p className="text-muted-foreground mt-3 text-sm">
         {zh
-          ? '确认提交时扣费，明确生成失败自动退回本次积分；不会重复生成四个部位。'
-          : 'Credits are charged on submission and returned on confirmed generation failure. Each task creates one try-on.'}
+          ? '单张试戴，设计生成另行计费。'
+          : 'One try-on. Design generation is charged separately.'}
       </p>
+      {showHint && (
+        <StepHint locale={locale} onDismiss={onDismissHint}>
+          {hasResult
+            ? zh
+              ? '结果已保存。对比原图、手动摆放和AI结果，或下载图片。'
+              : 'Your result is saved. Compare the original, placement and AI result, or download it.'
+            : zh
+              ? '确认照片上的位置和大小后，点击生成。只会按按钮所示消耗本次积分。'
+              : 'Happy with the placement? Generate one try-on for the credits shown on the button.'}
+        </StepHint>
+      )}
       {hasResult && (
-        <button className={`${button} mt-4 w-full`} onClick={onDownload}>
+        <button
+          className={`${button} mt-4 w-full ${current ? 'studio-current-action' : ''}`}
+          onClick={onDownload}
+        >
           {zh ? '下载 AI 结果' : 'Download AI result'}
         </button>
       )}
