@@ -49,6 +49,14 @@ const safeErrorTypes = new Set([
   'APIError',
   'AggregateError',
 ]);
+// Supabase poolers return XX000 for several unrelated failures. Keep only a
+// fixed vocabulary, removing quoted values first; tenant names and credentials
+// cannot be copied into logs. Never apply this to Drizzle's SQL wrapper message.
+const poolerWords = new Set(
+  'tenant or user not found circuit breaker open too many authentication errors connection connections database server client clients password invalid failed failure timeout timed out authentication query auth credentials session transaction mode pool pooler max limit reached ssl required is are was were has been closed unavailable queue request dropped from after milliseconds seconds connect connecting unable cannot could verify sasl signature missing cached plan must change result type internal error checkout no process overloaded shutdown shutting down'.split(
+    ' '
+  )
+);
 
 const patterns: ReadonlyArray<readonly [string, RegExp]> = [
   ['pooler_session_limit', /MaxClientsInSessionMode/i],
@@ -88,6 +96,7 @@ export function reportServerFailure(
   const errorTypes = new Set<string>();
   const fields = new Set<string>();
   const locations = new Set<string>();
+  const poolerSummaries = new Set<string>();
   const seen = new Set<unknown>();
   function inspect(current: unknown, depth: number) {
     if (depth > 5 || seen.has(current)) return;
@@ -132,6 +141,20 @@ export function reportServerFailure(
         }
       }
       message = value.message;
+      if (value.code === 'XX000' && typeof message === 'string') {
+        const words =
+          message
+            .slice(0, 2048)
+            .replace(/'[^']*'|"[^"]*"|https?:\/\/\S+/g, ' ')
+            .toLowerCase()
+            .match(/[a-z]+/g) || [];
+        poolerSummaries.add(
+          words
+            .slice(0, 60)
+            .map((word) => (poolerWords.has(word) ? word : '_'))
+            .join(' ')
+        );
+      }
       inspect(value.cause, depth + 1);
       if (Array.isArray(value.errors)) inspect(value.errors, depth + 1);
     }
@@ -155,6 +178,7 @@ export function reportServerFailure(
     errorTypes: [...errorTypes],
     fields: [...fields],
     locations: [...locations],
+    poolerSummaries: [...poolerSummaries],
   });
   return requestId;
 }

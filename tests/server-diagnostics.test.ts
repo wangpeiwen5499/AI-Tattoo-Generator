@@ -22,6 +22,23 @@ it('captures standard SQLSTATE and nested aggregate driver errors without copyin
   log.mockRestore();
 });
 
+it('retains fixed pooler vocabulary while removing tenant values and credentials', () => {
+  const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+  reportServerFailure(
+    'auth.internal',
+    Object.assign(
+      new Error(
+        "Tenant or user not found: 'private-tenant' https://private.example secretlongtoken"
+      ),
+      { code: 'XX000' }
+    )
+  );
+  const text = JSON.stringify(log.mock.calls);
+  expect(text).toContain('tenant or user not found');
+  expect(text).not.toMatch(/private|secretlongtoken/);
+  log.mockRestore();
+});
+
 it('logs only allowlisted metadata, including nested driver codes', () => {
   const log = vi.spyOn(console, 'error').mockImplementation(() => {});
   const error = Object.assign(
