@@ -2,6 +2,26 @@ import { reportServerFailure, safeAuthLogger } from '@/server/diagnostics';
 import { createLogger } from '@better-auth/core/env';
 import { expect, it, vi } from 'vitest';
 
+it('captures standard SQLSTATE and nested aggregate driver errors without copying payloads', () => {
+  const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+  reportServerFailure(
+    'auth.internal',
+    new Error('private SQL', {
+      cause: new AggregateError([
+        Object.assign(new Error('private query'), { code: 'XX000' }),
+        Object.assign(new Error('private parameter'), {
+          code: 'UNDEFINED_VALUE',
+        }),
+      ]),
+    })
+  );
+  const text = JSON.stringify(log.mock.calls);
+  expect(text).toContain('XX000');
+  expect(text).toContain('UNDEFINED_VALUE');
+  expect(text).not.toContain('private');
+  log.mockRestore();
+});
+
 it('logs only allowlisted metadata, including nested driver codes', () => {
   const log = vi.spyOn(console, 'error').mockImplementation(() => {});
   const error = Object.assign(

@@ -25,6 +25,17 @@ const safeCodes = new Set([
   'CONNECT_TIMEOUT',
   'CONNECTION_CLOSED',
   'CONNECTION_ENDED',
+  'CONNECTION_DESTROYED',
+  'UNDEFINED_VALUE',
+  'UNSAFE_TRANSACTION',
+  'SASL_SIGNATURE_MISMATCH',
+  'COPY_IN_PROGRESS',
+  'MAX_PARAMETERS_EXCEEDED',
+  'NOT_TAGGED_CALL',
+  'ENETUNREACH',
+  'EHOSTUNREACH',
+  'EPIPE',
+  'ERR_SOCKET_CLOSED',
 ]);
 
 // Only fixed classifications leave this function. Message text is inspected in
@@ -36,6 +47,7 @@ const safeErrorTypes = new Set([
   'PostgresError',
   'DrizzleQueryError',
   'APIError',
+  'AggregateError',
 ]);
 
 const patterns: ReadonlyArray<readonly [string, RegExp]> = [
@@ -92,8 +104,13 @@ export function reportServerFailure(
         code?: unknown;
         cause?: unknown;
         message?: unknown;
+        errors?: unknown;
       };
-      if (typeof value.code === 'string' && safeCodes.has(value.code))
+      // SQLSTATE is a public five-character protocol identifier, never a value.
+      if (
+        typeof value.code === 'string' &&
+        (safeCodes.has(value.code) || /^[0-9A-Z]{5}$/.test(value.code))
+      )
         codes.add(value.code);
       if (typeof value.name === 'string' && safeErrorTypes.has(value.name))
         errorTypes.add(value.name);
@@ -116,6 +133,7 @@ export function reportServerFailure(
       }
       message = value.message;
       inspect(value.cause, depth + 1);
+      if (Array.isArray(value.errors)) inspect(value.errors, depth + 1);
     }
     if (typeof message === 'string') {
       const bounded = message.slice(0, 8192);
