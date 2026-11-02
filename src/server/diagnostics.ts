@@ -91,6 +91,22 @@ export function reportServerFailure(
   error: unknown,
   requestId: string = randomUUID()
 ) {
+  let databaseTarget:
+    | { kind: string; port: string; max: number; customSizing: boolean }
+    | undefined;
+  try {
+    const target = new URL(process.env.DATABASE_URL || '');
+    databaseTarget = {
+      kind: target.hostname.endsWith('.pooler.supabase.com')
+        ? 'supabase-pooler'
+        : 'postgres',
+      port: target.port || '5432',
+      max: Number(process.env.DB_MAX_CONNECTIONS) || 1,
+      customSizing: process.env.DB_SINGLETON_ENABLED === 'true',
+    };
+  } catch {
+    /* No URL, username or password is emitted. */
+  }
   const codes = new Set<string>();
   const classifications = new Set<string>();
   const errorTypes = new Set<string>();
@@ -179,6 +195,7 @@ export function reportServerFailure(
     fields: [...fields],
     locations: [...locations],
     poolerSummaries: [...poolerSummaries],
+    databaseTarget,
   });
   return requestId;
 }
