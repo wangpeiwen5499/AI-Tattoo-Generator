@@ -465,9 +465,19 @@ export function StudioRender({
           {zh ? '让图案融入皮肤' : 'Make it feel real'}
         </h2>
         <StepHelp label={zh ? '真实试戴说明' : 'About real try-ons'}>
-          {zh
-            ? 'AI参考你在照片上的摆放生成一张真实试戴。点击生成即确认当前摆放并扣费；明确生成失败会退回本次积分。AI可能改变细节，请对比原图检查。'
-            : 'AI uses your placement to generate one realistic try-on. Generating confirms your placement and charges the displayed credits. Confirmed generation failures return this operation’s credits. Compare with the original to check altered details.'}
+          <p>
+            {zh
+              ? 'AI参考你在照片上的摆放生成一张真实试戴。点击生成即确认当前摆放并扣费；明确生成失败会退回本次积分。AI可能改变细节，请对比原图检查。'
+              : 'AI uses your placement to generate one realistic try-on. Generating confirms your placement and charges the displayed credits. Confirmed generation failures return this operation’s credits. Compare with the original to check altered details.'}
+          </p>
+          <p className="mt-3">
+            {zh
+              ? '保存图案或提交试戴时会上传图片，生成的设计和结果保存在账户中。离开会清空未提交编辑，可在步骤1手动保存本地草稿7天；登录往返时临时保留30分钟。手动摆放免费，设计和真实试戴分别计费。'
+              : 'Images are uploaded when a design is saved or a try-on is submitted. Generated designs and results are saved to your account. Leaving clears unsubmitted edits unless you explicitly save a local draft in step 1 (7 days). Login handoffs last 30 minutes. Manual placement is free; designs and try-ons are charged separately.'}
+          </p>
+          <Link href="/privacy-policy" className="mt-3 inline-block underline">
+            {zh ? '照片隐私政策' : 'Photo privacy policy'}
+          </Link>
         </StepHelp>
       </div>
       <label className="mt-4 block">

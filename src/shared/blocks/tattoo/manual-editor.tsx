@@ -1350,17 +1350,6 @@ export function ManualEditor({
               disabled={busy || !photo || !design}
               onOpen={() => visitStep(4)}
             >
-              <div className="text-muted-foreground flex items-center justify-between gap-2 text-sm">
-                <span>{t('Saving & photo privacy', '保存与照片隐私')}</span>
-                <StepHelp
-                  label={t('About saving and privacy', '保存与隐私说明')}
-                >
-                  {t(
-                    'Images are uploaded when a design is saved or a try-on is submitted. Generated designs and results are saved to your account. Leaving clears unsubmitted edits unless you explicitly save a local draft in step 1 (7 days). Login handoffs last 30 minutes. Manual placement is free; designs and try-ons are charged separately.',
-                    '保存图案或提交试戴时会上传图片，生成的设计和结果保存在账户中。离开会清空未提交编辑，可在步骤1手动保存本地草稿7天；登录往返时临时保留30分钟。手动摆放免费，设计和真实试戴分别计费。'
-                  )}
-                </StepHelp>
-              </div>
               <StudioRender
                 locale={locale}
                 resolution={resolution}
