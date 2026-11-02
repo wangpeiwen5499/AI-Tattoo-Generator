@@ -1,11 +1,35 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale } from 'next-intl';
 
-/** Delete button for account library records; the server re-verifies ownership. */
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from '@/shared/components/ui/dialog';
+
+const buttonClass =
+  'inline-flex min-h-11 items-center rounded-full border px-4 text-sm disabled:opacity-50';
+const subscribeToHydration = () => () => {};
+export function LocalDate({ value }: { value: string }) {
+  const locale = useLocale();
+  const hydrated = useSyncExternalStore(
+    subscribeToHydration,
+    () => true,
+    () => false
+  );
+  const local = hydrated
+    ? new Date(value).toLocaleString(locale === 'zh' ? 'zh-CN' : 'en-US')
+    : undefined;
+  return (
+    <time dateTime={value}>
+      {local ?? `${value.slice(0, 16).replace('T', ' ')} UTC`}
+    </time>
+  );
+}
 export function DeleteRecordButton({
   collection,
   id,
@@ -17,61 +41,175 @@ export function DeleteRecordButton({
   label: string;
   confirmLabel: string;
 }) {
-  const t = useTranslations('common');
-  const zh = useLocale() === 'zh';
-  const router = useRouter();
-  const [confirming, setConfirming] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
+  const zh = useLocale() === 'zh',
+    router = useRouter();
+  const [open, setOpen] = useState(false),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState('');
+  async function remove() {
+    setBusy(true);
+    setError('');
+    try {
+      const response = await fetch(
+        `/api/studio?collection=${collection}&id=${encodeURIComponent(id)}`,
+        { method: 'DELETE' }
+      );
+      if (!response.ok)
+        throw new Error(
+          zh ? '删除失败，请重试。' : 'Could not delete. Please try again.'
+        );
+      setOpen(false);
+      router.refresh();
+    } catch {
+      setError(
+        zh ? '删除失败，请重试。' : 'Could not delete. Please try again.'
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
   return (
-    <span>
+    <>
       <button
         type="button"
-        disabled={busy}
-        className="text-muted-foreground hover:text-destructive focus-visible:outline-primary inline-flex min-h-11 cursor-pointer items-center rounded-full border px-4 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 disabled:cursor-not-allowed disabled:opacity-50"
-        aria-busy={busy}
-        onClick={async () => {
-          if (!confirming) {
-            setConfirming(true);
-            return;
-          }
-          setBusy(true);
+        className={buttonClass}
+        onClick={() => {
           setError('');
-          try {
-            const response = await fetch(
-              `/api/studio?collection=${collection}&id=${encodeURIComponent(id)}`,
-              { method: 'DELETE' }
-            );
-            if (!response.ok) {
-              const data = await response.json().catch(() => ({}));
-              throw new Error(data.error || t('deleteFailed'));
-            }
-            router.refresh();
-          } catch (reason) {
-            setError(reason instanceof Error ? reason.message : '');
-            setConfirming(false);
-          } finally {
-            setBusy(false);
-          }
+          setOpen(true);
         }}
-        onBlur={() => setConfirming(false)}
       >
-        {busy && (
-          <Loader2 className="mr-2 size-4 animate-spin" aria-hidden="true" />
-        )}
-        {busy
-          ? zh
-            ? '正在删除…'
-            : 'Deleting…'
-          : confirming
-            ? confirmLabel
-            : label}
+        {label}
       </button>
-      {error && (
-        <span className="text-destructive ml-2 text-xs" role="alert">
-          {error}
-        </span>
-      )}
-    </span>
+      <Dialog
+        open={open}
+        onOpenChange={(next) => {
+          if (!busy) setOpen(next);
+        }}
+      >
+        <DialogContent>
+          <DialogTitle>
+            {zh ? '删除这条记录？' : 'Delete this record?'}
+          </DialogTitle>
+          <DialogDescription>
+            {zh
+              ? '删除后将从账户图库中移除，无法撤销。'
+              : 'This removes the record from your account library and cannot be undone.'}
+          </DialogDescription>
+          {error && <p role="alert">{error}</p>}
+          <div className="flex gap-3">
+            <button
+              className={buttonClass}
+              disabled={busy}
+              onClick={() => setOpen(false)}
+            >
+              {zh ? '取消' : 'Cancel'}
+            </button>
+            <button className={buttonClass} disabled={busy} onClick={remove}>
+              {busy ? (zh ? '正在删除…' : 'Deleting…') : confirmLabel}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+export function RenameRecordButton({
+  collection,
+  id,
+  name,
+}: {
+  collection: 'designs' | 'history';
+  id: string;
+  name: string;
+}) {
+  const zh = useLocale() === 'zh',
+    router = useRouter();
+  const [open, setOpen] = useState(false),
+    [value, setValue] = useState(name),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState('');
+  return (
+    <>
+      <button
+        className={buttonClass}
+        onClick={() => {
+          setValue(name);
+          setError('');
+          setOpen(true);
+        }}
+      >
+        {zh ? '重命名' : 'Rename'}
+      </button>
+      <Dialog
+        open={open}
+        onOpenChange={(next) => {
+          if (!busy) setOpen(next);
+        }}
+      >
+        <DialogContent>
+          <DialogTitle>{zh ? '重命名记录' : 'Rename record'}</DialogTitle>
+          <DialogDescription>
+            {zh
+              ? '为记录设置一个便于查找的名称。'
+              : 'Choose a name that makes this record easy to find.'}
+          </DialogDescription>
+          <form
+            onSubmit={async (event) => {
+              event.preventDefault();
+              setBusy(true);
+              setError('');
+              try {
+                const response = await fetch('/api/studio', {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ collection, id, name: value.trim() }),
+                });
+                if (!response.ok)
+                  throw new Error(
+                    zh
+                      ? '保存失败，请重试。'
+                      : 'Could not save. Please try again.'
+                  );
+                setOpen(false);
+                router.refresh();
+              } catch {
+                setError(
+                  zh
+                    ? '保存失败，请重试。'
+                    : 'Could not save. Please try again.'
+                );
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            <label className="block">
+              {zh ? '名称' : 'Name'}
+              <input
+                className="mt-2 w-full rounded border p-3"
+                value={value}
+                onChange={(event) => setValue(event.target.value)}
+                required
+                maxLength={100}
+              />
+            </label>
+            {error && <p role="alert">{error}</p>}
+            <div className="mt-4 flex gap-3">
+              <button
+                type="button"
+                className={buttonClass}
+                disabled={busy}
+                onClick={() => setOpen(false)}
+              >
+                {zh ? '取消' : 'Cancel'}
+              </button>
+              <button className={buttonClass} disabled={busy || !value.trim()}>
+                {busy ? (zh ? '保存中…' : 'Saving…') : zh ? '保存' : 'Save'}
+              </button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

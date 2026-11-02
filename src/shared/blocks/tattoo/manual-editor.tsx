@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useStudio } from '@/hooks/use-studio';
+import { useUnsavedStudio } from '@/hooks/use-unsaved-studio';
 import {
   canvasBlob,
   loadDesign,
@@ -31,11 +32,13 @@ import {
   removeLoginDraft,
   saveLoginDraft,
   studioLoginUrl,
+  type StudioLoginDraft,
 } from '@/lib/studio-login-draft';
 import { toast } from 'sonner';
 
 import { Link } from '@/core/i18n/navigation';
 
+import { LocalStudioDraft } from './local-studio-draft';
 import { OperationStatus } from './operation-status';
 import { StudioAccount, StudioDesigns, StudioRender } from './studio-actions';
 import {
@@ -53,15 +56,26 @@ export function ManualEditor({
   locale,
   initialDesignId,
   initialHistoryId,
+  initialPrompt = '',
 }: {
   locale: string;
   initialDesignId?: string;
   initialHistoryId?: string;
+  initialPrompt?: string;
 }) {
   const zh = locale === 'zh';
   const t = useCallback((en: string, cn: string) => (zh ? cn : en), [zh]);
-  const [photo, setPhoto] = useState<HTMLCanvasElement | null>(null);
-  const [design, setDesign] = useState<HTMLImageElement | null>(null);
+  const [imageVersion, setImageVersion] = useState(0);
+  const [photo, setPhotoState] = useState<HTMLCanvasElement | null>(null);
+  const [design, setDesignState] = useState<HTMLImageElement | null>(null);
+  const setPhoto = useCallback((value: HTMLCanvasElement | null) => {
+    setPhotoState(value);
+    setImageVersion((v) => v + 1);
+  }, []);
+  const setDesign = useCallback((value: HTMLImageElement | null) => {
+    setDesignState(value);
+    setImageVersion((v) => v + 1);
+  }, []);
   const [placement, setPlacement] = useState(defaultPlacement);
   const [original, setOriginal] = useState(false);
   const [menu, setMenu] = useState(false);
@@ -73,7 +87,9 @@ export function ManualEditor({
     loading ||
     studio.busy ||
     (!!studio.result && studio.result !== loadedResult);
-  const [prompt, setPrompt] = useState('');
+  const [prompt, setPrompt] = useState(
+    initialDesignId || initialHistoryId ? '' : initialPrompt.slice(0, 1000)
+  );
   const [resolution, setResolution] = useState('1K');
   const [designRecord, setDesignRecord] = useState<StudioRecord | null>(null);
   const [aiSelected, setAiSelected] = useState(false);
@@ -103,7 +119,9 @@ export function ManualEditor({
     task: studio.task?.kind,
     pending: studio.pending?.kind,
   });
-  const [selectedStep, setSelectedStep] = useState<number | null>(null);
+  const [selectedStep, setSelectedStep] = useState<number | null>(
+    initialPrompt && !initialDesignId && !initialHistoryId ? 2 : null
+  );
   const currentStep =
     (!jobKind &&
       selectedStep &&
@@ -211,6 +229,62 @@ export function ManualEditor({
     };
   }, [initialDesignId, initialHistoryId, t]);
 
+  const draftKey = JSON.stringify([
+    imageVersion,
+    prompt,
+    resolution,
+    placement,
+    photo?.width,
+    photo?.height,
+    design?.src,
+  ]);
+  useUnsavedStudio(
+    !!(photo || design || prompt.trim()) &&
+      !renderResult &&
+      !historyMode &&
+      !busy,
+    t(
+      'Leaving clears this editor. Save a local draft first if you want to keep your setup. Leave now?',
+      '离开会清空当前编辑。需要保留时请先保存本地草稿。仍要离开吗？'
+    )
+  );
+  async function captureDraft(): Promise<Omit<StudioLoginDraft, 'expires'>> {
+    return {
+      photo: photo ? await canvasBlob(photo) : null,
+      design: design ? await canvasBlob(photoCanvas(design)) : null,
+      placement: { ...placement },
+      prompt,
+      resolution,
+      action: currentStep === 4 ? 'render' : 'design',
+    };
+  }
+  async function restoreDraft(draft: StudioLoginDraft) {
+    const [nextPhoto, nextDesign] = await Promise.all([
+      draft.photo
+        ? loadPhoto(
+            new File([draft.photo], 'photo.png', { type: draft.photo.type })
+          )
+        : null,
+      draft.design
+        ? loadDesign(
+            new File([draft.design], 'design.png', { type: draft.design.type })
+          )
+        : null,
+    ]);
+    revision.current++;
+    setPhoto(nextPhoto);
+    setDesign(nextDesign);
+    setPlacement(constrainPlacement(draft.placement));
+    setPrompt(draft.prompt);
+    setResolution(draft.resolution);
+    setDesignRecord(null);
+    setRenderResult(null);
+    setAiSelected(false);
+    setOriginal(false);
+    setSelectedStep(
+      draft.action === 'render' && nextPhoto && nextDesign ? 4 : 2
+    );
+  }
   async function signInWithSetup(action: 'design' | 'render') {
     if (redirecting.current) return;
     redirecting.current = true;
@@ -375,7 +449,9 @@ export function ManualEditor({
     const ticket = ++revision.current;
     (async () => {
       const { records } = await studioClient.collection(
-        initialDesignId ? 'designs' : 'history'
+        initialDesignId ? 'designs' : 'history',
+        undefined,
+        initialDesignId || initialHistoryId
       );
       const record = records.find(
         (record) => record.id === (initialDesignId || initialHistoryId)
@@ -552,7 +628,17 @@ export function ManualEditor({
   }
   function renderTryOn() {
     if (!photo || !design || busy) return;
-    if (!studio.capabilities?.signedIn) {
+    if (!studio.capabilities) {
+      studio.access();
+      toast.info(
+        t(
+          'Connecting to your account. Retry the connection above if needed.',
+          '正在连接账户，如有异常请点击上方重试。'
+        )
+      );
+      return;
+    }
+    if (!studio.capabilities.signedIn) {
       void signInWithSetup('render');
       return;
     }
@@ -1079,8 +1165,32 @@ export function ManualEditor({
                 <p className="text-muted-foreground mt-3 text-sm">
                   PNG / JPEG / WebP · {t('up to 20 MB', '最大 20MB')}
                 </p>
+                <p className="text-muted-foreground mt-3 text-sm leading-6">
+                  {t(
+                    'Choosing a photo and placing a design stay in this browser. Saving a design or submitting a try-on uploads images for processing. Anyone with a shared image link may view it.',
+                    '选择照片和手动摆放仅在本浏览器内进行；保存图案或提交试戴时会上传图片处理。持有分享图片链接的人可能查看图片。'
+                  )}{' '}
+                  <Link href="/privacy-policy" className="underline">
+                    {t('Photo privacy', '照片隐私')}
+                  </Link>
+                </p>
               </div>
             </StudioPanel>
+            <details className="my-3 rounded-xl border p-3">
+              <summary className="cursor-pointer text-sm underline">
+                {t('Save or restore a local draft', '保存或恢复本地草稿')}
+              </summary>
+              <div className="mt-3">
+                <LocalStudioDraft
+                  locale={locale}
+                  disabled={busy}
+                  hasContent={!!(photo || design || prompt.trim())}
+                  capture={captureDraft}
+                  restore={restoreDraft}
+                  snapshotKey={draftKey}
+                />
+              </div>
+            </details>
             {loading && !historyMode && (
               <OperationStatus locale={locale} phase="processing" />
             )}
@@ -1122,7 +1232,17 @@ export function ManualEditor({
                 }
                 onGenerate={() => {
                   setActionKind('design');
-                  if (!studio.capabilities?.signedIn) {
+                  if (!studio.capabilities) {
+                    studio.access();
+                    toast.info(
+                      t(
+                        'Connecting to your account. Retry the connection above if needed.',
+                        '正在连接账户，如有异常请点击上方重试。'
+                      )
+                    );
+                    return;
+                  }
+                  if (!studio.capabilities.signedIn) {
                     void signInWithSetup('design');
                     return;
                   }
@@ -1236,8 +1356,8 @@ export function ManualEditor({
                   label={t('About saving and privacy', '保存与隐私说明')}
                 >
                   {t(
-                    'Images are uploaded when you save a design or submit a try-on. Generated designs and results are saved to your account. Unsubmitted edits clear when you leave or refresh, except for a temporary 30-minute sign-in handoff. Manual placement is free; new designs and AI try-ons are charged separately.',
-                    '保存设计或提交试戴时会上传图片，生成的设计和结果保存在账户中。未提交的摆放在离开或刷新后清空；登录往返时临时保留30分钟。手动摆放免费，新设计和真实试戴分别计费。'
+                    'Images are uploaded when a design is saved or a try-on is submitted. Generated designs and results are saved to your account. Leaving clears unsubmitted edits unless you explicitly save a local draft in step 1 (7 days). Login handoffs last 30 minutes. Manual placement is free; designs and try-ons are charged separately.',
+                    '保存图案或提交试戴时会上传图片，生成的设计和结果保存在账户中。离开会清空未提交编辑，可在步骤1手动保存本地草稿7天；登录往返时临时保留30分钟。手动摆放免费，设计和真实试戴分别计费。'
                   )}
                 </StepHelp>
               </div>
@@ -1271,6 +1391,32 @@ export function ManualEditor({
           </div>
         </aside>
       </div>
+      {!historyMode &&
+        photo &&
+        design &&
+        (currentStep === 3 || currentStep === 4) &&
+        !view && (
+          <div
+            className="studio-mobile-action"
+            aria-label={t('Quick studio action', '工作室快捷操作')}
+          >
+            <span className="text-muted-foreground text-xs">
+              {currentStep === 3
+                ? t('Placement is free', '摆放免费')
+                : `${resolution} · ${resolution === '4K' ? 3 : resolution === '2K' ? 2 : 1} ${zh ? '积分' : resolution === '1K' ? 'credit' : 'credits'}`}
+            </span>
+            <button
+              type="button"
+              className={`${button} bg-primary text-primary-foreground`}
+              disabled={busy || !!studio.pending}
+              onClick={() => (currentStep === 3 ? visitStep(4) : renderTryOn())}
+            >
+              {currentStep === 3
+                ? t('Continue to quality', '继续选择画质')
+                : t('Generate selected try-on', '按所选画质生成')}
+            </button>
+          </div>
+        )}
       <input
         ref={photoInput}
         aria-label={t('Photo file', '照片文件')}

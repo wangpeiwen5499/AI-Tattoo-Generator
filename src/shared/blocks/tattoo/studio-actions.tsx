@@ -29,6 +29,7 @@ export function StudioAccount({
 }) {
   const zh = locale === 'zh';
   const caps = studio.capabilities;
+  const [reconnecting, setReconnecting] = useState(false);
   const notice = useRef<HTMLDivElement>(null);
   const signIn = useRef(onSignIn);
   useEffect(() => {
@@ -87,12 +88,38 @@ export function StudioAccount({
           </button>
         </div>
       )}
-      {studio.error && studio.gate !== 401 && !studio.busy && (
-        <p role="status" className="text-primary w-full">
-          {studio.error}
-        </p>
-      )}
-      {studio.gate && studio.gate !== 401 && (
+      {(studio.error || studio.gate === 503) &&
+        studio.gate !== 401 &&
+        !studio.busy && (
+          <p role="status" className="text-primary w-full">
+            {studio.error ||
+              (zh
+                ? '暂时无法读取账户，请重试。'
+                : 'Could not read your account. Please retry.')}
+            <button
+              type="button"
+              className={`${button} ml-3`}
+              disabled={reconnecting}
+              onClick={async () => {
+                setReconnecting(true);
+                try {
+                  await studio.refresh();
+                } catch {
+                  toast.error(
+                    zh
+                      ? '连接失败，请稍后重试。'
+                      : 'Connection failed. Please retry shortly.'
+                  );
+                } finally {
+                  setReconnecting(false);
+                }
+              }}
+            >
+              {zh ? '重试连接' : 'Retry connection'}
+            </button>
+          </p>
+        )}
+      {studio.gate && studio.gate !== 401 && studio.gate !== 503 && (
         <div className="border-primary/30 w-full rounded-xl border p-4">
           <p>
             {studio.gate === 401
@@ -163,6 +190,7 @@ export function StudioDesigns({
   const zh = locale === 'zh';
   const working = busy && activeOperation === 'design';
   const [libraryPage, setLibraryPage] = useState(0);
+  const [retry, setRetry] = useState(0);
   const [preview, setPreview] = useState<number | null>(null);
   const [libraryLoading, setLibraryLoading] = useState(false);
   const [open, setOpen] = useState(false),
@@ -186,7 +214,7 @@ export function StudioDesigns({
         }
       });
     return () => abort.abort();
-  }, [open, studio.capabilities?.signedIn, studio.result]);
+  }, [open, studio.capabilities?.signedIn, studio.result, retry]);
   return (
     <div
       id="studio-design-step"
@@ -273,7 +301,7 @@ export function StudioDesigns({
               ? '正在生成纹身图案…'
               : 'Generating design…'
             : zh
-              ? '生成纹身图案 · 1 credit'
+              ? '生成纹身图案 · 1 积分'
               : 'Generate design · 1 credit'}
         </button>
         {working && (
@@ -285,7 +313,22 @@ export function StudioDesigns({
           <p className="mb-3">
             {zh ? '选择账户中的图案' : 'Choose from your account'}
           </p>
-          {error && <p role="alert">{error}</p>}
+          {error && (
+            <div>
+              <p role="alert">{error}</p>
+              <button
+                type="button"
+                className={button}
+                onClick={() => {
+                  setLibraryLoading(true);
+                  setError('');
+                  setRetry((value) => value + 1);
+                }}
+              >
+                {zh ? '重试' : 'Retry'}
+              </button>
+            </div>
+          )}
           {libraryLoading && (
             <OperationStatus locale={locale} phase="processing" />
           )}
@@ -438,7 +481,7 @@ export function StudioRender({
         >
           {['1K', '2K', '4K'].map((value, i) => (
             <option key={value} value={value}>
-              {value} · {i + 1} credit{i ? 's' : ''}
+              {value} · {i + 1} {zh ? '积分' : `credit${i ? 's' : ''}`}
             </option>
           ))}
         </select>
@@ -457,10 +500,18 @@ export function StudioRender({
         )}
         {working
           ? zh
-            ? '正在准备真实试戴…'
-            : 'Preparing try-on…'
+            ? phase === 'uploading' || phase === 'submitting'
+              ? '正在准备真实试戴…'
+              : phase === 'loading'
+                ? '正在保存并打开结果…'
+                : '正在生成真实试戴…'
+            : phase === 'uploading' || phase === 'submitting'
+              ? 'Preparing try-on…'
+              : phase === 'loading'
+                ? 'Opening saved result…'
+                : 'Generating try-on…'
           : zh
-            ? `生成真实试戴 · ${cost} credit${cost > 1 ? 's' : ''}`
+            ? `生成真实试戴 · ${cost} 积分`
             : `Generate real try-on · ${cost} credit${cost > 1 ? 's' : ''}`}
       </button>
       {working && <OperationStatus locale={locale} phase={phase} />}

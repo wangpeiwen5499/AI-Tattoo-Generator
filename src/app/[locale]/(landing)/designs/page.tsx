@@ -1,9 +1,15 @@
+import { studioCollectionPage } from '@/server/studio/library';
 import { accountStudioAllowed } from '@/server/studio/policy';
-import { studioCollection } from '@/server/studio/service';
 import { setRequestLocale } from 'next-intl/server';
 
 import { Link } from '@/core/i18n/navigation';
-import { DeleteRecordButton } from '@/shared/blocks/tattoo/account-library-pages';
+import {
+  DeleteRecordButton,
+  LocalDate,
+  RenameRecordButton,
+} from '@/shared/blocks/tattoo/account-library-pages';
+import { LibraryImage } from '@/shared/blocks/tattoo/library-image';
+import { LibraryNavigation } from '@/shared/blocks/tattoo/library-navigation';
 import { getMetadata } from '@/shared/lib/seo';
 import { getUserInfo } from '@/shared/models/user';
 
@@ -25,8 +31,10 @@ const SOURCE_LABELS = {
 
 export default async function DesignsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<{ page?: string; q?: string; source?: string }>;
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
@@ -36,7 +44,26 @@ export default async function DesignsPage({
     return <AccountLibraryUnavailable locale={locale} kind="designs" />;
   }
 
-  const user = await getUserInfo().catch(() => undefined);
+  let user;
+  try {
+    user = await getUserInfo();
+  } catch {
+    return (
+      <main className="container pt-28 pb-20">
+        <h1 className="text-4xl font-medium">
+          {zh ? '账户暂时不可用' : 'Account temporarily unavailable'}
+        </h1>
+        <p className="mt-5" role="alert">
+          {zh
+            ? '无法验证账户，请刷新页面重试。'
+            : 'Could not verify your account. Refresh this page to retry.'}
+        </p>
+        <Link href="/designs" className="mt-5 inline-block underline">
+          {zh ? '重试' : 'Retry'}
+        </Link>
+      </main>
+    );
+  }
 
   if (!user) {
     return (
@@ -64,9 +91,19 @@ export default async function DesignsPage({
   }
 
   let unavailable: string | null = null;
-  let records: Awaited<ReturnType<typeof studioCollection>> = [];
+  const query = (await searchParams) || {};
+  let listing: Awaited<ReturnType<typeof studioCollectionPage>> = {
+    records: [],
+    total: 0,
+    page: 1,
+    pages: 1,
+    q: query.q || '',
+    source: query.source || '',
+  };
+  let records: typeof listing.records = [];
   try {
-    records = await studioCollection(user.id, 'designs');
+    listing = await studioCollectionPage(user.id, 'designs', query);
+    records = listing.records;
   } catch {
     unavailable = zh
       ? '暂时无法读取账户图库，请稍后刷新重试。'
@@ -84,6 +121,9 @@ export default async function DesignsPage({
             ? '保存到账户的设计可跨设备复用：在工作室继续摆放，或下载留存。'
             : 'Designs saved to your account are reusable across devices: keep placing them in the studio or download a copy.'}
         </p>
+        {!unavailable && (
+          <LibraryNavigation kind="designs" locale={locale} listing={listing} />
+        )}
         {unavailable ? (
           <p
             className="bg-muted text-muted-foreground mt-8 rounded-xl border p-5"
@@ -91,7 +131,8 @@ export default async function DesignsPage({
           >
             {unavailable}
           </p>
-        ) : records.length === 0 ? (
+        ) : records.length === 0 &&
+          (listing.q || listing.source) ? null : records.length === 0 ? (
           <p className="bg-muted text-muted-foreground mt-8 rounded-xl border p-5">
             {zh
               ? '还没有保存的图案。上传或生成一个设计后，它会自动出现在这里。'
@@ -104,24 +145,22 @@ export default async function DesignsPage({
                 key={record.id}
                 className="bg-card flex flex-col rounded-2xl border p-4"
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <LibraryImage
                   src={`/api/studio?asset=${encodeURIComponent(record.image)}`}
                   alt={record.name || (zh ? '保存的图案' : 'Saved design')}
                   className="bg-muted h-48 w-full rounded-xl object-contain"
-                  loading="lazy"
                 />
                 <h2 className="mt-4 font-medium">
-                  {record.name || (zh ? '未命名图案' : 'Untitled design')}
+                  {record.name ||
+                    record.prompt?.slice(0, 60) ||
+                    (zh ? '未命名图案' : 'Untitled design')}
                 </h2>
                 <p className="text-muted-foreground mt-1 text-sm">
                   {SOURCE_LABELS[
                     (record.source as keyof typeof SOURCE_LABELS) || 'uploaded'
                   ]?.[zh ? 'zh' : 'en'] ?? record.source}
                   {' · '}
-                  {new Date(record.createdAt).toLocaleString(
-                    zh ? 'zh-CN' : 'en-US'
-                  )}
+                  <LocalDate value={new Date(record.createdAt).toISOString()} />
                 </p>
                 {record.prompt ? (
                   <p
@@ -145,6 +184,15 @@ export default async function DesignsPage({
                   >
                     {zh ? '下载' : 'Download'}
                   </a>
+                  <RenameRecordButton
+                    collection="designs"
+                    id={record.id}
+                    name={
+                      record.name ||
+                      record.prompt?.slice(0, 60) ||
+                      (zh ? '未命名记录' : 'Untitled record')
+                    }
+                  />
                   <DeleteRecordButton
                     collection="designs"
                     id={record.id}

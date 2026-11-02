@@ -5,6 +5,7 @@ import { Link } from '@/core/i18n/navigation';
 import { locales } from '@/config/locale';
 import { tattooGuideSlugs } from '@/config/seo/guide-paths';
 import { getTattooGuide, getTattooGuides } from '@/config/seo/tattoo-guides';
+import { GuidePromptActions } from '@/shared/blocks/common/guide-prompt-actions';
 import { getMetadata } from '@/shared/lib/seo';
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
@@ -157,6 +158,7 @@ export default async function GuidePage({ params }: Props) {
                 <p className="text-muted-foreground mt-4 text-sm leading-6">
                   {prompt.note}
                 </p>
+                <GuidePromptActions prompt={prompt.text} zh={zh} />
               </div>
             ))}
           </div>

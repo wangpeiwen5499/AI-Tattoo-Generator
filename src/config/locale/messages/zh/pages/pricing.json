@@ -1,7 +1,7 @@
 {
   "metadata": {
     "title": "价格方案",
-    "description": "购买纹身设计与真实试戴积分。新设计 1 credit，单张 1K / 2K / 4K 试戴为 1 / 2 / 3 credits；手动摆放免费，积分永不过期。"
+    "description": "购买纹身设计与真实试戴积分。新设计 1 积分，单张 1K / 2K / 4K 试戴为 1 / 2 / 3 积分；手动摆放免费，积分永不过期。"
   },
   "messages": {
     "current_plan": "当前方案",
@@ -13,7 +13,7 @@
       "pricing": {
         "id": "pricing",
         "title": "选择积分方案",
-        "description": "新设计 1 credit；单张真实试戴 1K / 2K / 4K 为 1 / 2 / 3 credits。保存和复用设计、手动摆放免费。积分永不过期。",
+        "description": "新设计 1 积分；单张真实试戴 1K / 2K / 4K 为 1 / 2 / 3 积分。保存和复用设计、手动摆放免费。积分永不过期。",
         "groups": [
           {
             "name": "one-time",
@@ -30,12 +30,12 @@
             "currency": "USD",
             "amount": 4.99,
             "credits": 5,
-            "description": "5 credits，按需要用于设计与单张真实试戴。",
+            "description": "5 积分，按需要用于设计与单张真实试戴。",
             "features_title": "包含",
             "features": [
-              "5 credits，一次性购买",
-              "生成新图案：1 credit",
-              "单张真实试戴：1K / 2K / 4K 为 1 / 2 / 3 credits",
+              "5 积分，一次性购买",
+              "生成新图案：1 积分",
+              "单张真实试戴：1K / 2K / 4K 为 1 / 2 / 3 积分",
               "保存和复用设计、手动摆放免费",
               "积分永不过期",
               "不承诺固定图片数量，无订阅"
@@ -43,9 +43,7 @@
             "button": {
               "title": "购买入门版"
             },
-            "payment_providers": [
-              "waffo"
-            ],
+            "payment_providers": ["waffo"],
             "payment_product_id": "PROD_5GdIMzJzJlUpdrBCyuaX2x"
           },
           {
@@ -57,13 +55,13 @@
             "currency": "USD",
             "amount": 14.99,
             "credits": 20,
-            "description": "20 credits，按需要用于设计与单张真实试戴。",
+            "description": "20 积分，按需要用于设计与单张真实试戴。",
             "label": "最受欢迎",
             "features_title": "包含",
             "features": [
-              "20 credits，一次性购买",
-              "生成新图案：1 credit",
-              "单张真实试戴：1K / 2K / 4K 为 1 / 2 / 3 credits",
+              "20 积分，一次性购买",
+              "生成新图案：1 积分",
+              "单张真实试戴：1K / 2K / 4K 为 1 / 2 / 3 积分",
               "保存和复用设计、手动摆放免费",
               "积分永不过期",
               "不承诺固定图片数量，无订阅"
@@ -71,9 +69,7 @@
             "button": {
               "title": "购买热门版"
             },
-            "payment_providers": [
-              "waffo"
-            ],
+            "payment_providers": ["waffo"],
             "payment_product_id": "PROD_10hOkpFlMDiWFiqLxcWXHi"
           },
           {
@@ -85,12 +81,12 @@
             "currency": "USD",
             "amount": 29.99,
             "credits": 50,
-            "description": "50 credits，按需要用于设计与单张真实试戴。",
+            "description": "50 积分，按需要用于设计与单张真实试戴。",
             "features_title": "包含",
             "features": [
-              "50 credits，一次性购买",
-              "生成新图案：1 credit",
-              "单张真实试戴：1K / 2K / 4K 为 1 / 2 / 3 credits",
+              "50 积分，一次性购买",
+              "生成新图案：1 积分",
+              "单张真实试戴：1K / 2K / 4K 为 1 / 2 / 3 积分",
               "保存和复用设计、手动摆放免费",
               "积分永不过期",
               "不承诺固定图片数量，无订阅"
@@ -98,9 +94,7 @@
             "button": {
               "title": "购买专业版"
             },
-            "payment_providers": [
-              "waffo"
-            ],
+            "payment_providers": ["waffo"],
             "payment_product_id": "PROD_1COeqPCRSNk89LbIyHY5nC"
           }
         ]
@@ -111,11 +105,15 @@
         "items": [
           {
             "question": "可以免费试用吗？",
-            "answer": "游客可免费体验互动案例和手动摆放。注册并验证邮箱后，一次性获赠 3 credits，用于分别生成设计和真实试戴。"
+            "answer": "游客可免费体验互动案例和手动摆放。注册并验证邮箱后，一次性获赠 3 积分，用于分别生成设计和真实试戴。"
           },
           {
             "question": "什么是积分？",
-            "answer": "生成新设计消耗 1 credit；单张真实试戴 1K / 2K / 4K 分别消耗 1 / 2 / 3 credits。上传、保存、复用设计与手动摆放免费。可生成数量取决于操作与分辨率，不承诺固定套数或图片数量。"
+            "answer": "生成新设计消耗 1 积分；单张真实试戴 1K / 2K / 4K 分别消耗 1 / 2 / 3 积分。上传、保存、复用设计与手动摆放免费。可生成数量取决于操作与分辨率，不承诺固定套数或图片数量。"
+          },
+          {
+            "question": "一次完整流程需要多少积分？",
+            "answer": "生成 1 个新设计（1 积分）＋免费手动摆放＋1 张真实试戴：1K 共 2 积分，2K 共 3 积分，4K 共 4 积分。复用已有设计时，仅收取试戴费用（分别为 1、2、3 积分）。每次重新生成设计或新增试戴单独计费。例如，1 个新设计加 2 张 2K 试戴，共 1＋2＋2＝5 积分。"
           },
           {
             "question": "积分会过期吗？",

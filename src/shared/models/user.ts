@@ -1,4 +1,5 @@
 import { headers } from 'next/headers';
+import { reportServerFailure } from '@/server/diagnostics';
 import { count, desc, eq, inArray } from 'drizzle-orm';
 
 import { getAuth } from '@/core/auth';
@@ -88,12 +89,16 @@ export async function getUserCredits(userId: string) {
 }
 
 export async function getSignUser() {
-  const auth = await getAuth();
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  return session?.user;
+  try {
+    const auth = await getAuth();
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+    return session?.user;
+  } catch (error) {
+    reportServerFailure('auth.session', error);
+    throw error;
+  }
 }
 
 export async function appendUserToResult(result: any) {

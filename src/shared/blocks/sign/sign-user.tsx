@@ -122,7 +122,11 @@ export function SignUser({
             className="rounded-full border px-3 py-2 text-sm whitespace-nowrap"
             aria-label={zh ? '积分余额与购买' : 'Credit balance and packs'}
           >
-            {user.credits?.remainingCredits ?? '…'} credits
+            {user.credits?.remainingCredits === undefined
+              ? zh
+                ? '读取积分中…'
+                : 'Loading credits…'
+              : `${user.credits.remainingCredits} ${zh ? '积分' : user.credits.remainingCredits === 1 ? 'credit' : 'credits'}`}
           </Link>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

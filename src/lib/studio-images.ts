@@ -1,12 +1,15 @@
 import { photoCanvas } from './manual-images';
 import { geometryFor, type Placement } from './manual-placement';
+import { readWithRetry } from './read-retry';
 import { studioAssetUrl } from './studio-client';
 
 export async function assetImage(id: string) {
-  const image = new Image();
-  image.src = studioAssetUrl(id);
-  await image.decode();
-  return image;
+  return readWithRetry(async () => {
+    const image = new Image();
+    image.src = studioAssetUrl(id);
+    await image.decode();
+    return image;
+  });
 }
 export async function imageBlob(image: HTMLImageElement) {
   return boundedBlob(photoCanvas(image), 'image/webp');

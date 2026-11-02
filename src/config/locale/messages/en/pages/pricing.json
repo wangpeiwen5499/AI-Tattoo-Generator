@@ -43,16 +43,14 @@
             "button": {
               "title": "Get Starter"
             },
-            "payment_providers": [
-              "waffo"
-            ],
+            "payment_providers": ["waffo"],
             "payment_product_id": "PROD_5GdIMzJzJlUpdrBCyuaX2x"
           },
           {
             "product_id": "PROD_10hOkpFlMDiWFiqLxcWXHi",
             "interval": "one-time",
             "group": "one-time",
-            "title": "Most Popular",
+            "title": "Plus",
             "price": "$14.99",
             "currency": "USD",
             "amount": 14.99,
@@ -69,11 +67,9 @@
               "Flexible usage, no fixed image count or subscription"
             ],
             "button": {
-              "title": "Get Most Popular"
+              "title": "Get Plus"
             },
-            "payment_providers": [
-              "waffo"
-            ],
+            "payment_providers": ["waffo"],
             "payment_product_id": "PROD_10hOkpFlMDiWFiqLxcWXHi"
           },
           {
@@ -98,9 +94,7 @@
             "button": {
               "title": "Get Pro"
             },
-            "payment_providers": [
-              "waffo"
-            ],
+            "payment_providers": ["waffo"],
             "payment_product_id": "PROD_1COeqPCRSNk89LbIyHY5nC"
           }
         ]
@@ -116,6 +110,10 @@
           {
             "question": "What is a credit?",
             "answer": "A new tattoo design costs 1 credit. One realistic 1K / 2K / 4K try-on costs 1 / 2 / 3 credits. Uploading, saving, reusing designs and manual placement are free. Output depends on your operations and resolution; no fixed set or image count is promised."
+          },
+          {
+            "question": "How many credits does a complete workflow cost?",
+            "answer": "Generate one new design (1 credit), place it manually for free, then create one realistic try-on: 2 credits total at 1K, 3 at 2K, or 4 at 4K. Reusing an existing design costs only the try-on charge (1, 2, or 3 credits). Each additional design generation or try-on is charged separately. For example, one new design plus two 2K try-ons costs 1 + 2 + 2 = 5 credits."
           },
           {
             "question": "Do credits expire?",

@@ -5,7 +5,7 @@ import { getMetadata } from '@/shared/lib/seo';
 
 type Props = {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ design?: string; history?: string }>;
+  searchParams: Promise<{ design?: string; history?: string; prompt?: string }>;
 };
 export async function generateMetadata({ params }: Props) {
   const { locale } = await params;
@@ -40,10 +40,13 @@ export default async function StudioPage({ params, searchParams }: Props) {
         </header>
       )}
       <ManualEditor
-        key={`${query.design || ''}:${query.history || ''}`}
+        key={`${query.design || ''}:${query.history || ''}:${query.prompt || ''}`}
         locale={locale}
         initialDesignId={query.design}
         initialHistoryId={query.history}
+        initialPrompt={
+          typeof query.prompt === 'string' ? query.prompt.slice(0, 1000) : ''
+        }
       />
     </main>
   );

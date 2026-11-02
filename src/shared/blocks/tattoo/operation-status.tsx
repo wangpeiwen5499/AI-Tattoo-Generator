@@ -1,4 +1,9 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
+
+import { Link } from '@/core/i18n/navigation';
 
 export function OperationStatus({
   phase,
@@ -10,6 +15,22 @@ export function OperationStatus({
   error?: string;
 }) {
   const zh = locale === 'zh';
+  const [seconds, setSeconds] = useState(0);
+  useEffect(() => {
+    const started = Date.now();
+    const timer = setInterval(
+      () => setSeconds(Math.floor((Date.now() - started) / 1000)),
+      1000
+    );
+    return () => clearInterval(timer);
+  }, []);
+  const submitted = [
+    'queued',
+    'running',
+    'submitted',
+    'persisting',
+    'review_required',
+  ].includes(phase);
   const text =
     phase === 'uploading'
       ? zh
@@ -41,7 +62,17 @@ export function OperationStatus({
           className="mt-1 size-4 shrink-0 animate-spin motion-reduce:animate-none"
         />
       )}
-      {error || text}
+      <span>
+        {error || text}
+        {!error && submitted && (
+          <span className="mt-1 block">
+            {zh ? `已等待 ${seconds} 秒 · ` : `Elapsed ${seconds}s · `}
+            <Link href="/history" className="underline">
+              {zh ? '在历史记录查看进度' : 'View progress in history'}
+            </Link>
+          </span>
+        )}
+      </span>
     </p>
   );
 }

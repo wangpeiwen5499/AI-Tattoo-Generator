@@ -1,6 +1,7 @@
 import type { Placement } from './manual-placement';
 
-// A short-lived login handoff, not a user library. Tokens isolate browser tabs.
+// Token-scoped browser drafts. Login handoffs default to 30 minutes; explicit
+// local saves may opt into a longer retention period. This is not an account library.
 export type StudioLoginDraft = {
   photo: Blob | null;
   design: Blob | null;
@@ -37,7 +38,10 @@ async function transaction<T>(
     db.close();
   }
 }
-export async function saveLoginDraft(draft: Omit<StudioLoginDraft, 'expires'>) {
+export async function saveLoginDraft(
+  draft: Omit<StudioLoginDraft, 'expires'>,
+  retentionMs = ttl
+) {
   // Remove abandoned handoffs on the next use, without keeping a browsable library.
   await transaction('readwrite', (store) => {
     const cursor = store.openCursor();
@@ -51,7 +55,7 @@ export async function saveLoginDraft(draft: Omit<StudioLoginDraft, 'expires'>) {
   });
   const token = crypto.randomUUID();
   await transaction('readwrite', (store) =>
-    store.put({ ...draft, expires: Date.now() + ttl }, token)
+    store.put({ ...draft, expires: Date.now() + retentionMs }, token)
   );
   return token;
 }

@@ -13,3 +13,21 @@ it('maps the 50-credit package to the verified full Waffo ID in both languages',
     expect(pro.credits).toBe(50);
   }
 });
+
+it('uses a separate plan name and localized credit terminology', () => {
+  const plus = en.page.sections.pricing.items[1];
+  expect(plus.title).toBe('Plus');
+  expect(plus.label).toBe('Most Popular');
+  const visibleChinese = JSON.stringify(zh.page).replace(/"credits":\d+/g, '');
+  expect(visibleChinese).not.toMatch(/\bcredits?\b/);
+});
+
+it('explains complete design and try-on workflow costs in both languages', () => {
+  for (const messages of [en, zh]) {
+    const example = messages.page.sections.faq.items[2].answer;
+    expect(example).toContain('1K');
+    expect(example).toContain('2K');
+    expect(example).toContain('4K');
+    expect(example).toContain('5');
+  }
+});

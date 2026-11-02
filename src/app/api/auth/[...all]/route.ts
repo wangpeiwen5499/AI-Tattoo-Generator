@@ -1,3 +1,4 @@
+import { reportServerFailure } from '@/server/diagnostics';
 import { toNextJsHandler } from 'better-auth/next-js';
 
 import { getAuth } from '@/core/auth';
@@ -73,7 +74,7 @@ export async function OPTIONS(request: Request) {
   });
 }
 
-export async function POST(request: Request) {
+async function post(request: Request) {
   if (
     ['/sign-up/email', '/request-password-reset'].some((path) =>
       new URL(request.url).pathname.endsWith(path)
@@ -108,7 +109,7 @@ export async function POST(request: Request) {
   return response;
 }
 
-export async function GET(request: Request) {
+async function get(request: Request) {
   const limited = maybeRateLimitGetSession(request);
   if (limited) {
     return limited;
@@ -126,3 +127,38 @@ export async function GET(request: Request) {
 
   return response;
 }
+
+// Better Auth can return a 500 itself or throw before creating a response.
+async function diagnose(
+  request: Request,
+  handler: (request: Request) => Promise<Response>
+) {
+  try {
+    const response = await handler(request);
+    if (response.status >= 500) {
+      const requestId = reportServerFailure('auth.request', undefined);
+      response.headers.set('X-Request-Id', requestId);
+    }
+    return response;
+  } catch (error) {
+    const requestId = reportServerFailure('auth.request', error);
+    return Response.json(
+      {
+        code: 'AUTH_TEMPORARILY_UNAVAILABLE',
+        message:
+          'Account service is temporarily unavailable. Please try again.',
+        requestId,
+      },
+      {
+        status: 503,
+        headers: {
+          ...corsHeaders(request),
+          'Cache-Control': 'no-store',
+          'X-Request-Id': requestId,
+        },
+      }
+    );
+  }
+}
+export const GET = (request: Request) => diagnose(request, get);
+export const POST = (request: Request) => diagnose(request, post);

@@ -1,16 +1,27 @@
 import { setRequestLocale } from 'next-intl/server';
 
 import { Link } from '@/core/i18n/navigation';
+import { LegalPolicyZh } from '@/shared/blocks/common/legal-policy-zh';
 import { getMetadata } from '@/shared/lib/seo';
 
 export const revalidate = 86400;
 
-export const generateMetadata = getMetadata({
-  title: 'Privacy Policy — TattooVis',
-  description:
-    'How TattooVis uses Google Sign-In information, uploaded photos and prompts for account authentication and tattoo previews.',
-  canonicalUrl: '/privacy-policy',
-});
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  return getMetadata({
+    title:
+      locale === 'zh' ? '隐私政策 — TattooVis' : 'Privacy Policy — TattooVis',
+    description:
+      locale === 'zh'
+        ? 'TattooVis 如何使用 Google 登录信息、上传照片及提示词来验证账户身份和生成纹身预览。'
+        : 'How TattooVis uses Google Sign-In information, uploaded photos and prompts for account authentication and tattoo previews.',
+    canonicalUrl: '/privacy-policy',
+  })({ params });
+}
 
 export default async function PrivacyPage({
   params,
@@ -19,6 +30,7 @@ export default async function PrivacyPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
+  if (locale === 'zh') return <LegalPolicyZh kind="privacy" />;
 
   return (
     <section className="py-24 md:py-36">
@@ -26,7 +38,7 @@ export default async function PrivacyPage({
         <article className="mx-auto max-w-3xl">
           <h1 className="text-3xl font-bold tracking-tight">Privacy Policy</h1>
           <p className="text-muted-foreground mt-2 text-sm">
-            Last updated: November 1, 2026
+            Last updated: November 2, 2026
           </p>
 
           <div className="text-muted-foreground [&_h2]:text-foreground mt-8 space-y-6 text-sm leading-relaxed [&_a]:underline [&_h2]:mt-8 [&_h2]:text-base [&_h2]:font-semibold">

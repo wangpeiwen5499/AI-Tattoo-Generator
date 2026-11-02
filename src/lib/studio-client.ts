@@ -1,3 +1,5 @@
+import { readWithRetry } from './read-retry';
+
 export type StudioRecord = {
   designAsset?: string;
   placement?: import('./manual-placement').Placement;
@@ -42,24 +44,33 @@ export class StudioClient {
     query: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const response = await this.fetcher(
-      `/api/studio${query ? `?${query}` : ''}`,
-      { cache: 'no-store', ...options }
-    );
-    const data = await response.json();
-    if (!response.ok)
-      throw new StudioAccessError(
-        data.error || 'Studio is temporarily unavailable.',
-        response.status
+    const read = async () => {
+      const response = await this.fetcher(
+        `/api/studio${query ? `?${query}` : ''}`,
+        { cache: 'no-store', ...options }
       );
-    return data;
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok)
+        throw new StudioAccessError(
+          data.error || 'Studio is temporarily unavailable.',
+          response.status
+        );
+      return data as T;
+    };
+    return !options.method || options.method === 'GET'
+      ? readWithRetry(read, options.signal || undefined)
+      : read();
   }
   capabilities(signal?: AbortSignal) {
     return this.request<StudioCapabilities>('', { signal });
   }
-  collection(collection: 'designs' | 'history', signal?: AbortSignal) {
+  collection(
+    collection: 'designs' | 'history',
+    signal?: AbortSignal,
+    id?: string
+  ) {
     return this.request<{ records: StudioRecord[] }>(
-      `collection=${collection}`,
+      `collection=${collection}${id ? `&id=${encodeURIComponent(id)}` : ''}`,
       { signal }
     );
   }

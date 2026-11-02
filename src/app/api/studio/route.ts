@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { after } from 'next/server';
+import { reportServerFailure } from '@/server/diagnostics';
 import { readBoundedBody } from '@/server/storage/file-proxy';
 import { proxyAsset, uploadAsset } from '@/server/studio/assets';
+import { renameStudioRecord } from '@/server/studio/library';
 import {
   accountStudioAllowed,
   assertAccountStudio,
@@ -102,7 +104,31 @@ async function handle(request: Request) {
   if (!mutation) {
     if (asset) return proxyAsset(owner.id, asset);
     if (collection)
-      return json({ records: await studioCollection(owner.id, collection) });
+      return json({
+        records: await studioCollection(
+          owner.id,
+          collection,
+          url.searchParams.get('id') || undefined
+        ),
+      });
+  }
+  if (request.method === 'PATCH') {
+    const bytes = await readBoundedBody(request, 2048);
+    let input;
+    try {
+      input = JSON.parse(Buffer.from(bytes).toString('utf8'));
+    } catch {
+      throw new StudioError('Invalid request');
+    }
+    if (
+      !input ||
+      typeof input !== 'object' ||
+      typeof input.id !== 'string' ||
+      typeof input.collection !== 'string'
+    )
+      throw new StudioError('Invalid request');
+    await renameStudioRecord(owner.id, input.collection, input.id, input.name);
+    return json({ ok: true });
   }
   if (request.method === 'DELETE') {
     await removeStudioRecord(
@@ -193,13 +219,17 @@ async function route(request: Request) {
       return json({ error: error.message }, error.status);
     if (error instanceof Error && error.message === 'File too large')
       return json({ error: 'File too large' }, 413);
-    return json(
+    const requestId = reportServerFailure('studio.request', error);
+    const response = json(
       {
         error:
           'Studio service is temporarily unavailable. Your saved work is retained.',
+        requestId,
       },
       503
     );
+    response.headers.set('X-Request-Id', requestId);
+    return response;
   }
 }
-export { route as GET, route as POST, route as DELETE };
+export { route as GET, route as POST, route as DELETE, route as PATCH };

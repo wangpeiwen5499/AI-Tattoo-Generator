@@ -128,7 +128,11 @@ export async function startStudioJob(
     return id;
   });
 }
-export async function studioCollection(userId: string, collection: string) {
+export async function studioCollection(
+  userId: string,
+  collection: string,
+  id?: string
+) {
   if (!['designs', 'history'].includes(collection))
     throw new StudioError('Invalid collection');
   const records = await db()
@@ -138,6 +142,7 @@ export async function studioCollection(userId: string, collection: string) {
       and(
         eq(studioRecord.userId, userId),
         eq(studioRecord.collection, collection),
+        id ? eq(studioRecord.id, id) : undefined,
         isNull(studioRecord.deletedAt)
       )
     )

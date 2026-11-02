@@ -1,12 +1,18 @@
+import { studioCollectionPage } from '@/server/studio/library';
 import { accountStudioAllowed } from '@/server/studio/policy';
-import { studioCollection } from '@/server/studio/service';
 import { and, desc, eq, inArray, or } from 'drizzle-orm';
 import { setRequestLocale } from 'next-intl/server';
 
 import { db } from '@/core/db';
 import { Link } from '@/core/i18n/navigation';
 import { studioJob } from '@/config/db/schema';
-import { DeleteRecordButton } from '@/shared/blocks/tattoo/account-library-pages';
+import {
+  DeleteRecordButton,
+  LocalDate,
+  RenameRecordButton,
+} from '@/shared/blocks/tattoo/account-library-pages';
+import { LibraryImage } from '@/shared/blocks/tattoo/library-image';
+import { LibraryNavigation } from '@/shared/blocks/tattoo/library-navigation';
 import { getMetadata } from '@/shared/lib/seo';
 import { getUserInfo } from '@/shared/models/user';
 
@@ -39,8 +45,10 @@ const JOB_LABELS: Record<string, { zh: string; en: string; tone: string }> = {
 
 export default async function HistoryPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<{ page?: string; q?: string; source?: string }>;
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
@@ -50,7 +58,26 @@ export default async function HistoryPage({
     return <AccountHistoryUnavailable locale={locale} />;
   }
 
-  const user = await getUserInfo().catch(() => undefined);
+  let user;
+  try {
+    user = await getUserInfo();
+  } catch {
+    return (
+      <main className="container pt-28 pb-20">
+        <h1 className="text-4xl font-medium">
+          {zh ? '账户暂时不可用' : 'Account temporarily unavailable'}
+        </h1>
+        <p className="mt-5" role="alert">
+          {zh
+            ? '无法验证账户，请刷新页面重试。'
+            : 'Could not verify your account. Refresh this page to retry.'}
+        </p>
+        <Link href="/history" className="mt-5 inline-block underline">
+          {zh ? '重试' : 'Retry'}
+        </Link>
+      </main>
+    );
+  }
 
   if (!user) {
     return (
@@ -84,12 +111,21 @@ export default async function HistoryPage({
   }
 
   let unavailable: string | null = null;
-  let records: Awaited<ReturnType<typeof studioCollection>> = [];
+  const query = (await searchParams) || {};
+  let listing: Awaited<ReturnType<typeof studioCollectionPage>> = {
+    records: [],
+    total: 0,
+    page: 1,
+    pages: 1,
+    q: query.q || '',
+    source: query.source || '',
+  };
+  let records: typeof listing.records = [];
   let jobs: (typeof studioJob.$inferSelect)[] = [];
   {
     try {
-      [records, jobs] = await Promise.all([
-        studioCollection(user.id, 'history'),
+      [listing, jobs] = await Promise.all([
+        studioCollectionPage(user.id, 'history', query),
         db()
           .select()
           .from(studioJob)
@@ -111,6 +147,7 @@ export default async function HistoryPage({
           .orderBy(desc(studioJob.createdAt))
           .limit(20),
       ]);
+      records = listing.records;
     } catch {
       unavailable = zh
         ? '暂时无法读取账户历史，请稍后刷新重试。'
@@ -129,6 +166,9 @@ export default async function HistoryPage({
             ? '每次试戴生成一张结果，成功后自动保存在这里；生成中的任务会显示状态，失败会退回积分。'
             : 'Each try-on produces one image, saved here automatically on success. In-progress tasks show their status; failures return their credits.'}
         </p>
+        {!unavailable && (
+          <LibraryNavigation kind="history" locale={locale} listing={listing} />
+        )}
         {unavailable ? (
           <p
             className="bg-muted text-muted-foreground mt-8 rounded-xl border p-5"
@@ -167,9 +207,9 @@ export default async function HistoryPage({
                             : 'Single try-on'}
                         {' · '}
                         {job.resolution} ·{' '}
-                        {new Date(job.createdAt).toLocaleString(
-                          zh ? 'zh-CN' : 'en-US'
-                        )}
+                        <LocalDate
+                          value={new Date(job.createdAt).toISOString()}
+                        />
                       </span>
                       <span
                         className={`text-sm font-medium ${
@@ -197,7 +237,8 @@ export default async function HistoryPage({
                 </li>
               </ul>
             )}
-            {records.length === 0 ? (
+            {records.length === 0 &&
+            (listing.q || listing.source) ? null : records.length === 0 ? (
               <p className="bg-muted text-muted-foreground mt-8 rounded-xl border p-5">
                 {zh
                   ? '还没有保存的试戴结果。完成一次生成后，结果会自动出现在这里。'
@@ -210,20 +251,21 @@ export default async function HistoryPage({
                     key={record.id}
                     className="bg-card flex flex-col rounded-2xl border p-4"
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    <LibraryImage
                       src={`/api/studio?asset=${encodeURIComponent(record.image)}`}
                       alt={zh ? '试戴结果' : 'Try-on result'}
                       className="bg-muted h-56 w-full rounded-xl object-contain"
-                      loading="lazy"
                     />
                     <h2 className="mt-4 font-medium">
-                      {zh ? '试戴结果' : 'Try-on result'} · {record.resolution}
+                      {record.name ||
+                        record.prompt?.slice(0, 60) ||
+                        (zh ? '试戴结果' : 'Try-on result')}{' '}
+                      · {record.resolution}
                     </h2>
                     <p className="text-muted-foreground mt-1 text-sm">
-                      {new Date(record.createdAt).toLocaleString(
-                        zh ? 'zh-CN' : 'en-US'
-                      )}
+                      <LocalDate
+                        value={new Date(record.createdAt).toISOString()}
+                      />
                     </p>
                     <div className="mt-auto flex flex-wrap items-center gap-3 pt-5">
                       <Link
@@ -239,6 +281,15 @@ export default async function HistoryPage({
                       >
                         {zh ? '下载' : 'Download'}
                       </a>
+                      <RenameRecordButton
+                        collection="history"
+                        id={record.id}
+                        name={
+                          record.name ||
+                          record.prompt?.slice(0, 60) ||
+                          (zh ? '未命名记录' : 'Untitled record')
+                        }
+                      />
                       <DeleteRecordButton
                         collection="history"
                         id={record.id}

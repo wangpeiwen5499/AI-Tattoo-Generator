@@ -94,3 +94,29 @@ it('shows upload progress for a try-on rather than leaving the idle label', () =
   ).toBe('true');
   expect(screen.getByRole('status').textContent).toContain('Uploading');
 });
+
+it('labels an active AI render as generating and links to saved progress', () => {
+  render(
+    <StudioRender
+      locale="en"
+      resolution="1K"
+      setResolution={() => {}}
+      onRender={() => {}}
+      busy
+      ready
+      pending
+      hasResult={false}
+      onDownload={() => {}}
+      activeOperation="render"
+      phase="running"
+    />
+  );
+  expect(
+    screen
+      .getByRole('button', { name: /Generating try-on/ })
+      .getAttribute('aria-busy')
+  ).toBe('true');
+  expect(
+    screen.getByRole('link', { name: /history/i }).getAttribute('href')
+  ).toBe('/history');
+});

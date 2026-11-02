@@ -1,15 +1,27 @@
 import { setRequestLocale } from 'next-intl/server';
 
 import { Link } from '@/core/i18n/navigation';
+import { LegalPolicyZh } from '@/shared/blocks/common/legal-policy-zh';
 import { getMetadata } from '@/shared/lib/seo';
 
 export const revalidate = 86400;
 
-export const generateMetadata = getMetadata({
-  title: 'Terms of Service — TattooVis',
-  description: 'The terms governing your use of TattooVis.',
-  canonicalUrl: '/terms-of-service',
-});
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  return getMetadata({
+    title:
+      locale === 'zh' ? '服务条款 — TattooVis' : 'Terms of Service — TattooVis',
+    description:
+      locale === 'zh'
+        ? '使用 TattooVis 的服务条款。'
+        : 'The terms governing your use of TattooVis.',
+    canonicalUrl: '/terms-of-service',
+  })({ params });
+}
 
 export default async function TermsPage({
   params,
@@ -18,6 +30,7 @@ export default async function TermsPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
+  if (locale === 'zh') return <LegalPolicyZh kind="terms" />;
 
   return (
     <section className="py-24 md:py-36">
@@ -27,7 +40,7 @@ export default async function TermsPage({
             Terms of Service
           </h1>
           <p className="text-muted-foreground mt-2 text-sm">
-            Last updated: November 1, 2026
+            Last updated: November 2, 2026
           </p>
 
           <div className="text-muted-foreground [&_h2]:text-foreground mt-8 space-y-6 text-sm leading-relaxed [&_a]:underline [&_h2]:mt-8 [&_h2]:text-base [&_h2]:font-semibold">
@@ -65,12 +78,15 @@ export default async function TermsPage({
             <section>
               <h2>4. Credits & Payment</h2>
               <p>
-                The Service uses a one-time credit system: $4.99 for 5 previews,
-                $14.99 for 20 previews, and $29.99 for 50 previews. New visitors
-                receive 1 free preview, and registered accounts receive 3
-                additional free previews. Credits do not expire. Payments are
-                processed by Waffo as Merchant of Record. All purchases are
-                non-refundable except where required by applicable law.
+                The Service uses one-time credit packages: $4.99 for 5 credits,
+                $14.99 for 20 credits, and $29.99 for 50 credits. A new design
+                costs 1 credit. One realistic 1K / 2K / 4K try-on costs 1 / 2 /
+                3 credits respectively. Manual placement, saving and reusing
+                designs are free. New accounts receive 3 one-time welcome
+                credits after email verification. Credits do not expire.
+                Payments are processed by Waffo as Merchant of Record. All
+                purchases are non-refundable except where required by applicable
+                law.
               </p>
             </section>
 
@@ -88,9 +104,9 @@ export default async function TermsPage({
               <p>
                 You confirm you have the rights to any photo you upload and that
                 your prompts comply with our{' '}
-                <Link href="/acceptable-use">Acceptable Use Policy</Link>. You grant
-                us a limited license to process your content solely to provide
-                the Service.
+                <Link href="/acceptable-use">Acceptable Use Policy</Link>. You
+                grant us a limited license to process your content solely to
+                provide the Service.
               </p>
             </section>
 
@@ -118,7 +134,8 @@ export default async function TermsPage({
                 <li>Defamation, harassment, or threats.</li>
               </ul>
               <p>
-                See our <Link href="/acceptable-use">Acceptable Use Policy</Link> for
+                See our{' '}
+                <Link href="/acceptable-use">Acceptable Use Policy</Link> for
                 the full list. Violations may result in immediate account
                 termination, without refund, and content removal.
               </p>

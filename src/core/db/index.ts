@@ -49,45 +49,33 @@ export function db() {
     return drizzle(client);
   }
 
-  // Singleton mode: reuse existing connection (good for traditional servers and serverless warm starts)
-  if (envConfigs.db_singleton_enabled === 'true') {
-    // Return existing instance if already initialized
-    if (dbInstance) {
-      return dbInstance;
-    }
-
-    // Create connection pool only once
-    client = postgres(databaseUrl, {
-      prepare: false,
-      max: Number(envConfigs.db_max_connections) || 1, // Maximum connections in pool (default 1)
-      idle_timeout: 30, // Idle connection timeout (seconds)
-      connect_timeout: 10, // Connection timeout (seconds)
-      ...connectionSchemaOptions,
-    });
-
-    dbInstance = drizzle({ client });
-    return dbInstance;
-  }
-
-  // Non-singleton mode: create new connection each time (good for serverless)
-  // In serverless, the connection will be cleaned up when the function instance is destroyed
-  const serverlessClient = postgres(databaseUrl, {
+  // A warm Node process must share one bounded pool. Creating a pool on every
+  // db() call multiplies connections across auth/config/model queries even when
+  // each individual pool has max=1. The legacy flag only opts into custom sizing.
+  if (dbInstance) return dbInstance;
+  const configuredMax = Number(envConfigs.db_max_connections);
+  const max =
+    envConfigs.db_singleton_enabled === 'true' &&
+    Number.isSafeInteger(configuredMax) &&
+    configuredMax > 0
+      ? configuredMax
+      : 1;
+  client = postgres(databaseUrl, {
     prepare: false,
-    max: 1, // Use single connection in serverless
+    max,
     idle_timeout: 20,
     connect_timeout: 10,
     ...connectionSchemaOptions,
   });
-
-  return drizzle({ client: serverlessClient });
+  dbInstance = drizzle({ client });
+  return dbInstance;
 }
 
-// Optional: Function to close database connection (useful for testing or graceful shutdown)
-// Note: Only works in singleton mode
+// Detach before awaiting shutdown so concurrent callers cannot acquire a pool
+// that is already closing. Worker clients remain scoped to their invocation.
 export async function closeDb() {
-  if (envConfigs.db_singleton_enabled && client) {
-    await client.end();
-    client = null;
-    dbInstance = null;
-  }
+  const closingClient = client;
+  client = null;
+  dbInstance = null;
+  if (closingClient) await closingClient.end();
 }

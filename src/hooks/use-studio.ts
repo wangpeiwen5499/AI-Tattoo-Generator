@@ -30,6 +30,8 @@ export function useStudio() {
     const caps = await studioClient.capabilities(signal);
     if (alive.current) {
       setCapabilities(caps);
+      setError('');
+      setGate(null);
       setPending(caps.pending[0] || null);
       if (caps.signedIn)
         window.dispatchEvent(new Event('studio-credits-changed'));
@@ -51,13 +53,15 @@ export function useStudio() {
   }, [refresh]);
   const access = useCallback(
     (cost = 0) => {
-      const status = !capabilities?.signedIn
-        ? 401
-        : !capabilities.verified
-          ? 403
-          : capabilities.credits < cost
-            ? 402
-            : null;
+      const status = !capabilities
+        ? 503
+        : !capabilities.signedIn
+          ? 401
+          : !capabilities.verified
+            ? 403
+            : capabilities.credits < cost
+              ? 402
+              : null;
       setGate(status);
       return !status;
     },
@@ -122,13 +126,14 @@ export function useStudio() {
         await action(abort.signal);
       } catch (reason) {
         if (!abort.signal.aborted && alive.current) {
+          await refresh(abort.signal).catch(() => {});
+          if (abort.signal.aborted || !alive.current) return;
           setError(reason instanceof Error ? reason.message : 'Please retry.');
           if (
             reason instanceof StudioAccessError &&
             [401, 402, 403].includes(reason.status)
           )
             setGate(reason.status);
-          await refresh(abort.signal).catch(() => {});
         }
       } finally {
         lock.current = false;
