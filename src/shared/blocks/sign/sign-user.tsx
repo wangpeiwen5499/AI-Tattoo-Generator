@@ -66,7 +66,12 @@ export function SignUser({
   }, [fetchUserCredits]);
 
   // get session
-  const { data: session, isPending } = useSession();
+  const {
+    data: session,
+    isPending,
+    error: sessionError,
+    refetch: refetchSession,
+  } = useSession();
 
   // one tap initialized
   const oneTapInitialized = useRef(false);
@@ -88,15 +93,17 @@ export function SignUser({
       configs.google_one_tap_enabled === 'true' &&
       !session &&
       !isPending &&
+      !sessionError &&
       !oneTapInitialized.current
     ) {
       oneTapInitialized.current = true;
       showOneTap(configs);
     }
-  }, [configs, session, isPending]);
+  }, [configs, session, isPending, sessionError]);
 
   // set user
   useEffect(() => {
+    if (isPending || sessionError) return;
     const sessionUser = session?.user;
     const currentUserId = user?.id;
     const sessionUserId = sessionUser?.id;
@@ -107,7 +114,7 @@ export function SignUser({
     } else if (!sessionUser && currentUserId) {
       setUser(null);
     }
-  }, [session?.user?.id, user?.id]);
+  }, [session?.user?.id, user?.id, isPending, sessionError]);
 
   return (
     <>
@@ -226,6 +233,14 @@ export function SignUser({
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+      ) : sessionError ? (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => void refetchSession()}
+        >
+          {zh ? '重试账户连接' : 'Retry account connection'}
+        </Button>
       ) : (
         <div className="flex w-full flex-col space-y-3 sm:flex-row sm:gap-3 sm:space-y-0 md:w-fit">
           <Button

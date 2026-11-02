@@ -1,4 +1,5 @@
 import { claimRegistrationAttempt } from '@/server/db/guest-queries';
+import { safeAuthLogger } from '@/server/diagnostics';
 import { APIError } from 'better-auth/api';
 import { emailOTP, genericOAuth, oneTap } from 'better-auth/plugins';
 import { getLocale } from 'next-intl/server';
@@ -59,11 +60,7 @@ const authOptions = {
   emailAndPassword: {
     enabled: true,
   },
-  logger: {
-    verboseLogging: false,
-    // Disable all logs during build and production
-    disabled: true,
-  },
+  logger: safeAuthLogger,
 };
 
 // get auth options with configs
