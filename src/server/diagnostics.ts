@@ -62,7 +62,7 @@ const patterns: ReadonlyArray<readonly [string, RegExp]> = [
   ['pooler_session_limit', /MaxClientsInSessionMode/i],
   [
     'connection_limit',
-    /too many (?:database )?connections|remaining connection slots|Max client connections reached/i,
+    /too many (?:database )?connections|remaining connection slots|Max client connections reached|max clients reached/i,
   ],
   ['invalid_uuid', /invalid input syntax for (?:type )?uuid/i],
   [

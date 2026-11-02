@@ -4,6 +4,8 @@ import postgres from 'postgres';
 import { envConfigs } from '@/config';
 import { isCloudflareWorker } from '@/shared/lib/env';
 
+import { resolveDatabaseConnection } from './connection';
+
 // Global database connection instance (singleton pattern)
 let dbInstance: ReturnType<typeof drizzle> | null = null;
 let client: ReturnType<typeof postgres> | null = null;
@@ -53,19 +55,29 @@ export function db() {
   // db() call multiplies connections across auth/config/model queries even when
   // each individual pool has max=1. The legacy flag only opts into custom sizing.
   if (dbInstance) return dbInstance;
+  const resolved = resolveDatabaseConnection(
+    databaseUrl,
+    process.env.VERCEL_ENV
+  );
+  const onVercel =
+    process.env.VERCEL_ENV === 'production' ||
+    process.env.VERCEL_ENV === 'preview';
   const configuredMax = Number(envConfigs.db_max_connections);
   const max =
+    !onVercel &&
     envConfigs.db_singleton_enabled === 'true' &&
     Number.isSafeInteger(configuredMax) &&
     configuredMax > 0
       ? configuredMax
       : 1;
-  client = postgres(databaseUrl, {
+  client = postgres(resolved.url, {
     prepare: false,
     max,
     idle_timeout: 20,
     connect_timeout: 10,
-    ...connectionSchemaOptions,
+    // Transaction pools cannot retain session search_path. Our Drizzle tables
+    // and deployment DDL explicitly qualify their schema.
+    ...(resolved.transactionPooler ? {} : connectionSchemaOptions),
   });
   dbInstance = drizzle({ client });
   return dbInstance;

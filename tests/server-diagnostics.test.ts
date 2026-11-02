@@ -98,6 +98,10 @@ it('suppresses non-error Better Auth logs and never copies message-only errors',
 });
 it.each([
   ['too many connections for role private', 'connection_limit'],
+  [
+    'Max clients reached: session mode max clients are limited by pool size private',
+    'connection_limit',
+  ],
   ['invalid input syntax for type uuid: private', 'invalid_uuid'],
   ['fetch failed: private', 'network_failure'],
   ['connection timeout private', 'timeout'],

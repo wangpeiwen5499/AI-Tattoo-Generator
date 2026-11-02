@@ -60,3 +60,53 @@ it('does not reuse a client across Worker calls', async () => {
   expect(mocks.postgres).toHaveBeenCalledTimes(2);
   expect(mocks.postgres.mock.results[0].value.end).not.toHaveBeenCalled();
 });
+it('uses transaction-safe startup options and max=1 on Vercel despite custom pool sizing', async () => {
+  vi.stubEnv('VERCEL_ENV', 'production');
+  mocks.env.database_url =
+    'postgres://user:password@aws-0.pooler.supabase.com:5432/postgres';
+  mocks.env.db_singleton_enabled = 'true';
+  try {
+    const { db } = await import('@/core/db');
+    expect(db()).toBe(db());
+    expect(mocks.postgres).toHaveBeenCalledOnce();
+    expect(mocks.postgres.mock.calls[0][0]).toContain(':6543/postgres');
+    expect(mocks.postgres.mock.calls[0][1]).toMatchObject({
+      max: 1,
+      prepare: false,
+    });
+    expect(mocks.postgres.mock.calls[0][1]).not.toHaveProperty('connection');
+  } finally {
+    vi.unstubAllEnvs();
+    mocks.env.database_url = 'postgres://test';
+  }
+});
+it('leaves Worker pool URLs and schema startup options unchanged even with Vercel metadata', async () => {
+  vi.stubEnv('VERCEL_ENV', 'production');
+  mocks.worker = true;
+  const original =
+    'postgres://user:password@aws-0.pooler.supabase.com:5432/postgres';
+  mocks.env.database_url = original;
+  try {
+    const { db } = await import('@/core/db');
+    db();
+    expect(mocks.postgres.mock.calls[0][0]).toBe(original);
+    expect(mocks.postgres.mock.calls[0][1]).toMatchObject({
+      max: 1,
+      connection: { options: '-c search_path=tenant' },
+    });
+  } finally {
+    vi.unstubAllEnvs();
+    mocks.env.database_url = 'postgres://test';
+  }
+});
+it('omits session startup options for an already configured transaction pooler', async () => {
+  mocks.env.database_url =
+    'postgres://user:password@aws-0.pooler.supabase.com:6543/postgres';
+  try {
+    const { db } = await import('@/core/db');
+    db();
+    expect(mocks.postgres.mock.calls[0][1]).not.toHaveProperty('connection');
+  } finally {
+    mocks.env.database_url = 'postgres://test';
+  }
+});
