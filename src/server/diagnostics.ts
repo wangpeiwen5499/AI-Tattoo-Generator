@@ -10,6 +10,7 @@ const safeCodes = new Set([
   '08006',
   '08P01',
   '22P02',
+  '57014',
   '57P01',
   '57P02',
   '57P03',
@@ -28,6 +29,15 @@ const safeCodes = new Set([
 
 // Only fixed classifications leave this function. Message text is inspected in
 // memory because poolers sometimes omit structured codes; it is never logged.
+const safeErrorTypes = new Set([
+  'Error',
+  'TypeError',
+  'RangeError',
+  'PostgresError',
+  'DrizzleQueryError',
+  'APIError',
+]);
+
 const patterns: ReadonlyArray<readonly [string, RegExp]> = [
   ['pooler_session_limit', /MaxClientsInSessionMode/i],
   [
@@ -41,6 +51,16 @@ const patterns: ReadonlyArray<readonly [string, RegExp]> = [
   ],
   ['timeout', /timed?\s*out|timeout/i],
   ['missing_column', /column[^\r\n]{0,200}does not exist/i],
+  ['cannot_read_property', /Cannot read propert(?:y|ies) (?:of|')/i],
+  ['not_a_function', /is not a function/i],
+  ['invalid_date', /Invalid (?:time value|date)/i],
+  ['cookies_readonly', /Cookies can only be modified/i],
+  ['outside_request_scope', /outside (?:a )?request scope/i],
+  ['invalid_key', /invalid key|invalid (?:secret|public|private) key/i],
+  [
+    'query_cancelled',
+    /cancel(?:ing|led|ed) (?:statement|query)|query (?:cancelled|canceled)/i,
+  ],
 ];
 
 // Never log raw messages/stacks: wrappers can contain full SQL and parameters,
@@ -53,6 +73,9 @@ export function reportServerFailure(
 ) {
   const codes = new Set<string>();
   const classifications = new Set<string>();
+  const errorTypes = new Set<string>();
+  const fields = new Set<string>();
+  const locations = new Set<string>();
   const seen = new Set<unknown>();
   function inspect(current: unknown, depth: number) {
     if (depth > 5 || seen.has(current)) return;
@@ -64,17 +87,42 @@ export function reportServerFailure(
     let message: unknown = current;
     if (current && typeof current === 'object') {
       const value = current as {
+        name?: unknown;
+        stack?: unknown;
         code?: unknown;
         cause?: unknown;
         message?: unknown;
       };
       if (typeof value.code === 'string' && safeCodes.has(value.code))
         codes.add(value.code);
+      if (typeof value.name === 'string' && safeErrorTypes.has(value.name))
+        errorTypes.add(value.name);
+      if (typeof value.stack === 'string') {
+        // Ignore the first line (the raw error message), local paths and all
+        // function names/arguments. Emit only compiled Next chunk coordinates.
+        for (const line of value.stack
+          .slice(0, 16384)
+          .split('\n')
+          .slice(1, 21)) {
+          if (!/^\s+at\s/.test(line)) continue;
+          const match = line.match(
+            /[\\/]\.next[\\/]server[\\/]chunks[\\/]((?:ssr[\\/])?[A-Za-z0-9_.\[\]-]{1,180}\.(?:js|mjs):\d{1,8}:\d{1,8})\)?$/
+          );
+          if (match && locations.size < 8)
+            locations.add(
+              `.next/server/chunks/${match[1].replaceAll('\\', '/')}`
+            );
+        }
+      }
       message = value.message;
       inspect(value.cause, depth + 1);
     }
     if (typeof message === 'string') {
       const bounded = message.slice(0, 8192);
+      const field = bounded.match(
+        /Cannot read properties of (?:undefined|null) \(reading '(headers|user|session|expiresAt|id)'\)/
+      );
+      if (field) fields.add(field[1]);
       for (const [classification, pattern] of patterns) {
         if (pattern.test(bounded)) classifications.add(classification);
       }
@@ -86,6 +134,9 @@ export function reportServerFailure(
     requestId,
     codes: [...codes],
     classifications: [...classifications],
+    errorTypes: [...errorTypes],
+    fields: [...fields],
+    locations: [...locations],
   });
   return requestId;
 }
