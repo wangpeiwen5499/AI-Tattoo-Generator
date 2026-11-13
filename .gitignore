@@ -46,6 +46,8 @@ next-env.d.ts
 
 data*
 !tests/database.ts
+!tests/database-security.test.ts
+!scripts/lib/database-security.ts
 *debug*
 
 *.db
@@ -61,6 +63,8 @@ src/config/db/migrations*
 .test
 
 *.sql
+!supabase/migrations/*.sql
+supabase/.temp/
 .source
 
 .chats.playwright-mcp/\n*.png

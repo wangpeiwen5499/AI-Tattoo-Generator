@@ -17,9 +17,16 @@ const schemaName = (envConfigs.db_schema || 'public').trim();
 // For non-public schema (e.g. 'web'), use pgSchema(name).table() to generate "schema"."table".
 const customSchema =
   schemaName && schemaName !== 'public' ? pgSchema(schemaName) : null;
-const table: typeof pgTable = customSchema
+const baseTable: typeof pgTable = customSchema
   ? (customSchema.table.bind(customSchema) as unknown as typeof pgTable)
   : pgTable;
+// Browser requests use our server API, never direct database access. Keep newly
+// generated tables closed to untrusted SQL roles, including future additions.
+const table: typeof pgTable = new Proxy(baseTable, {
+  apply(target, thisArg, args) {
+    return Reflect.apply(target, thisArg, args).enableRLS();
+  },
+});
 
 export const user = table(
   'user',

@@ -14,7 +14,10 @@ export async function applyStudioUpgrade(database: any, schemaName: string) {
       CREATE TABLE IF NOT EXISTS ${s}.studio_job (
       id text PRIMARY KEY,user_id text NOT NULL REFERENCES ${s}."user"(id) ON DELETE CASCADE,operation_id text NOT NULL UNIQUE,kind text NOT NULL,input text NOT NULL,resolution text NOT NULL,credit_id text NOT NULL REFERENCES ${s}.credit(id),state text NOT NULL DEFAULT 'queued',provider_task_id text,result_url text,asset_id text REFERENCES ${s}.studio_asset(id),record_id text REFERENCES ${s}.studio_record(id),workflow_run_id text,lease_token text,lease_until timestamp NOT NULL DEFAULT now(),next_run_at timestamp NOT NULL DEFAULT now(),refunded boolean NOT NULL DEFAULT false,error text,created_at timestamp NOT NULL DEFAULT now());
       CREATE INDEX IF NOT EXISTS idx_studio_job_owner ON ${s}.studio_job(user_id,state);
-      ALTER TABLE ${s}.studio_job ADD COLUMN IF NOT EXISTS deadline_at timestamp NOT NULL DEFAULT (now() + interval '60 minutes');`;
+      ALTER TABLE ${s}.studio_job ADD COLUMN IF NOT EXISTS deadline_at timestamp NOT NULL DEFAULT (now() + interval '60 minutes');
+      ALTER TABLE ${s}.studio_asset ENABLE ROW LEVEL SECURITY;
+      ALTER TABLE ${s}.studio_record ENABLE ROW LEVEL SECURITY;
+      ALTER TABLE ${s}.studio_job ENABLE ROW LEVEL SECURITY;`;
     for (const statement of statements.split(';').filter((part) => part.trim()))
       await tx.execute(sql.raw(statement));
   });
